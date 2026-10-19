@@ -243,7 +243,7 @@ ok((await aluno.locator('[data-acao="dica"][data-sem-dicas="true"]').count()) > 
 // sem botão de Verificar: o laboratório confere sozinho a cada 5 segundos
 ok((await aluno.locator('[data-acao="verificar"]').count()) === 0, 'não existe botão de Verificar (a conferência é automática)');
 await dormir(6000);
-ok((await aluno.locator('.item-check .pista').count()) > 0, 'a conferência automática devolve mensagem por critério que aponta o próximo passo');
+ok((await aluno.locator('.item-check .pista').count()) === 0, 'a conferência automática NÃO mostra dicas sozinha (dica é só pelo botão)');
 
 // resolve mesmo, pelo terminal
 await aluno.locator('.xterm').click();

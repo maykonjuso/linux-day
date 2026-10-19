@@ -370,7 +370,9 @@ function Corrida({
       setOcupado(true);
       const r = await arena.verificar(cena.taskSlug!, '', true);
       setOcupado(false);
-      setRecado(r.todos ? 'tarefa fechada!' : r.resultados?.[0]?.mensagem ?? null);
+      // só avisa quando fecha: a mensagem do checker diz o comando, e mostrá-la
+      // sozinha entregava a tarefa da corrida
+      setRecado(r.todos ? 'tarefa fechada!' : null);
     };
     conferir();
     const t = setInterval(conferir, 4_000);

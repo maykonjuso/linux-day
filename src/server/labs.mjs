@@ -38,7 +38,7 @@ export const LABS = {
         check: `
           esperado="$(cat "$HOME/.arena/flag" 2>/dev/null)"
           [ -n "$esperado" ] || cai "ambiente sem seed — chame um monitor"
-          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse texto. Confira se copiou tudo, e procure a pasta escondida com ls -la"
+          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse texto. Confira se copiou o conteúdo inteiro do flag.txt"
         `,
       },
     ],
@@ -126,10 +126,10 @@ export const LABS = {
     criterios: [
       { id: 'm4-c1', xp: 100, tipo: 'resposta', descricao: 'Quantas linhas do log têm a palavra ERROR?', check: `
           esperado="$(grep -c ERROR "$HOME/app.log")"
-          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse número. Dica: grep -c conta em vez de listar"` },
+          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse número. Tente de novo"` },
       { id: 'm4-c2', xp: 100, tipo: 'resposta', descricao: 'Qual IP aparece mais vezes no log inteiro?', check: `
           esperado="$(grep -oE '([0-9]{1,3}\\.){3}[0-9]{1,3}' "$HOME/app.log" | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')"
-          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse IP. Conte TODAS as linhas, não só as de erro: cut -d' ' -f3 app.log | sort | uniq -c | sort -rn | head -1"` },
+          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse IP. Atenção: a pergunta é sobre o log inteiro, não só as linhas de erro"` },
       { id: 'm4-c3', xp: 150, descricao: 'Guardar todas as linhas com FATAL em ~/fatais.txt', check: `
           [ -f "$HOME/fatais.txt" ] || cai "crie o arquivo: grep FATAL app.log > fatais.txt"
           esperado="$(grep -c FATAL "$HOME/app.log")"
@@ -204,7 +204,7 @@ export const LABS = {
       { id: 'b-c1', xp: 150, papel: 'investigador', tipo: 'resposta',
         descricao: 'Investigador: qual é a mensagem de erro do log?', check: `
           esperado="$(grep -m1 FATAL "$DIR_GRUPO/log/relatorio.log" | sed 's/.*FATAL //')"
-          echo "$RESPOSTA" | grep -qiF "$esperado" || cai "não é essa mensagem. Na pasta da equipe: grep FATAL log/relatorio.log"` },
+          echo "$RESPOSTA" | grep -qiF "$esperado" || cai "não é essa mensagem. Tente de novo"` },
       { id: 'b-c2', xp: 150, papel: 'operador',
         descricao: 'Operador: o processo travado foi morto', check: `
           pgrep -f "arena-travado-$GRUPO" >/dev/null && cai "ele ainda está vivo — ache o PID e use kill"

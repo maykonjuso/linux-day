@@ -35,6 +35,8 @@ export interface EstadoArena {
 }
 export interface ResultadoCriterio {
   id: string; passou: boolean; mensagem?: string; adesivo?: boolean; xp?: number; papel?: string | null;
+  /** 'resposta': o critério é conferido pelo que a pessoa digita no campo */
+  tipo?: string | null;
 }
 
 const CHAVE = 'arena:eu';

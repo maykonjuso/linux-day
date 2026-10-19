@@ -34,6 +34,14 @@ export function LabScene({
   cena: CenaLab; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
 }) {
   const [resultados, setResultados] = useState<Record<string, ResultadoCriterio>>({});
+  /**
+   * Mensagens que aparecem embaixo do item. Só quando a pessoa ENVIA uma
+   * resposta no campo, e só nos itens de resposta ("não é esse número").
+   * A conferência automática nunca mostra mensagem: as mensagens dos checkers
+   * apontam o comando, e mostrá-las sozinhas entregava a solução no instante
+   * em que o terminal abria. Ajuda de verdade é o botão de dica.
+   */
+  const [avisos, setAvisos] = useState<Record<string, string>>({});
   const [resposta, setResposta] = useState('');
   const [dica, setDica] = useState<string | null>(null);
   const [dicaIndice, setDicaIndice] = useState(0);
@@ -51,7 +59,7 @@ export function LabScene({
     ? `${arena.labs[cena.taskSlug].pasta}${arena.eu.grupo}` : null;
   const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes' || cena.taskSlug === 'boss-chamado';
 
-  useEffect(() => { setResultados({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
+  useEffect(() => { setResultados({}); setAvisos({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
   useEffect(() => { ultimaResposta.current = resposta; }, [resposta]);
 
   /** itens que acabaram de ficar prontos: ganham a animação de conquista */
@@ -66,6 +74,14 @@ export function LabScene({
     setOcupado(false);
     if (r.erro) { if (!silencioso) setMsg(r.erro); return; }
     setResultados(Object.fromEntries(r.resultados.map((x) => [x.id, x])));
+    if (!silencioso) {
+      setAvisos(Object.fromEntries(r.resultados
+        .filter((x) => !x.passou && x.tipo === 'resposta' && x.mensagem)
+        .map((x) => [x.id, x.mensagem as string])));
+    } else {
+      // o que ficou certo perde o aviso antigo
+      setAvisos((a) => Object.fromEntries(Object.entries(a).filter(([id]) => !r.resultados.find((x) => x.id === id)?.passou)));
+    }
 
     // o que ficou verde AGORA: anima o item e sobe o "+XP" na tela
     const novos = r.resultados.filter((x) => x.passou && !prontosAntes.current.has(x.id) && !x.adesivo).map((x) => x.id);
@@ -76,7 +92,7 @@ export function LabScene({
     }
     if (r.ganho > 0) setGanhoVisivel({ xp: r.ganho, chave: Date.now() });
     if (r.todos && r.ganho > 0) setMsg('🎉 laboratório completo!');
-    else if (!silencioso) setMsg(r.ganho > 0 ? null : 'ainda não: veja a dica amarela no item');
+    else if (!silencioso) setMsg(r.ganho > 0 ? null : 'resposta não confere, tente de novo');
   }, [arena, cena.taskSlug, ocupado, souJogador]);
 
   useEffect(() => { prontosAntes.current = new Set(arena.eu?.criterios ?? []); }, [cena.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -155,10 +171,10 @@ export function LabScene({
 
                   <span className="texto-item">
                     <span><Texto>{c.descricao}</Texto></span>
-                    {!ok && r?.mensagem && (
+                    {!ok && avisos[c.id] && (
                       <span className="pista">
                         <Icone nome="ideia" tamanho={14} cor="var(--atencao)" />
-                        <span>{r.mensagem}</span>
+                        <span>{avisos[c.id]}</span>
                       </span>
                     )}
                     {bloqueado && (

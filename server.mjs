@@ -158,7 +158,7 @@ async function avaliar(dono, conta, taskSlug, extra = {}) {
   const resultados = await Promise.all(lab.criterios.map((c) => fila.adicionar(async () => {
     if (jaPremiados.has(c.id)) return { id: c.id, passou: true, mensagem: '', adesivo: true };
     const r = await amb.rodarCheck(conta, scriptDoCheck(c), extra);
-    return { id: c.id, passou: r.passou, mensagem: r.mensagem, xp: c.xp, papel: c.papel ?? null };
+    return { id: c.id, passou: r.passou, mensagem: r.mensagem, xp: c.xp, papel: c.papel ?? null, tipo: c.tipo ?? null };
   })));
   return resultados;
 }
