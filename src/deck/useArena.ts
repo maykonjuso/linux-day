@@ -141,12 +141,21 @@ export function useArena(papel: Papel) {
     };
   }, [papel, efemero]);
 
+  /** nome recusado por já estar em uso, com sugestões livres */
+  const [nomeRecusado, setNomeRecusado] = useState<{ nome: string; sugestoes: string[] } | null>(null);
+
   const entrar = useCallback((nick: string, emoji: string) => {
     const s = socketRef.current;
     if (!s) return;
     const salvo = localStorage.getItem(CHAVE);
     const id = salvo ? JSON.parse(salvo).id : undefined;
-    s.emit('entrar', { id, nick, emoji }, (r: { eu: Participante; ambientePronto?: boolean }) => {
+    s.emit('entrar', { id, nick, emoji }, (r: { eu?: Participante; ambientePronto?: boolean; erro?: string; nome?: string; sugestoes?: string[] }) => {
+      if (r?.erro === 'nome-em-uso') {
+        setNomeRecusado({ nome: r.nome ?? nick, sugestoes: r.sugestoes ?? [] });
+        return;
+      }
+      if (!r?.eu) return;
+      setNomeRecusado(null);
       setEu(r.eu);
       setAmbienteOk(r.ambientePronto !== false);
       localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji }));
@@ -181,7 +190,7 @@ export function useArena(papel: Papel) {
   return {
     socket, conectado, estado, cena, eu, placar, presenca, revelacao, respostas,
     aviso, badge, subiuNivel, ganho, evento, ambienteOk, chat, meuGrupo, labs, ocioso,
-    entrar, verificar, pedirDica, resetarAmbiente, estouAqui,
+    nomeRecusado, entrar, verificar, pedirDica, resetarAmbiente, estouAqui,
     emit: (ev: string, ...args: unknown[]) => socketRef.current?.emit(ev, ...args),
   };
 }

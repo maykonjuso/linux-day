@@ -11,7 +11,7 @@ import { Tour } from '@/components/Tour';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
 
-const EMOJIS = ['🐧', '🦊', '🐙', '🦉', '🐢', '🦝', '🐝', '🦈', '🐼', '🦅'];
+import { AVATARES, AVATAR_PADRAO, usuarioDoNick } from '@/deck/avatares';
 
 /**
  * A tela do participante. É o deck, e é a única URL dele nas 2 horas: o quiz,
@@ -26,7 +26,7 @@ export default function Player() {
   const arena = useArena('player');
   const { eu, estado, conectado, aviso, entrar } = arena;
   const [nick, setNick] = useState('');
-  const [emoji, setEmoji] = useState(EMOJIS[0]);
+  const [emoji, setEmoji] = useState<string>(AVATAR_PADRAO);
   const [gaveta, setGaveta] = useState(false);
   const [consulta, setConsulta] = useState(false);
   const [tour, setTour] = useState(false);
@@ -58,6 +58,7 @@ export default function Player() {
   }, [estado.cenaIndex]);
 
   if (!eu) {
+    const usados = new Set(arena.placar.individual.map((p) => p.emoji));
     return (
       <div className="centro">
         <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 16 }}>
@@ -65,15 +66,64 @@ export default function Player() {
             <Icone nome="shell" tamanho={16} /> Linux Day
           </div>
           <h1 className="titulo" style={{ fontSize: 34 }}>Escolha seu nome</h1>
-          <input className="btn" style={{ textAlign: 'left' }} placeholder="seu nick" value={nick} maxLength={20}
+          <input className="btn" style={{ textAlign: 'left', borderColor: arena.nomeRecusado ? 'var(--erro)' : 'var(--borda)' }}
+            placeholder="seu nome" value={nick} maxLength={20}
             onChange={(e) => setNick(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && nick.trim()) entrar(nick.trim(), emoji); }} />
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {EMOJIS.map((e) => (
-              <button key={e} className="btn" onClick={() => setEmoji(e)}
-                style={{ fontSize: 24, borderColor: emoji === e ? 'var(--acento)' : 'var(--borda)' }}>{e}</button>
-            ))}
+
+          {arena.nomeRecusado && (
+            <div className="cartao" style={{ borderColor: 'var(--erro)', display: 'grid', gap: 8 }}>
+              <span style={{ fontSize: 14 }}>
+                Já tem alguém chamado <strong>{arena.nomeRecusado.nome}</strong> na sala. Escolha outro para
+                ninguém confundir o seu XP com o dele.
+              </span>
+              {arena.nomeRecusado.sugestoes.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {arena.nomeRecusado.sugestoes.map((su) => (
+                    <button key={su} className="btn" style={{ padding: '6px 12px' }}
+                      onClick={() => { setNick(su); entrar(su, emoji); }}>
+                      {su}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div>
+            <div className="olho" style={{ marginBottom: 6 }}>
+              escolha seu bicho ({AVATARES.length} opções{usados.size ? `, ${usados.size} já escolhidos` : ''})
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(46px, 1fr))',
+              gap: 6, maxHeight: 210, overflowY: 'auto', padding: 4,
+              border: '1px solid var(--borda)', borderRadius: 12, background: 'var(--papel-2)',
+            }}>
+              {AVATARES.map((e) => {
+                // avatar já escolhido por alguém: ainda dá para usar, mas fica
+                // esmaecido para a sala naturalmente se espalhar pelos 64
+                const emUso = usados.has(e);
+                return (
+                  <button key={e} onClick={() => setEmoji(e)} aria-label={`avatar ${e}`}
+                    title={emUso ? 'já escolhido por alguém' : undefined}
+                    style={{
+                      fontSize: 24, lineHeight: 1, padding: '7px 0', cursor: 'pointer',
+                      borderRadius: 9, background: emoji === e ? '#eff4ff' : 'var(--papel)',
+                      border: `1.5px solid ${emoji === e ? 'var(--acento)' : 'transparent'}`,
+                      opacity: emUso && emoji !== e ? 0.32 : 1,
+                    }}>
+                    {e}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+          {nick.trim() && (
+            <div className="cartao" style={{ background: 'var(--papel-2)', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <Icone nome="terminal" tamanho={16} />
+              <span style={{ fontSize: 13, color: 'var(--tinta-2)' }}>no terminal você vai aparecer como</span>
+              <code className="kbd">{usuarioDoNick(nick)}@linuxday:~$</code>
+            </div>
+          )}
           <button className="btn primario" disabled={!nick.trim()} onClick={() => entrar(nick.trim(), emoji)}>
             entrar
           </button>
@@ -161,7 +211,7 @@ export default function Player() {
         </div>
 
         <div className="estado-faixa">
-          <span style={{ fontFamily: 'var(--mono)' }}>{nivel.prompt.replace('{nick}', eu.nick)}</span>
+          <span style={{ fontFamily: 'var(--mono)' }}>{nivel.prompt.replace('{nick}', usuarioDoNick(eu.nick))}</span>
           {estado.pausado && <span className="chip forte"><Icone nome="pausar" tamanho={14} /> pausado</span>}
           <span className="chip">
             {!conectado ? '🔴 reconectando' : livre === null ? '🟢 ao vivo' : '🟡 olhando sozinho'}
@@ -207,7 +257,7 @@ export default function Player() {
           <div style={{ textAlign: 'center' }}>
             <div className="olho">subiu de nível</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(26px, 4vw, 56px)', fontWeight: 700 }}>
-              {nivelDe(eu.xp).prompt.replace('{nick}', eu.nick)}
+              {nivelDe(eu.xp).prompt.replace('{nick}', usuarioDoNick(eu.nick))}
             </div>
             <div className="chip forte" style={{ marginTop: 12 }}>{arena.subiuNivel.patente}</div>
           </div>

@@ -150,7 +150,11 @@ button { font: inherit; color: inherit; }
 /* ── utilidades ──────────────────────────────────────────────────────────── */
 .grade { display: grid; gap: 22px; }
 .duas { display: grid; gap: 34px; grid-template-columns: 1.1fr 1fr; align-items: center; }
-@media (max-width: 900px) { .duas { grid-template-columns: 1fr; } }
+/* no laboratório o terminal leva a fatia maior */
+.duas-lab { grid-template-columns: minmax(240px, 0.85fr) minmax(340px, 1.15fr); }
+@media (max-width: 900px) {
+  .duas, .duas-lab { grid-template-columns: 1fr; }
+}
 .kbd {
   font-family: var(--mono); font-size: 0.85em; padding: 2px 7px;
   border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 6px; background: var(--papel);

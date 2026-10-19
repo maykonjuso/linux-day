@@ -59,7 +59,7 @@ await pedir(host, 'host:entrar', PIN);
 const ra = await pedir(ana, 'entrar', { nick: 'ana', emoji: '🐧' });
 const rb = await pedir(bia, 'entrar', { nick: 'bia', emoji: '🦊' });
 ok(ra.eu.xp === 20 && rb.eu.xp === 20, 'check-in dá 20 XP para cada');
-ok(ra.eu.conta && ra.eu.conta !== rb.eu.conta, 'cada participante recebe uma conta própria', `(${ra.eu.conta} / ${rb.eu.conta})`);
+ok(ra.eu.conta && ra.eu.conta !== rb.eu.conta, 'cada participante recebe um ambiente próprio', `(${ra.eu.conta} / ${rb.eu.conta})`);
 ok(ra.eu.tokens === 3, 'começam com 3 tokens');
 
 console.log('▸ esperando o seed do ambiente…');
@@ -96,6 +96,9 @@ ok(saida.includes('terminal-vivo'), 'o terminal é um PTY real e responde');
 ana.emit('term:entrada', 'ls -la ~ | head -3\n');
 await esperar(700);
 ok(/total|bagunca|app/.test(saida), 'o shell abre na casa do participante, com o lab semeado');
+ana.emit('term:entrada', 'whoami\n');
+await esperar(900);
+ok(/\bana\b/.test(saida), 'o terminal identifica a pessoa pelo nome que ela escolheu');
 const gradeTerm = await pedir(host, 'host:grade', null);
 ok(gradeTerm.sessoes >= 1, 'o painel vê a sessão de terminal aberta', `(${gradeTerm.sessoes})`);
 

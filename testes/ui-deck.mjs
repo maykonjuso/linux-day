@@ -51,7 +51,7 @@ for (const [nome, rota, tamanho] of [
   pg.on('console', (m) => { if (m.type() === 'error' && !/favicon/.test(m.text())) erros.push(`${nome}: ${m.text()}`); });
   await pg.goto(URL + rota, { waitUntil: 'domcontentloaded' });
   if (rota === '/') {
-    await pg.fill('input[placeholder="seu nick"]', nome === 'celular' ? 'bia' : 'ana');
+    await pg.fill('input[placeholder="seu nome"]', nome === 'celular' ? 'bia' : 'ana');
     await pg.getByRole('button', { name: /^entrar$/ }).click();
     await dormir(900);
   }

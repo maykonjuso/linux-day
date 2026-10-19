@@ -53,12 +53,25 @@ const abrir = async (rota) => {
 
 // ───────────────────────────── entrada ────────────────────────────────────
 const aluno = await abrir('/');
-await aluno.fill('input[placeholder="seu nick"]', 'ana');
+await aluno.fill('input[placeholder="seu nome"]', 'ana');
 await aluno.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1200);
 ok(await aluno.locator('.controles').isVisible(), 'participante entra e vê a barra de controles');
 ok((await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent())?.includes('20'), 'o XP do check-in aparece na barra',
   `(${(await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent())?.trim()})`);
+
+// nome repetido: a sala não pode ter dois "ana"
+const repetido = await abrir('/');
+await repetido.fill('input[placeholder="seu nome"]', 'Ana');
+await repetido.getByRole('button', { name: /^entrar$/ }).click();
+await dormir(900);
+ok((await repetido.locator('.cartao', { hasText: /Já tem alguém chamado/ }).count()) > 0, 'nome repetido é recusado com explicação');
+const sugestao = repetido.locator('.cartao button').first();
+ok((await sugestao.count()) > 0, 'e a tela oferece nomes livres', `("${await sugestao.textContent()}")`);
+await sugestao.click();
+await dormir(1100);
+ok((await repetido.locator('.controles').count()) > 0, 'clicar numa sugestão entra na hora');
+await repetido.close();
 
 const host = await abrir('/host');
 await host.fill('input[placeholder="PIN"]', '1991');
@@ -167,6 +180,28 @@ await aluno.keyboard.type('echo ui-terminal-ok\n');
 await dormir(1500);
 const telaTerm = await aluno.locator('.xterm').textContent();
 ok((telaTerm ?? '').includes('ui-terminal-ok'), 'digitar no terminal funciona e a saída volta');
+
+// a fonte do terminal: com `var(--mono)` o xterm media errado e o texto saía torto
+const fonte = await aluno.evaluate(() => {
+  const el = document.querySelector('.xterm-rows span');
+  const s = el ? getComputedStyle(el) : null;
+  return {
+    familia: s?.fontFamily ?? '',
+    cssDoXterm: !!document.querySelector('.xterm-viewport'),
+    linhas: document.querySelectorAll('.xterm-rows > div').length,
+  };
+});
+ok(!fonte.familia.includes('var('), 'a fonte do terminal é uma pilha real, não variável CSS', `(${fonte.familia.slice(0, 30)}…)`);
+ok(fonte.cssDoXterm, 'o CSS do xterm está carregado (cursor e espaçamento corretos)');
+ok(fonte.linhas >= 14, 'o terminal tem altura de trabalho', `(${fonte.linhas} linhas)`);
+
+// cada pessoa vê o PRÓPRIO nome, não o usuário do dono do Mac nem "aluno01"
+await aluno.keyboard.type('whoami\n');
+await dormir(1400);
+const quemSouEu = (await aluno.locator('.xterm-rows').textContent()) ?? '';
+ok(/\bana\b/.test(quemSouEu), 'o whoami responde o nome da própria pessoa', `(${quemSouEu.match(/\b[a-z]+@linuxday/)?.[0] ?? '?'})`);
+ok(/ana@linuxday/.test(quemSouEu), 'e o prompt mostra esse mesmo nome');
+ok(!/aluno\d/.test(quemSouEu), 'e não aparece aluno01 em lugar nenhum do terminal');
 
 const btnDica = aluno.getByRole('button', { name: /Dica/ });
 ok(await btnDica.isEnabled(), 'o botão de dica está habilitado (há token e há dica)');

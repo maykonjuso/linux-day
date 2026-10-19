@@ -77,20 +77,30 @@ function comoUsuario(conta, script, env = {}, timeout = 10_000) {
 }
 
 /** Argumentos do PTY: o shell interativo que aparece dentro do slide. */
-export function shellDe(conta) {
+export function shellDe(conta, nomeVisivel = conta) {
   const home = casaDe(conta);
-  if (MODO === 'usuarios') return { arquivo: 'su', args: ['-', conta], cwd: '/', home };
+  if (MODO === 'usuarios') {
+    // conta real do sistema; os atalhos abaixo fazem o `whoami` responder o
+    // nome escolhido pela pessoa, que é o que ela lê no prompt
+    prepararAtalhosLocais(nomeVisivel, home);
+    return { arquivo: 'su', args: ['-', conta], cwd: '/', home, caminhoExtra: resolve(home, '.arena/bin') };
+  }
   mkdirSync(home, { recursive: true });
   // No modo local todo mundo roda como o MESMO usuário do sistema, então
   // `whoami` e `id` respondiam o seu usuário do Mac para a sala inteira.
   // Estes atalhos deixam o ambiente de desenvolvimento igual ao do evento.
-  prepararAtalhosLocais(conta, home);
+  prepararAtalhosLocais(nomeVisivel, home);
   return {
     arquivo: 'bash', args: ['--noprofile', '--norc', '-i'], cwd: home, home,
     caminhoExtra: resolve(home, '.arena/bin'),
   };
 }
 
+/**
+ * `whoami`, `id` e `groups` respondendo o nome que a pessoa escolheu.
+ * Sem isso, no modo local todo mundo via o usuário do Mac ("aluno1"), e no
+ * modo de contas reais via "aluno07", que não diz nada para ela.
+ */
 function prepararAtalhosLocais(conta, home) {
   const bin = resolve(home, '.arena/bin');
   mkdirSync(bin, { recursive: true });

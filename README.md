@@ -54,6 +54,16 @@ Numa cena de pergunta, o avançar faz a coisa certa sozinho: abre, depois
 revela, depois passa para a próxima. A pergunta também **revela sozinha quando
 todos responderam**, como no Kahoot, e quem responde mais rápido ganha mais XP.
 
+### Identidade de cada pessoa
+
+Ela escolhe um nome e um entre **64 avatares**. O nome é único na sala (nomes
+repetidos são recusados com sugestões livres, senão a sala tem dois
+`ana@linuxday` e ninguém sabe de quem é o XP).
+
+O nome tratado (sem acento nem espaço) é o que aparece **no prompt do terminal
+dela e no `whoami`**: `anaclara@linuxday:~$`. A conta real do sistema continua
+sendo `alunoNN`, e é ela que aparece na grade do apresentador, para suporte.
+
 ### Controles do participante
 
 Ele segue o apresentador, mas pode olhar os slides sozinho com as setas (um

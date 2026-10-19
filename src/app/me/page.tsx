@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useArena } from '@/deck/useArena';
 import { nivelDe } from '@/deck/types';
+import { usuarioDoNick } from '@/deck/avatares';
 import { PACOTE } from '@/deck/pacote';
 
 /** Resumo pessoal pós-evento + certificado (abre a impressão do navegador). */
@@ -35,7 +36,7 @@ export default function Eu() {
 
       <div className="cartao" style={{ maxWidth: 820 }}>
         <div className="olho">seu prompt final</div>
-        <code className="kbd" style={{ fontSize: 22 }}>{n.prompt.replace('{nick}', eu.nick)}</code>
+        <code className="kbd" style={{ fontSize: 22 }}>{n.prompt.replace('{nick}', usuarioDoNick(eu.nick))}</code>
       </div>
 
       {(eu.badges?.length ?? 0) > 0 && (

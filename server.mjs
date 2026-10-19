@@ -19,6 +19,7 @@ import { criarFila } from './src/server/fila.mjs';
 import { LABS, labDe, scriptDoCheck } from './src/server/labs.mjs';
 import * as amb from './src/server/ambiente.mjs';
 import * as pty from './src/server/pty.mjs';
+import { usuarioDoNick } from './src/server/nomes.mjs';
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = Number(process.env.PORT ?? 3000);
@@ -124,9 +125,37 @@ io.on('connection', (socket) => {
   socket.emit('placar', jogo.placar());
   socket.emit('labs', Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, { dicas: l.dicas?.length ?? 0 }])));
 
+  /**
+   * Dois "Ana" na sala viram dois `ana@linuxday` e dois nomes iguais no placar:
+   * ninguém sabe de quem é o XP, e o apresentador não sabe quem chamar. Então o
+   * nome é único, comparado pela forma tratada (sem acento, sem espaço).
+   */
+  function nomeOcupado(nick, meuId) {
+    const alvo = usuarioDoNick(nick);
+    return [...jogo.participantes.values()].some(
+      (p) => p.id !== meuId && usuarioDoNick(p.nick) === alvo,
+    );
+  }
+
+  function sugerirNomes(nick, meuId) {
+    const base = String(nick).trim();
+    const sugestoes = [];
+    for (let n = 2; n <= 40 && sugestoes.length < 3; n++) {
+      const tentativa = `${base} ${n}`;
+      if (!nomeOcupado(tentativa, meuId)) sugestoes.push(tentativa);
+    }
+    return sugestoes;
+  }
+
   async function registrar({ id, nick, emoji }, ack) {
     const existente = id && jogo.participantes.get(id);
     let ambientePronto = true;   // quem volta já tem ambiente semeado
+
+    // quem está voltando mantém o próprio nome; quem está chegando não pode
+    // repetir o de alguém que já está na sala
+    if (nomeOcupado(nick, existente?.id)) {
+      return ack?.({ erro: 'nome-em-uso', nome: String(nick).trim(), sugestoes: sugerirNomes(nick, existente?.id) });
+    }
     if (existente) {
       eu = existente;
       eu.presenca = 'ativo';
@@ -145,7 +174,7 @@ io.on('connection', (socket) => {
       if (Date.now() - jogo.abertoEm < 3 * 60_000) jogo.darBadge(eu.id, 'chegou-cedo');
       ambientePronto = false;
       // semeia o ambiente em segundo plano: a pessoa já pode ver o slide
-      amb.semear(conta, 'all.sh', { NICK: eu.nick }).then((r) => {
+      amb.semear(conta, 'all.sh', { NICK: eu.nick, USUARIO: usuarioDoNick(eu.nick) }).then((r) => {
         if (!r.ok) console.warn('[seed]', conta, r.saida);
         io.to(`p:${eu.id}`).emit('ambiente', { conta, pronto: r.ok });
       });
@@ -188,7 +217,7 @@ io.on('connection', (socket) => {
   socket.on('term:abrir', ({ cols, rows } = {}) => {
     if (!eu?.conta) return;
     ouvinteTerm = (d) => socket.emit('term:dados', d);
-    pty.abrirSessao(eu.id, eu.conta, ouvinteTerm);
+    pty.abrirSessao(eu.id, eu.conta, ouvinteTerm, usuarioDoNick(eu.nick));
     if (cols && rows) pty.redimensionar(eu.id, cols, rows);
   });
   socket.on('term:entrada', (d) => { if (eu) pty.escrever(eu.id, d); });

@@ -47,7 +47,7 @@ const pg = await ctx.newPage();
 pg.on('pageerror', (e) => erros.push(e.message));
 pg.on('console', (m) => { if (m.type() === 'error' && !/favicon/.test(m.text())) erros.push(m.text()); });
 await pg.goto(URL);
-await pg.fill('input[placeholder="seu nick"]', 'ana');
+await pg.fill('input[placeholder="seu nome"]', 'ana');
 await pg.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1500);
 

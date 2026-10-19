@@ -12,7 +12,7 @@ import { shellDe } from './ambiente.mjs';
 const BUFFER_MAX = 60_000;
 const sessoes = new Map(); // participanteId -> sessão
 
-export function abrirSessao(participanteId, conta, aoReceber) {
+export function abrirSessao(participanteId, conta, aoReceber, nomeVisivel = conta) {
   let s = sessoes.get(participanteId);
   if (s && !s.morto) {
     s.ouvintes.add(aoReceber);
@@ -20,7 +20,7 @@ export function abrirSessao(participanteId, conta, aoReceber) {
     return s;
   }
 
-  const { arquivo, args, cwd, home, caminhoExtra } = shellDe(conta);
+  const { arquivo, args, cwd, home, caminhoExtra } = shellDe(conta, nomeVisivel);
   const proc = spawn(arquivo, args, {
     name: 'xterm-256color',
     cols: 100, rows: 28, cwd,
@@ -33,12 +33,12 @@ export function abrirSessao(participanteId, conta, aoReceber) {
        * usuário real do sistema operacional, e no modo local isso é o seu
        * usuário do Mac: a sala inteira aparecia como "aluno1".
        */
-      PS1: `${conta}@linuxday:\\w$ `,
+      PS1: `${nomeVisivel}@linuxday:\\w$ `,
       TERM: 'xterm-256color', LANG: 'pt_BR.UTF-8', LC_ALL: 'pt_BR.UTF-8',
     },
   });
 
-  s = { proc, conta, buffer: '', ouvintes: new Set([aoReceber]), morto: false };
+  s = { proc, conta, nomeVisivel, buffer: '', ouvintes: new Set([aoReceber]), morto: false };
   sessoes.set(participanteId, s);
 
   proc.onData((d) => {

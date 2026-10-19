@@ -182,6 +182,10 @@ export const NIVEIS = [
   { nivel: 5, xp: 1900, patente: 'Root', prompt: 'root@servidor:/#' },
 ] as const;
 
+/**
+ * `prompt` traz `{nick}`, que é trocado pelo nome tratado da pessoa
+ * (`usuarioDoNick`), o mesmo que aparece no terminal dela.
+ */
 export function nivelDe(xp: number): (typeof NIVEIS)[number] {
   let atual: (typeof NIVEIS)[number] = NIVEIS[0];
   for (const n of NIVEIS) if (xp >= n.xp) atual = n;

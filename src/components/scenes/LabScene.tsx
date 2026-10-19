@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Arena, ResultadoCriterio } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
 import { Icone } from '../Icone';
+import { usuarioDoNick } from '@/deck/avatares';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -79,7 +80,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
       <h2 className="titulo" style={{ fontSize: 'clamp(20px, 2.2vw, 34px)' }}>{cena.titulo}</h2>
       <p className="corpo" style={{ maxWidth: '50em', fontSize: 'clamp(16px, 1.5vw, 22px)' }}>{cena.objetivo}</p>
 
-      <div className="duas" style={{ alignItems: 'start', gap: 26 }}>
+      <div className="duas duas-lab" style={{ alignItems: 'start', gap: 26 }}>
         <div className="grade" style={{ gap: 14 }}>
           <div className="criterios">
             {cena.criterios.map((c) => {
@@ -152,15 +153,16 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
 
         <div className="grade" style={{ gap: 12 }}>
           {/* o TerminalHost se posiciona exatamente aqui */}
+          {/* o terminal é o que a pessoa mais usa na cena: ganha a maior fatia */}
           <div id={souJogador ? 'slot-terminal' : undefined} className="term"
-            style={{ minHeight: '34vh', display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#8e8e99' }}>
+            style={{ minHeight: 'min(46vh, 420px)', display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#8e8e99' }}>
             {!souJogador && 'o terminal está na tela de cada participante'}
           </div>
           {souJogador && (
             <small style={{ color: 'var(--tinta-2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <Icone nome="teclado" tamanho={15} />
               Clique no terminal para digitar. Para voltar o teclado ao slide, aperte <code className="kbd">Esc</code> duas vezes.
-              {arena.eu?.conta && <>Sua conta: <code className="kbd">{arena.eu.conta}</code></>}
+              {arena.eu?.nick && <>Você é <code className="kbd">{usuarioDoNick(arena.eu.nick)}</code> no terminal.</>}
             </small>
           )}
         </div>
