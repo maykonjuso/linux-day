@@ -2,5 +2,7 @@ node_modules/
 .next/
 *.tsbuildinfo
 next-env.d.ts
-data/*.db
+# as casas dos participantes e o banco são estado de execução, não código
+# (e o seed do M3 cria um arquivo com permissão 000, que o git nem consegue ler)
+data/
 .DS_Store

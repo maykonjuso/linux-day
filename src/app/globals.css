@@ -145,3 +145,29 @@ button { font: inherit; color: inherit; }
 }
 .cartao { border: 1px solid var(--borda); border-radius: var(--r); padding: 18px 20px; background: var(--papel); }
 .centro { display: grid; place-items: center; height: 100vh; padding: 24px; }
+
+/* ── xterm.js ────────────────────────────────────────────────────────────── */
+.xterm { height: 100%; }
+.xterm-viewport { background: transparent !important; }
+
+/* ── avisos flutuantes (XP, badge, nível) ────────────────────────────────── */
+.flutuante {
+  position: fixed; z-index: 60; pointer-events: none;
+  animation: sobe 2.2s var(--ease) forwards;
+}
+@keyframes sobe {
+  0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+.toast {
+  position: fixed; bottom: 86px; left: 50%; transform: translateX(-50%);
+  z-index: 60; padding: 14px 22px; border-radius: 999px;
+  background: var(--tinta); color: var(--papel); font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.nivel-cheio {
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center;
+  background: rgba(250,250,249,.94); animation: sobe 2.6s var(--ease) forwards;
+}

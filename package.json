@@ -7,10 +7,16 @@
     "dev": "node server.mjs",
     "build": "next build",
     "start": "NODE_ENV=production node server.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node -e \"const{chmodSync,existsSync}=require('fs');for(const p of ['node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper','node_modules/node-pty/prebuilds/darwin-x64/spawn-helper','node_modules/node-pty/prebuilds/linux-arm64/spawn-helper','node_modules/node-pty/prebuilds/linux-x64/spawn-helper','node_modules/node-pty/build/Release/spawn-helper'])if(existsSync(p))chmodSync(p,0o755)\"",
+    "provision": "sudo bash infra/provision.sh",
+    "teste": "node testes/e2e.mjs"
   },
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "next": "^15.1.0",
+    "node-pty": "^1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io": "^4.8.1",
@@ -21,5 +27,8 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^5.7.0"
+  },
+  "allowScripts": {
+    "node-pty@1.1.0": true
   }
 }

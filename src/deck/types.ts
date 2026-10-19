@@ -93,12 +93,20 @@ export interface CenaWidget extends CenaBase {
 
 export interface CenaLab extends CenaBase {
   tipo: 'LabScene';
+  /** casa com a chave em src/server/labs.mjs (os checkers) */
   taskSlug: string;
   objetivo: string;
   criterios: { id: string; descricao: string; xp: number }[];
   comandosDoModulo: string[];
   segundos: number;
   escopo: 'individual' | 'grupo';
+}
+
+export interface CenaGrupos extends CenaBase {
+  tipo: 'GroupScene';
+  enunciado: string;
+  /** no boss, as cartas de função que cada membro assume */
+  papeis?: { id: string; nome: string; faz: string }[];
 }
 
 export interface CenaPlacar extends CenaBase {
@@ -121,6 +129,7 @@ export type Cena =
   | CenaQuiz
   | CenaWidget
   | CenaLab
+  | CenaGrupos
   | CenaPlacar
   | CenaRecap;
 
@@ -145,8 +154,17 @@ export interface Participante {
   presenca: 'ativo' | 'ocioso' | 'desconectado';
   /** se navegou sozinho: saiu do "ao vivo" */
   livre: boolean;
+  /** conta Linux (aluno01…) que o terminal dele usa */
+  conta?: string;
+  /** carta de função no boss */
+  papel?: string | null;
+  /** critérios já premiados (adesivos: uma vez verdes, verdes para sempre) */
+  criterios?: string[];
+  badges?: string[];
+  combo?: number;
 }
 
+/** Mesma tabela do servidor (src/server/jogo.mjs) — mantenha as duas em sincronia. */
 export const NIVEIS = [
   { nivel: 1, xp: 0, patente: 'Visitante', prompt: 'visitante@linuxday:~$' },
   { nivel: 2, xp: 300, patente: 'Usuário', prompt: '{nick}@linuxday:~$' },

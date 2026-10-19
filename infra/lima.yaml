@@ -1,0 +1,33 @@
+# Lima VM do workshop. Uso:
+#   limactl create --name=linuxday --vm-type=vz infra/lima.yaml
+#   limactl start linuxday && limactl shell linuxday
+#
+# Dimensionado para um Mac M4 de 24 GB: 8 GB e 6 vCPU para a VM, o resto para
+# o macOS, o navegador e o espelhamento de tela (a MESMA máquina apresenta).
+vmType: vz
+cpus: 6
+memory: 8GiB
+disk: 40GiB
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: aarch64
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+    arch: x86_64
+
+# SEM hostIP 0.0.0.0 o Lima só expõe em 127.0.0.1 e NINGUÉM da sala acessa.
+# É o erro que custa 20 minutos no dia do evento.
+portForwards:
+  - guestPort: 3000
+    hostIP: "0.0.0.0"
+
+mounts:
+  - location: "~/Developer/linux-day"
+    writable: true
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+      bash /Users/*/Developer/linux-day/infra/setup-vm.sh || true

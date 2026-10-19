@@ -6,6 +6,12 @@ import type { Cena, Papel } from '@/deck/types';
 import { Diagrama } from './Diagramas';
 import PermissionToggles from './widgets/PermissionToggles';
 import PathQuiz from './widgets/PathQuiz';
+import PipeBuilder from './widgets/PipeBuilder';
+import FsDragDrop from './widgets/FsDragDrop';
+import CommandBuilder from './widgets/CommandBuilder';
+import { Escolhas, ESCAPE, PERIGO, PREVER, ERROS } from './widgets/Escolhas';
+import { LabScene } from './scenes/LabScene';
+import { GroupScene } from './scenes/GroupScene';
 
 /**
  * Uma cena, três projeções. O conteúdo é o mesmo objeto; quem muda é o papel:
@@ -24,7 +30,8 @@ export function SceneRouter({ arena, papel }: { arena: Arena; papel: Papel }) {
     case 'WillGoWrong': return <Erros cena={cena} />;
     case 'QuizScene': return <Quiz cena={cena} arena={arena} papel={papel} />;
     case 'WidgetScene': return <Widget cena={cena} arena={arena} papel={papel} />;
-    case 'LabScene': return <Lab cena={cena} arena={arena} papel={papel} />;
+    case 'LabScene': return <LabScene cena={cena} arena={arena} papel={papel} />;
+    case 'GroupScene': return <GroupScene cena={cena} arena={arena} papel={papel} />;
     case 'Scoreboard': return <Placar cena={cena} arena={arena} />;
     case 'Recap': return <Recap cena={cena} passo={arena.estado.passo} />;
   }
@@ -171,22 +178,30 @@ function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; 
     if (papel === 'player') arena.emit('widget:concluido', { cenaId: cena.id, xp: 60 });
   };
 
+  // no projetor o widget não é jogável: o exercício está na tela de cada um
   const interativo = papel !== 'screen';
+
+  const qual = () => {
+    switch (cena.widget) {
+      case 'permission-toggles': return <PermissionToggles onConcluir={concluir} />;
+      case 'path-quiz': return <PathQuiz onConcluir={concluir} />;
+      case 'pipe-builder': return <PipeBuilder onConcluir={concluir} />;
+      case 'fs-dragdrop': return <FsDragDrop onConcluir={concluir} />;
+      case 'command-builder': return <CommandBuilder onConcluir={concluir} />;
+      case 'escape-room': return <Escolhas rodadas={ESCAPE} onConcluir={concluir} />;
+      case 'spot-the-danger': return <Escolhas rodadas={PERIGO} onConcluir={concluir} />;
+      case 'predict-output': return <Escolhas rodadas={PREVER} onConcluir={concluir} />;
+      case 'error-match': return <Escolhas rodadas={ERROS} onConcluir={concluir} />;
+      default: return null;
+    }
+  };
 
   return (
     <div className="cena">
       <div className="olho">{cena.titulo}{arena.estado.restante !== null && ` · ${arena.estado.restante}s`}</div>
       <p className="corpo" style={{ maxWidth: '44em' }}>{cena.enunciado}</p>
 
-      {interativo ? (
-        <>
-          {cena.widget === 'permission-toggles' && <PermissionToggles onConcluir={concluir} />}
-          {cena.widget === 'path-quiz' && <PathQuiz onConcluir={concluir} />}
-          {!['permission-toggles', 'path-quiz'].includes(cena.widget) && (
-            <div className="cartao">widget <code className="kbd">{cena.widget}</code> ainda não implementado (ver docs/plano-app.md §1.3b)</div>
-          )}
-        </>
-      ) : (
+      {interativo ? qual() : (
         <div className="cartao" style={{ fontSize: 'clamp(18px, 2vw, 30px)' }}>
           👉 o exercício está na tela de vocês. Mãos no mouse.
         </div>
@@ -195,55 +210,9 @@ function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; 
       {feito && cena.pontePara && (
         <div className="cartao" style={{ borderColor: 'var(--ok)' }}>
           <div className="olho">o que você acabou de fazer, em comando</div>
-          <code className="kbd" style={{ fontSize: '1.3em' }}>{cena.pontePara}</code>
+          <code className="kbd" style={{ fontSize: '1.25em' }}>{cena.pontePara}</code>
         </div>
       )}
-    </div>
-  );
-}
-
-function Lab({ cena, arena, papel }: { cena: C<'LabScene'>; arena: Arena; papel: Papel }) {
-  const [feitos, setFeitos] = useState<string[]>([]);
-  useEffect(() => setFeitos([]), [cena.id]);
-
-  return (
-    <div className="cena" style={{ gap: 20 }}>
-      <div className="olho">
-        {cena.escopo === 'grupo' ? 'boss em grupo' : 'mão na massa'}
-        {arena.estado.restante !== null && ` · ${Math.floor(arena.estado.restante / 60)}:${String(arena.estado.restante % 60).padStart(2, '0')}`}
-      </div>
-      <h2 className="titulo" style={{ fontSize: 'clamp(22px, 2.4vw, 38px)' }}>{cena.titulo}</h2>
-      <p className="corpo" style={{ maxWidth: '46em' }}>{cena.objetivo}</p>
-
-      <div className="duas" style={{ alignItems: 'start' }}>
-        <div className="criterios">
-          {cena.criterios.map((c) => (
-            <div key={c.id} className="criterio" data-ok={feitos.includes(c.id)}>
-              <span>{feitos.includes(c.id) ? '✅' : '⬜'}</span>
-              <span style={{ flex: 1 }}>{c.descricao}</span>
-              <span className="chip">{c.xp} XP</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grade">
-          {/* Fase 1: aqui entra o TerminalHost persistente (xterm.js + node-pty).
-              Enquanto não existe, o slot fica reservado para não mudar o layout depois. */}
-          <div className="term" id="slot-terminal" style={{ minHeight: '28vh', display: 'grid', placeItems: 'center', color: '#8e8e99' }}>
-            terminal entra aqui (Fase 1 · xterm.js ↔ su - alunoNN)
-          </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button className="btn primario" disabled={papel !== 'player'}>Verificar</button>
-            <button className="btn" disabled={papel !== 'player'}>Dica (1 token)</button>
-            <button className="btn" disabled={papel !== 'player'}>Resetar ambiente</button>
-            <button className="btn" onClick={() => arena.emit('ajuda')} disabled={papel !== 'player'}>🙋 Pedir ajuda</button>
-          </div>
-          <div className="olho">comandos do módulo</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {cena.comandosDoModulo.map((c) => <code key={c} className="kbd">{c}</code>)}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

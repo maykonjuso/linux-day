@@ -356,6 +356,10 @@ Conteúdo em MDX/arquivo (não no banco) é deliberado: você vai editar texto d
 
 ## 8. Fases de construção (do indispensável ao luxo)
 
+> **Estado em 19/10/2026: Fases 0 a 4 construídas e verificadas** (`npm run teste`, 38 verificações).
+> Da Fase 5 ficaram de fora o modo offline com roteador próprio testado no local e o export de PDF
+> dos slides — ambos dependem de ensaio presencial. O resto desta seção fica como registro do plano.
+
 **Fase 0 — O deck como máquina de cenas (2 dias)**
 Next + Socket.IO + Postgres + entrada por código/nickname + presença + o runtime de cenas (cena/passo/fase sincronizados, os três papéis `screen`/`player`/`host`, follow-the-presenter com escape) + 4 tipos de cena de conteúdo em MDX.
 *Esse runtime é a fundação de tudo: quiz e lab são só mais dois tipos de cena. Errar a abstração aqui custa reescrever o app depois.*
