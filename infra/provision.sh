@@ -8,7 +8,7 @@ SEEDS=${ARENA_SEEDS:-/opt/seed}
 # Cada participante instala um pacote DIFERENTE no M5: se todos instalassem o
 # mesmo, do segundo em diante o apt diria "already the newest version" e o lab
 # perderia o sentido.
-PKGS=(htop jq cowsay figlet ncdu sl neofetch tree)
+PKGS=(cmatrix jq cowsay figlet ncdu sl neofetch tree)
 
 [ "$(id -u)" = 0 ] || { echo "rode com sudo"; exit 1; }
 

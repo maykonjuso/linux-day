@@ -23,12 +23,25 @@
   --term-fundo: #16161a;
   --term-tinta: #e8e8ea;
   /*
-   * Escala de espaçamento: tudo é múltiplo de 8, com 4 como meio-passo.
+   * Cores derivadas. Nenhum componente escreve cor fixa (#eff4ff, #fff…): ele
+   * usa estes tokens, que o tema escuro redefine. Era a cor fixa que deixava
+   * texto escuro sobre fundo escuro quando a pessoa trocava de tema.
+   */
+  --acento-suave: #e8efff;
+  --ok-suave: #e9f7ee;
+  --erro-suave: #fdecec;
+  --atencao-suave: #fdf4e3;
+  --sobre-acento: #ffffff;     /* texto em cima de fundo var(--acento) */
+  --sobre-ok: #ffffff;
+  --tinta-hover: #2a2a30;      /* fundo do botão escuro ao passar o mouse */
+  --sombra: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /*
+   * Escala de espaçamento: tudo é múltiplo de 8.
    * Uma escala fechada é o que faz telas diferentes parecerem o mesmo produto:
    * sem ela cada caixa recebe um número inventado na hora (12, 13, 22, 26) e o
    * olho percebe desalinho mesmo sem saber dizer onde.
    */
-  --e05: 4px;
+  --e05: 8px;   /* nome antigo do meio-passo; hoje também 8 */
   --e1: 8px;
   --e2: 16px;
   --e3: 24px;
@@ -37,11 +50,19 @@
   --e6: 48px;
   --e8: 64px;
 
-  /* raios na mesma lógica: 8, 12, 16, 24 */
+  /* raios na mesma lógica: 8, 16, 24 */
   --r-p: 8px;
-  --r: 12px;
+  --r: 8px;
   --r-m: 16px;
   --r-g: 24px;
+  /* alturas de controle: tudo o que é clicável tem uma destas */
+  --h-p: 32px;   /* chip, botão da barra */
+  --h: 40px;     /* botão e campo de texto */
+  --h-g: 48px;   /* botão principal */
+  /* margem da cena: a mesma em toda cena do mesmo tamanho de tela */
+  --margem-y: 32px;
+  --margem-x: 48px;
+  --respiro: 24px;   /* espaço entre os blocos de uma cena */
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
   /* só fontes que existem na máquina: nada é baixado (a rede é local, sem internet) */
   --mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "DejaVu Sans Mono", monospace;
@@ -65,17 +86,28 @@
   --ok: #5bd48a;
   --erro: #ff8080;
   --atencao: #f5c451;
-  --term-fundo: #0d0e12;
+  --term-fundo: #07080a;
   --term-tinta: #ecedf0;
+  --acento-suave: #1a2540;
+  --ok-suave: #13291d;
+  --erro-suave: #331a1c;
+  --atencao-suave: #2e2614;
+  --sobre-acento: #0d1117;
+  --sobre-ok: #0d1117;
+  --tinta-hover: #d4d6dc;
+  --sombra: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
-:root[data-tema="escuro"] .alt[data-escolhida="true"] { background: #1b2740; }
-:root[data-tema="escuro"] .alt[data-estado="certa"] { background: #14301f; }
-:root[data-tema="escuro"] .item-check .numero,
-:root[data-tema="escuro"] .btn.primario { color: #121317; }
-:root[data-tema="escuro"] .btn.primario { background: var(--tinta); border-color: var(--tinta); }
-:root[data-tema="escuro"] .btn-icone.destaque { background: var(--acento); color: #0d1117; }
+:root[data-tema="escuro"] .term { border: 1px solid var(--borda); }
 :root[data-tema="escuro"] .toast { background: var(--papel-2); color: var(--tinta); border: 1px solid var(--borda); }
 :root[data-tema="escuro"] .nivel-cheio { background: rgba(18,19,23,.95); }
+/* as cores de módulo ficam mais claras no escuro, senão o título some no fundo */
+:root[data-tema="escuro"] .cena[data-modulo="0"] { --cor-modulo: #7cb0ff; }
+:root[data-tema="escuro"] .cena[data-modulo="1"] { --cor-modulo: #4fd1e8; }
+:root[data-tema="escuro"] .cena[data-modulo="2"] { --cor-modulo: #5bd48a; }
+:root[data-tema="escuro"] .cena[data-modulo="3"] { --cor-modulo: #b49bff; }
+:root[data-tema="escuro"] .cena[data-modulo="4"] { --cor-modulo: #ff9d5c; }
+:root[data-tema="escuro"] .cena[data-modulo="5"] { --cor-modulo: #f5c451; }
+:root[data-tema="escuro"] .cena[data-modulo="6"] { --cor-modulo: #ff8080; }
 
 * { box-sizing: border-box; }
 
@@ -112,12 +144,25 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: safe center;
-  gap: clamp(var(--e2), 2.4vh, var(--e4));
-  padding: clamp(var(--e3), 4.5vh, var(--e6)) clamp(var(--e3), 6vw, var(--e8));
+  gap: var(--respiro);
+  /* ocupa a altura toda (o Encaixe dá a altura da tela) e a largura toda,
+     até um teto para a linha não ficar impossível de ler num monitor ultralargo */
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--margem-y) var(--margem-x);
   min-height: 0;
   animation: entra 200ms var(--ease);
 }
-@keyframes entra { from { opacity: 0; transform: translateY(8px); } }
+/*
+ * As margens mudam por FAIXA de tela, e não com vw: um clamp com vw gera 37px,
+ * 51px… e cada cena acabava com uma margem diferente da outra.
+ */
+@media (min-width: 1600px) { :root { --margem-y: 48px; --margem-x: 64px; --respiro: 32px; } }
+@media (max-width: 900px) { :root { --margem-y: 24px; --margem-x: 24px; --respiro: 16px; } }
+@media (max-width: 560px) { :root { --margem-y: 16px; --margem-x: 16px; } }
+@keyframes entra { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .cena { animation: none; }
   * { transition-duration: 0.01ms !important; }
@@ -157,8 +202,9 @@ button { font: inherit; color: inherit; }
 .titulo { font-size: var(--t1); font-weight: 760; }
 .titulo-cena { font-size: var(--t2); font-weight: 720; letter-spacing: -0.015em; }
 .titulo-secao { font-size: var(--t3); font-weight: 700; }
-.corpo { font-size: var(--t4); color: var(--tinta-2); max-width: 30em; }
-.corpo-p { font-size: var(--t5); color: var(--tinta-2); max-width: 42em; }
+.corpo { font-size: var(--t4); color: var(--tinta-2); }
+/* sem largura máxima: o texto usa a largura da cena em vez de quebrar no meio dela */
+.corpo-p { font-size: var(--t5); color: var(--tinta-2); line-height: 1.5; }
 .apoio { font-size: var(--t6); color: var(--tinta-2); }
 
 /*
@@ -178,7 +224,7 @@ button { font: inherit; color: inherit; }
   border-bottom: 2px solid var(--cor-modulo, var(--borda));
 }
 .cabecalho .moldura {
-  width: clamp(44px, 4.4vw, 68px);
+  width: 64px;
   aspect-ratio: 1;
   border-radius: var(--r-m);
   display: grid;
@@ -186,7 +232,8 @@ button { font: inherit; color: inherit; }
   background: color-mix(in srgb, var(--cor-modulo, var(--acento)) 12%, var(--papel));
   padding: var(--e1);
 }
-.cabecalho .textos { display: grid; gap: var(--e05); }
+.cabecalho .textos { display: grid; gap: var(--e1); }
+@media (max-width: 900px) { .cabecalho .moldura { width: 48px; } }
 
 /* cor de cada módulo: dá identidade e ajuda a saber onde a turma está */
 .cena[data-modulo="0"] { --cor-modulo: #2563eb; }
@@ -208,37 +255,48 @@ button { font: inherit; color: inherit; }
 .barra .cresce { margin-left: auto; }
 .chip {
   display: inline-flex; align-items: center; gap: var(--e1);
-  padding: var(--e05) var(--e1); border: 1px solid var(--borda); border-radius: 999px;
-  background: var(--papel); font-variant-numeric: tabular-nums;
+  min-height: var(--h-p); padding: 0 var(--e2);
+  border: 1px solid var(--borda); border-radius: 999px;
+  background: var(--papel); color: var(--tinta); font-size: var(--t6);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .chip.forte { border-color: var(--acento); color: var(--acento); font-weight: 650; }
+/* o chip do cronômetro e da contagem, no topo da pergunta: um tamanho só */
+.chip.grande { min-height: var(--h); font-size: var(--t5); }
+button.chip { cursor: pointer; font: inherit; font-size: var(--t6); }
 
 /* ── botões ──────────────────────────────────────────────────────────────── */
 .btn {
-  border: 1px solid var(--borda); background: var(--papel);
-  border-radius: var(--r-p); padding: var(--e1) var(--e2); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e1);
+  min-height: var(--h); padding: var(--e1) var(--e2);
+  border: 1px solid var(--borda); background: var(--papel); color: var(--tinta);
+  border-radius: var(--r-p); cursor: pointer;
   transition: transform 160ms var(--ease), background 160ms ease;
 }
 .btn:hover { background: var(--papel-2); }
 .btn:active { transform: scale(0.97); }
-.btn.primario { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
-.btn.primario:hover { background: #26262b; }
+.btn.primario { background: var(--tinta); color: var(--papel); border-color: var(--tinta); font-weight: 650; }
+.btn.primario:hover { background: var(--tinta-hover); border-color: var(--tinta-hover); }
 
 /* ── terminal ────────────────────────────────────────────────────────────── */
 .term {
   background: var(--term-fundo); color: var(--term-tinta);
   border-radius: var(--r-m); padding: var(--e3);
-  font-family: var(--mono); font-size: clamp(14px, 1.35vw, 22px);
+  font-family: var(--mono); font-size: clamp(14px, 1.3vw, 21px);
   line-height: 1.6; overflow: auto; white-space: pre-wrap;
 }
+/* o terminal é sempre escuro, nos dois temas: ênfase e tecla dentro dele
+   usam cor própria, senão o negrito (cor da tinta do slide) some no fundo */
+.term strong { color: #ffffff !important; }
+.term .kbd { background: #26262c; border-color: #3a3a42; color: #ffd479; }
 .term .cmd::before { content: "$ "; color: #7dd3a0; }
 .term .cmd { color: #fff; }
 .term .saida { color: #a7a7b0; }
 .term .saida b { color: #ffd479; font-weight: 600; }
 .term .traducao {
   display: block; margin: var(--e1) 0 var(--e2);
-  font-family: var(--sans); font-size: 0.74em; color: #8e8e99;
-  border-left: 2px solid #3a3a42; padding-left: var(--e1);
+  font-family: var(--sans); font-size: 0.8em; color: #a7a7b0;
+  border-left: 2px solid #3a3a42; padding-left: var(--e2);
 }
 
 /* ── quiz ────────────────────────────────────────────────────────────────── */
@@ -246,13 +304,16 @@ button { font: inherit; color: inherit; }
 @media (max-width: 760px) { .alternativas { grid-template-columns: 1fr; } }
 .alt {
   display: flex; align-items: center; gap: var(--e2); text-align: left;
-  padding: var(--e3); border: 2px solid var(--borda); border-radius: var(--r-m);
-  background: var(--papel); cursor: pointer; font-size: clamp(17px, 1.7vw, 24px);
+  min-height: 80px; padding: var(--e2) var(--e3);
+  border: 2px solid var(--borda); border-radius: var(--r-m);
+  background: var(--papel); color: var(--tinta); cursor: pointer; font-size: clamp(17px, 1.7vw, 24px);
   transition: transform 160ms var(--ease), border-color 160ms ease, background 160ms ease;
 }
 .alt:active { transform: scale(0.985); }
-.alt[data-escolhida="true"] { border-color: var(--acento); background: #eff4ff; }
-.alt[data-estado="certa"] { border-color: var(--ok); background: #effaf1; }
+.alt:disabled { cursor: default; }
+.alt:hover:not(:disabled) { border-color: var(--tinta-2); }
+.alt[data-escolhida="true"] { border-color: var(--acento); background: var(--acento-suave); }
+.alt[data-estado="certa"] { border-color: var(--ok); background: var(--ok-suave); }
 .alt[data-estado="errada"] { opacity: 0.45; }
 .alt .letra {
   width: var(--e4); height: var(--e4); flex: none; border-radius: var(--r-p);
@@ -280,15 +341,16 @@ button { font: inherit; color: inherit; }
 .checklist, .cartao { max-width: 100%; }
 .item-check .texto-item { overflow-wrap: anywhere; }
 /* no laboratório o terminal leva a fatia maior */
-.duas-lab { grid-template-columns: minmax(240px, 0.85fr) minmax(340px, 1.15fr); }
+.duas-lab { grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.15fr); }
 @media (max-width: 900px) {
   .duas, .duas-lab { grid-template-columns: 1fr; }
 }
 .kbd {
-  font-family: var(--mono); font-size: 0.88em; padding: 2px var(--e1);
-  border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: var(--r-p); background: var(--papel);
+  font-family: var(--mono); font-size: 0.88em; padding: 0 var(--e1);
+  border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: var(--r-p);
+  background: var(--papel-2); color: var(--tinta); white-space: nowrap;
 }
-.cartao { border: 1px solid var(--borda); border-radius: var(--r-m); padding: var(--e3); background: var(--papel); }
+.cartao { border: 1px solid var(--borda); border-radius: var(--r-m); padding: var(--e3); background: var(--papel); color: var(--tinta); }
 .centro { display: grid; place-items: center; height: 100vh; padding: var(--e3); }
 
 /* ── xterm.js ────────────────────────────────────────────────────────────── */
@@ -322,14 +384,16 @@ button { font: inherit; color: inherit; }
 .palco[data-papel="screen"] .titulo { font-size: clamp(40px, 5.2vw, 92px); }
 .palco[data-papel="screen"] .corpo { font-size: clamp(22px, 2.3vw, 38px); max-width: 28em; }
 .palco[data-papel="screen"] .olho { font-size: clamp(16px, 1.5vw, 24px); }
-.palco[data-papel="screen"] .alt { font-size: clamp(22px, 2.2vw, 34px); padding: var(--e3) var(--e4); }
+.palco[data-papel="screen"] .alt { font-size: clamp(22px, 2.2vw, 34px); padding: var(--e3) var(--e4); min-height: 96px; }
 .palco[data-papel="screen"] .alt .letra { width: var(--e6); height: var(--e6); font-size: 22px; }
 .palco[data-papel="screen"] .term { font-size: clamp(18px, 1.7vw, 28px); }
-.palco[data-papel="screen"] .chip { font-size: clamp(15px, 1.3vw, 22px); padding: var(--e1) var(--e2); }
+.palco[data-papel="screen"] .chip { font-size: clamp(15px, 1.3vw, 22px); min-height: var(--h); }
 .palco[data-papel="screen"] .criterio { font-size: clamp(18px, 1.7vw, 28px); }
 .palco[data-papel="screen"] .cartao { padding: var(--e4); }
 .palco[data-papel="screen"] .kbd { font-size: clamp(16px, 1.5vw, 26px); }
 .palco[data-papel="screen"] .barra { font-size: clamp(15px, 1.3vw, 20px); padding: var(--e2) var(--e4); }
+.palco[data-papel="screen"] { --respiro: 32px; }
+.palco[data-papel="screen"] .corpo-p { font-size: var(--t4); }
 
 /*
  * Cenas densas (laboratório e jogos): respiro menor, porque elas carregam
@@ -338,12 +402,29 @@ button { font: inherit; color: inherit; }
  * limite do legível.
  */
 .cena[data-denso="true"] {
-  gap: var(--e2);
-  padding: var(--e2) clamp(var(--e2), 3vw, var(--e4));
+  --respiro: 16px;
+  justify-content: flex-start;
+  padding: var(--e3) var(--margem-x);
 }
 .cena[data-denso="true"] .titulo { font-size: clamp(22px, 2.6vw, 40px); }
 .cena[data-denso="true"] .corpo { font-size: clamp(15px, 1.4vw, 21px); }
 .cena[data-denso="true"] .cartao { padding: var(--e2); }
+/* no laboratório as duas colunas descem até o fim da tela: o terminal cresce
+   em vez de deixar uma faixa vazia embaixo */
+.cena[data-denso="true"] .duas-lab { flex: 1 1 auto; align-items: stretch; }
+.duas-lab > .coluna { display: flex; flex-direction: column; gap: var(--e2); min-height: 0; }
+.duas-lab > .coluna > * { flex-shrink: 0; }   /* a lista não encolhe: a coluna rola */
+.duas-lab .term-lab { flex: 1 1 auto; flex-shrink: 1; min-height: 240px; }
+/*
+ * Altura fixa: a cena tem exatamente a altura da tela (o Encaixe define), e a
+ * coluna da esquerda rola por dentro quando a lista é longa. Assim o terminal
+ * nunca encolhe e a letra nunca diminui.
+ */
+@media (min-width: 901px) {
+  .cena[data-altura-fixa="true"] { height: 100%; flex: 1 1 auto; overflow: hidden; }
+  .cena[data-altura-fixa="true"] .duas-lab { min-height: 0; }
+  .cena[data-altura-fixa="true"] .duas-lab > .coluna:first-child { overflow-y: auto; padding-right: var(--e1); }
+}
 
 /* ── barras de controle ──────────────────────────────────────────────────── */
 /*
@@ -371,8 +452,9 @@ button { font: inherit; color: inherit; }
   flex-wrap: nowrap;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--e05);
-  padding: var(--e05) var(--e1);
+  gap: 0;
+  min-height: var(--h);
+  padding: 0 var(--e1);
   border: 1px solid var(--borda);
   border-radius: var(--r);
   background: var(--papel);
@@ -383,7 +465,7 @@ button { font: inherit; color: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--tinta-2);
-  margin-right: 2px;
+  margin: 0 var(--e1);
   user-select: none;
   white-space: nowrap;
 }
@@ -391,11 +473,14 @@ button { font: inherit; color: inherit; }
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--e05);
+  justify-content: center;
+  gap: var(--e1);
+  min-height: var(--h-p);
   border: 1px solid transparent;
   background: transparent;
+  color: var(--tinta);
   border-radius: var(--r-p);
-  padding: 6px var(--e1);
+  padding: 0 var(--e1);
   cursor: pointer;
   font-size: 13px;
   transition: background 140ms ease, transform 140ms var(--ease);
@@ -404,8 +489,9 @@ button { font: inherit; color: inherit; }
 .btn-icone:hover:not(:disabled) { background: var(--papel-2); }
 .btn-icone:active:not(:disabled) { transform: scale(0.97); }
 .btn-icone:disabled { opacity: 0.4; cursor: default; }
-.btn-icone.destaque { background: var(--tinta); color: var(--papel); font-weight: 650; }
-.btn-icone.destaque:hover { background: #26262b; }
+.btn-icone.destaque { background: var(--tinta); color: var(--papel); font-weight: 650; padding: 0 var(--e2); }
+.btn-icone.destaque:hover:not(:disabled) { background: var(--tinta-hover); }
+select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
 .estado-faixa {
   display: flex;
   flex-wrap: nowrap;
@@ -432,7 +518,6 @@ button { font: inherit; color: inherit; }
  */
 @media (max-width: 560px) {
   :root {
-    --e2: 12px;
     --e3: 16px;
     --e4: 24px;
     --e5: 32px;
@@ -440,7 +525,7 @@ button { font: inherit; color: inherit; }
     --e8: 40px;
   }
   .alternativas { gap: var(--e1); }
-  .alt { padding: var(--e2); }
+  .alt { padding: var(--e2); min-height: 64px; }
   .cartao { padding: var(--e2); }
 }
 
@@ -495,12 +580,12 @@ button { font: inherit; color: inherit; }
 /* a etiqueta de XP enche quando o item fica pronto */
 .item-check .xp-item {
   font-family: var(--mono); font-size: 0.8em; white-space: nowrap;
-  padding: 2px var(--e1); border-radius: 999px;
+  padding: 0 var(--e1); border-radius: 999px;
   border: 1px solid var(--borda); color: var(--tinta-2); background: var(--papel-2);
   transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 .item-check[data-ok="true"] .xp-item {
-  background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 700;
+  background: var(--ok); border-color: var(--ok); color: var(--sobre-ok); font-weight: 700;
 }
 
 /* barra de progresso do laboratório */
@@ -527,33 +612,470 @@ button { font: inherit; color: inherit; }
   border: 2px solid var(--acento);
   border-radius: var(--r-m);
   padding: var(--e2);
-  background: var(--papel-2);
+  background: var(--acento-suave);
   display: grid;
   gap: var(--e1);
   max-width: 100%;
-  overflow: hidden;
 }
 .caixa-resposta[data-preenchida="true"] { border-color: var(--ok); }
 .caixa-resposta .linha {
   display: flex;
   gap: var(--e1);
-  flex-wrap: wrap;
   align-items: center;
 }
+/* campo do tamanho de um botão (40px), e não um bloco gigante */
 .caixa-resposta input {
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: left;
+  height: var(--h);
+  padding: 0 var(--e2);
   font-family: var(--mono);
-  font-size: var(--t4);
-  padding: var(--e1) var(--e2);
+  font-size: var(--t5);
   border: 1px solid var(--borda);
   border-radius: var(--r-p);
   background: var(--papel);
   color: var(--tinta);
 }
-@media (min-width: 620px) {
-  .caixa-resposta input { flex: 1 1 200px; }
+.caixa-resposta input:focus { outline: 2px solid var(--acento); outline-offset: 0; }
+.caixa-resposta .btn-icone { min-height: var(--h); }
+
+/* ── espera do Kahoot: a cena ainda não foi liberada ─────────────────────── */
+.aguardando {
+  border-style: dashed;
+  border-color: var(--acento);
+  background: var(--acento-suave);
 }
+
+/* ── comandos do módulo: o que fazem e como usar ─────────────────────────── */
+/*
+ * Três colunas alinhadas (comando, o que faz, exemplo), separadas por fio,
+ * como o checklist: é UMA tabela de consulta, não uma nuvem de etiquetas.
+ */
+.lista-comandos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  border: 1px solid var(--borda);
+  border-radius: var(--r-m);
+  background: var(--papel);
+  overflow: hidden;
+}
+.linha-comando { display: contents; }
+.linha-comando > * {
+  padding: var(--e1) var(--e2);
+  border-top: 1px solid var(--borda);
+  display: flex; align-items: center;
+  font-size: var(--t6);
+}
+.linha-comando:first-child > * { border-top: 0; }
+.linha-comando .kbd { border: 0; border-top: 1px solid var(--borda); border-radius: 0; background: transparent; font-weight: 700; color: var(--acento); font-size: var(--t6); }
+.linha-comando:first-child .kbd { border-top: 0; }
+.linha-comando .faz { color: var(--tinta); }
+.linha-comando .exemplo { font-family: var(--mono); color: var(--tinta-2); white-space: nowrap; }
+/* compacta (coluna estreita do laboratório, celular): o exemplo desce para
+   baixo do "o que faz", e a explicação ganha a largura toda */
+.lista-comandos.compacta { grid-template-columns: max-content minmax(0, 1fr); }
+/* resumo (fecho final): só o comando e o que ele faz */
+.lista-comandos.resumo { grid-template-columns: max-content minmax(0, 1fr); }
+.lista-comandos.resumo .exemplo { display: none; }
+.grade-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e2); align-items: start; }
+@media (max-width: 1100px) { .grade-resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .grade-resumo { grid-template-columns: 1fr; } }
+.lista-comandos.compacta .linha-comando .exemplo { grid-column: 2; border-top: 0; padding-top: 0; white-space: normal; }
+.lista-comandos.compacta .linha-comando .faz:has(+ .exemplo:not(:empty)) { padding-bottom: 0; }
+.lista-comandos.compacta .linha-comando .exemplo:empty { display: none; }
+@media (max-width: 760px) {
+  .lista-comandos { grid-template-columns: max-content minmax(0, 1fr); }
+  .linha-comando .exemplo { grid-column: 2; border-top: 0; padding-top: 0; white-space: normal; }
+  .linha-comando .exemplo:empty { display: none; }
+}
+.palco[data-papel="screen"] .linha-comando > * { font-size: var(--t5); }
+
+/* ── controles da tela (slide de abertura) ───────────────────────────────── */
+.grade-controles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+}
+@media (max-width: 1100px) { .grade-controles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .grade-controles { grid-template-columns: 1fr; } }
+.grade-teclas { display: flex; flex-wrap: wrap; gap: var(--e2) var(--e4); }
+.item-controle {
+  display: grid; grid-template-columns: var(--h) 1fr; gap: var(--e2); align-items: start;
+  padding: var(--e2); border: 1px solid var(--borda); border-radius: var(--r-m); background: var(--papel);
+}
+.item-controle .icone {
+  width: var(--h); height: var(--h); border-radius: var(--r-p);
+  display: grid; place-items: center; background: var(--acento-suave);
+}
+.item-controle strong { display: block; font-size: var(--t5); margin-bottom: var(--e1); }
+.item-controle span { font-size: var(--t6); color: var(--tinta-2); line-height: 1.5; }
+
+/* ── caça ao erro: linhas clicáveis dentro do terminal ───────────────────── */
+.linhas-caca { display: grid; gap: var(--e1); padding: var(--e2); }
+.linha-caca {
+  text-align: left; font-family: var(--mono); font-size: var(--t5); cursor: pointer;
+  min-height: var(--h-p); padding: 0 var(--e2); border-radius: var(--r-p);
+  background: transparent; color: #e8e8ea; border: 1px solid #2c2c33;
+}
+.linha-caca:hover:not(:disabled) { border-color: #4a4a55; }
+.linha-caca[data-marcada="true"] { background: #3a1f1f; color: #ffa198; border-color: #ff7b72; }
+.linha-caca:disabled { cursor: default; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ══════════════════════ TELA DO PARTICIPANTE: MAIS LEVE ══════════════════
+ * O notebook é lido a 50cm, não a 10 metros: a escala do projetor ali fica
+ * gritando, e cada cena cabe menos conteúdo. O participante tem a sua.
+ */
+.palco[data-papel="player"], .palco[data-papel="host"] {
+  /* tamanhos de site: fixos, não crescem com a largura da tela */
+  --t1: 36px;
+  --t2: 26px;
+  --t3: 20px;
+  --t4: 17px;
+  --t5: 15px;
+  --t6: 13px;
+  --margem-y: 24px;
+  --margem-x: 32px;
+  --respiro: 16px;
+}
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .alt { font-size: 17px; min-height: 56px; padding: var(--e1) var(--e2); }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .alt .letra { width: var(--e4); height: var(--e4); }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .term { font-size: 14px; padding: var(--e2); }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .cabecalho .moldura { width: 48px; }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .cartao { padding: var(--e2); }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .titulo-cena { font-size: var(--t2); }
+:is(.palco[data-papel="player"], .palco[data-papel="host"]) .veredito { min-height: 48px; }
+@media (max-width: 560px) {
+  .palco[data-papel="player"] { --t1: 28px; --t2: 22px; --t3: 18px; --margem-x: 16px; --margem-y: 16px; }
+}
+
+/* ═══════════════════════════ LABORATÓRIO: CONQUISTA ═════════════════════ */
+/* o marcador vira uma caixinha que se enche de verde */
+.item-check .caixa-marca {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: var(--e1);
+  border: 2px solid var(--borda); border-radius: var(--r-p); vertical-align: middle;
+  font-weight: 800; color: var(--sobre-ok); transition: background 200ms ease, border-color 200ms ease;
+}
+.item-check[data-ok="true"] .caixa-marca { background: var(--ok); border-color: var(--ok); }
+/* item que acabou de ficar pronto: pulsa, brilha e a caixinha "pula" */
+.item-check[data-novo="true"] { animation: item-pronto 1.4s var(--ease); }
+.item-check[data-novo="true"] .caixa-marca { animation: marca-pula 600ms var(--ease); }
+@keyframes item-pronto {
+  0% { background: color-mix(in srgb, var(--ok) 35%, var(--papel)); transform: scale(1.02); }
+  100% { background: color-mix(in srgb, var(--ok) 7%, var(--papel)); transform: scale(1); }
+}
+@keyframes marca-pula { 0% { transform: scale(0.4); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+/* o "+40 XP" que sobe no meio da tela quando um item fecha */
+.ganho-xp {
+  position: fixed; left: 50%; top: 40%; z-index: 65; pointer-events: none;
+  transform: translateX(-50%); font-size: var(--t1); font-weight: 800; color: var(--ok);
+  text-shadow: 0 4px 24px color-mix(in srgb, var(--ok) 40%, transparent);
+  animation: sobe-xp 2.2s var(--ease) forwards;
+}
+@keyframes sobe-xp {
+  0% { opacity: 0; transform: translate(-50%, 24px) scale(0.6); }
+  20% { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  35% { transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -48px); }
+}
+.ganho-flutuante { right: var(--e4); bottom: 88px; font-size: var(--t3); font-weight: 800; color: var(--ok); }
+
+/* conferência automática: um ponto que respira enquanto confere */
+.acoes-lab { display: flex; align-items: center; gap: var(--e2); flex-wrap: wrap; justify-content: space-between; }
+.conferindo { display: inline-flex; align-items: center; gap: var(--e1); font-size: var(--t6); color: var(--tinta-2); }
+.conferindo .ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); opacity: 0.5; }
+.conferindo[data-ativo="true"] .ponto { animation: respira 900ms ease-in-out infinite; opacity: 1; }
+@keyframes respira { 50% { transform: scale(1.6); opacity: 0.4; } }
+
+/* comandos do módulo: gaveta recolhível */
+.gaveta-comandos { border: 1px solid var(--borda); border-radius: var(--r-m); background: var(--papel); }
+.gaveta-comandos > summary {
+  display: flex; align-items: center; gap: var(--e1); cursor: pointer; list-style: none;
+  min-height: var(--h); padding: 0 var(--e2); font-size: var(--t6); font-weight: 650; color: var(--tinta);
+}
+.gaveta-comandos > summary::-webkit-details-marker { display: none; }
+.gaveta-comandos > summary::after { content: '▸'; margin-left: auto; color: var(--tinta-2); transition: transform 160ms ease; }
+.gaveta-comandos[open] > summary::after { transform: rotate(90deg); }
+.gaveta-comandos[open] > summary { border-bottom: 1px solid var(--borda); }
+.gaveta-comandos > .lista-comandos { border: 0; border-radius: 0 0 var(--r-m) var(--r-m); }
+
+/* ═══════════════════════════════ PÓDIO ═══════════════════════════════════ */
+.podio { display: grid; gap: var(--e3); }
+/*
+ * O pódio desenhado, como no Kahoot: três colunas na ordem 2º, 1º, 3º. Em cima
+ * de cada degrau, o avatar grande, o nome e os pontos; o degrau tem altura de
+ * pódio de verdade (o 1º é o mais alto) e cor de medalha. Os degraus sobem um
+ * de cada vez, do 3º para o 1º, para criar o suspense de quem ganhou.
+ */
+.cena-podio { justify-content: flex-start; }
+.cena-podio .podio { flex: 1 1 auto; grid-template-rows: 1fr auto auto; }
+.degraus {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e2);
+  align-items: end; max-width: 960px; width: 100%; margin: 0 auto; min-height: 360px;
+}
+.coluna-podio { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+.coluna-podio .quem {
+  display: grid; justify-items: center; gap: var(--e1); text-align: center; padding-bottom: var(--e2);
+  animation: aparece-cima 500ms var(--ease) both; animation-delay: calc(var(--atraso, 0ms) + 350ms);
+}
+.coluna-podio .coroa { animation: marca-pula 700ms var(--ease) both; animation-delay: calc(var(--atraso, 0ms) + 700ms); }
+.coluna-podio .avatar {
+  width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 56px; line-height: 1; font-weight: 800; background: var(--papel-2);
+  border: 4px solid var(--borda); box-shadow: var(--sombra);
+}
+.coluna-podio[data-pos="1"] .avatar { width: 120px; height: 120px; font-size: 72px; border-color: #e3b341; }
+.coluna-podio[data-pos="2"] .avatar { border-color: #a7b0bd; }
+.coluna-podio[data-pos="3"] .avatar { border-color: #c98b5a; }
+.coluna-podio[data-eu="true"] .avatar { outline: 4px solid var(--acento); outline-offset: 4px; }
+.coluna-podio .nome { font-size: var(--t4); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coluna-podio .pontos { font-family: var(--mono); font-size: var(--t3); font-weight: 800; }
+.degrau {
+  width: 100%; display: grid; place-items: start center; padding-top: var(--e2);
+  border-radius: var(--r-m) var(--r-m) 0 0; color: #fff; font-size: clamp(40px, 5vw, 80px); font-weight: 900;
+  transform-origin: bottom; animation: degrau-sobe 700ms var(--ease) both; animation-delay: var(--atraso, 0ms);
+  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.12);
+}
+.coluna-podio[data-pos="1"] .degrau { height: 200px; background: linear-gradient(#f2c94c, #d4a52a); }
+.coluna-podio[data-pos="2"] .degrau { height: 144px; background: linear-gradient(#c3cad4, #98a1ad); }
+.coluna-podio[data-pos="3"] .degrau { height: 104px; background: linear-gradient(#dba174, #b97a4a); }
+.ganho, .ranking .ganho {
+  font-size: var(--t6); font-weight: 700; color: var(--ok);
+  padding: 0 var(--e1); border-radius: 999px; background: var(--ok-suave);
+}
+@keyframes degrau-sobe { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes aparece-cima { from { opacity: 0; transform: translateY(-24px) scale(0.8); } }
+.palco[data-papel="screen"] .coluna-podio[data-pos="1"] .degrau { height: 240px; }
+.palco[data-papel="screen"] .coluna-podio[data-pos="1"] .avatar { width: 144px; height: 144px; font-size: 88px; }
+@media (max-width: 640px) {
+  .coluna-podio .avatar { width: 64px; height: 64px; font-size: 36px; }
+  .coluna-podio[data-pos="1"] .avatar { width: 80px; height: 80px; font-size: 48px; }
+  .coluna-podio[data-pos="1"] .degrau { height: 140px; }
+  .coluna-podio[data-pos="2"] .degrau { height: 100px; }
+  .coluna-podio[data-pos="3"] .degrau { height: 72px; }
+  .degraus { min-height: 260px; }
+}
+
+.ranking {
+  list-style: none; margin: 0 auto; padding: 0; display: grid; gap: var(--e1);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); width: 100%; max-width: 960px;
+}
+.ranking .avatar-p { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 16px; }
+.ranking li {
+  display: grid; grid-template-columns: var(--e5) 1fr auto auto; align-items: center; gap: var(--e2);
+  min-height: var(--h); padding: 0 var(--e2); border: 1px solid var(--borda); border-radius: var(--r-p);
+  background: var(--papel); animation: entra-lado 400ms var(--ease) both; animation-delay: var(--atraso, 0ms);
+}
+.ranking li[data-eu="true"] { border-color: var(--acento); background: var(--acento-suave); }
+.ranking .posicao { font-family: var(--mono); font-weight: 800; color: var(--tinta-2); }
+.ranking .pontos { font-family: var(--mono); font-weight: 700; }
+@keyframes entra-lado { from { opacity: 0; transform: translateX(-24px); } }
+.minha-posicao { font-size: var(--t5); color: var(--tinta-2); text-align: center; }
+.faixa-ganho {
+  display: flex; align-items: center; justify-content: center; gap: var(--e1);
+  min-height: var(--h-g); border-radius: var(--r-m); font-size: var(--t4);
+  background: var(--ok-suave); color: var(--ok); animation: marca-pula 600ms var(--ease);
+}
+.revelacao { align-items: start; }
+
+/* ═══════════════════════════ EVENTO AO VIVO ══════════════════════════════ */
+.evento-fundo {
+  position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: var(--e3);
+  background: color-mix(in srgb, var(--tinta) 40%, transparent); animation: aparece 200ms ease;
+}
+.evento-cartao {
+  position: relative; width: min(560px, 100%); display: grid; gap: var(--e2); justify-items: start;
+  padding: var(--e5) var(--e4) var(--e4); border-radius: var(--r-g); background: var(--papel);
+  border: 2px solid var(--acento); box-shadow: var(--sombra); animation: marca-pula 500ms var(--ease);
+}
+.evento-icone {
+  position: absolute; top: calc(-1 * var(--e4)); left: var(--e4);
+  width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--acento); box-shadow: var(--sombra);
+}
+.evento-voce {
+  font-size: var(--t5); font-weight: 650; color: var(--tinta);
+  padding: var(--e2); border-radius: var(--r-p); background: var(--acento-suave); width: 100%;
+}
+@keyframes aparece { from { opacity: 0; } }
+
+/* ═════════════════════════════ CONQUISTA ═════════════════════════════════ */
+.conquista {
+  position: fixed; right: var(--e3); top: var(--e3); z-index: 72; overflow: hidden;
+  display: flex; gap: var(--e2); align-items: center; max-width: min(420px, calc(100vw - 48px));
+  padding: var(--e2) var(--e3); border-radius: var(--r-m); background: var(--papel);
+  border: 2px solid var(--atencao); box-shadow: var(--sombra);
+  animation: conquista-entra 5s var(--ease) forwards;
+}
+.conquista[data-minha="false"] { border-width: 1px; border-color: var(--borda); padding: var(--e1) var(--e2); }
+.conquista strong { display: block; font-size: var(--t4); }
+.medalha-giro { display: grid; animation: gira 900ms var(--ease); }
+@keyframes gira { from { transform: rotateY(540deg) scale(0.4); } }
+@keyframes conquista-entra {
+  0% { transform: translateX(120%); }
+  8%, 90% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+/* confete: tiras que caem girando */
+.confete { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confete span {
+  position: absolute; top: -16px; width: 8px; height: 16px; border-radius: 2px;
+  animation: cai 1.6s cubic-bezier(.3,.6,.5,1) forwards;
+}
+@keyframes cai { to { transform: translateY(110vh) rotate(var(--giro, 360deg)); opacity: 0.7; } }
+.nivel-cartao {
+  position: relative; text-align: center; display: grid; justify-items: center; gap: var(--e1);
+  padding: var(--e5); border-radius: var(--r-g); background: var(--papel); border: 2px solid var(--ok);
+  box-shadow: var(--sombra); animation: marca-pula 600ms var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .confete { display: none; }
+  .degrau, .ranking li, .conquista, .ganho-xp, .item-check[data-novo="true"] { animation: none; }
+}
+
+/* ═════════════════ PÓDIO DUPLO: PESSOAS E EQUIPES LADO A LADO ═════════════
+ * Cada lado é um pódio menor (degraus mais baixos, avatar menor) com os cinco
+ * seguintes embaixo, numa coluna. A escala menor é o que deixa os dois placares
+ * e os oito primeiros de cada um na mesma tela, sem rolar.
+ */
+.podio-duplo { flex: 1 1 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e4); align-items: start; }
+.lado-podio {
+  display: grid; gap: var(--e2); padding: var(--e3); min-width: 0;
+  border: 1px solid var(--borda); border-radius: var(--r-g); background: var(--papel);
+}
+.lado-podio .podio { gap: var(--e2); grid-template-rows: none; }
+.lado-podio .degraus { min-height: 0; max-width: none; gap: var(--e1); }
+.lado-podio .coluna-podio .avatar { width: 56px; height: 56px; font-size: 32px; border-width: 3px; }
+.lado-podio .coluna-podio[data-pos="1"] .avatar { width: 72px; height: 72px; font-size: 44px; }
+.lado-podio .coluna-podio .quem { gap: var(--e05); padding-bottom: var(--e1); }
+.lado-podio .coluna-podio .nome { font-size: var(--t5); }
+.lado-podio .coluna-podio .pontos { font-size: var(--t4); }
+.lado-podio .coluna-podio .coroa .ilustra, .lado-podio .coluna-podio .coroa svg { width: 32px; height: 32px; }
+.lado-podio .degrau { font-size: clamp(28px, 3vw, 48px); padding-top: var(--e1); }
+.lado-podio .coluna-podio[data-pos="1"] .degrau { height: 128px; }
+.lado-podio .coluna-podio[data-pos="2"] .degrau { height: 96px; }
+.lado-podio .coluna-podio[data-pos="3"] .degrau { height: 72px; }
+.lado-podio .ranking { grid-template-columns: 1fr; max-width: none; }
+.lado-podio .ranking li { min-height: var(--h-p); }
+.palco[data-papel="screen"] .lado-podio .coluna-podio[data-pos="1"] .degrau { height: 160px; }
+.palco[data-papel="screen"] .lado-podio .coluna-podio[data-pos="1"] .avatar { width: 96px; height: 96px; font-size: 56px; }
+@media (max-width: 900px) { .podio-duplo { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════ KAHOOT: CORES E MOVIMENTO ═══════════════════
+ * As quatro alternativas têm as cores e formas do Kahoot. É o que a turma já
+ * conhece de olhar: ninguém precisa ler "A, B, C, D" para achar a sua, e a
+ * forma (▲ ◆ ● ■) garante que quem não distingue cor também acha.
+ */
+.alternativas.kahoot .alt {
+  border: 0; color: #ffffff; font-weight: 700;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18);
+  animation: alt-pop 420ms var(--ease) both;
+  animation-delay: calc(var(--ordem, 0) * 90ms);
+}
+.alternativas.kahoot .alt[data-cor="0"] { background: #e21b3c; }
+.alternativas.kahoot .alt[data-cor="1"] { background: #1368ce; }
+.alternativas.kahoot .alt[data-cor="2"] { background: #c98a00; }
+.alternativas.kahoot .alt[data-cor="3"] { background: #26890c; }
+.alternativas.kahoot .alt .letra { background: rgba(255, 255, 255, 0.22); color: #ffffff; font-size: 1.1em; }
+.alternativas.kahoot .alt:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); }
+.alternativas.kahoot .alt:disabled { cursor: default; }
+/* a escolhida ganha um contorno; as outras recuam enquanto espera a revelação */
+.alternativas.kahoot .alt[data-escolhida="true"] { outline: 4px solid var(--tinta); outline-offset: 3px; }
+.alternativas.kahoot:has(.alt[data-escolhida="true"]) .alt:not([data-escolhida="true"]) { opacity: 0.45; }
+/* revelação: a certa pulsa e ganha brilho, as erradas apagam */
+.alternativas.kahoot .alt[data-estado="certa"] { opacity: 1; animation: certa 700ms var(--ease) both; box-shadow: 0 0 0 4px var(--ok), inset 0 -6px 0 rgba(0,0,0,.18); }
+.alternativas.kahoot .alt[data-estado="errada"] { opacity: 0.3; filter: grayscale(0.6); }
+.alternativas.kahoot .alt .barra-votos { background: rgba(255, 255, 255, 0.85); }
+.alternativas.kahoot .alt small, .alternativas.kahoot .alt strong { color: #ffffff !important; }
+@keyframes alt-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+@keyframes certa { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+/* a pergunta entra com zoom, como a tela de pergunta do Kahoot */
+.pergunta-quiz { animation: pergunta-entra 500ms var(--ease) both; }
+@keyframes pergunta-entra { from { opacity: 0; transform: scale(0.85); } }
+
+/* barra de tempo: encolhe a cada segundo e fica vermelha nos 5 finais */
+.barra-tempo { height: var(--e1); border-radius: 999px; background: var(--papel-2); overflow: hidden; border: 1px solid var(--borda); }
+.barra-tempo > span { display: block; height: 100%; border-radius: 999px; background: var(--acento); transition: width 1s linear, background 300ms ease; }
+.barra-tempo > span[data-pouco="true"] { background: var(--erro); animation: respira 600ms ease-in-out infinite; }
+
+/* troca de slide: entra deslizando e crescendo, não só aparece */
+.cena { animation: cena-entra 380ms var(--ease) both; }
+/* sem deslocar para baixo nem crescer além do tamanho final: qualquer um dos
+   dois cria um transbordo momentâneo e faz a barra de rolagem piscar */
+@keyframes cena-entra { from { opacity: 0; transform: scale(0.98); } }
+
+/* conteúdo liberado (exercício, terminal, botão): surge com um "pop" */
+.alternativas.kahoot, .linhas-caca { animation: alt-pop 420ms var(--ease) both; }
+.aguardando { animation: respira-suave 2.4s ease-in-out infinite; }
+@keyframes respira-suave { 50% { border-color: var(--borda); } }
+@media (prefers-reduced-motion: reduce) {
+  .alternativas.kahoot .alt, .pergunta-quiz, .cena, .aguardando { animation: none; }
+}
+/* veredito do quiz na tela de quem respondeu */
+.veredito {
+  display: flex; align-items: center; justify-content: center; gap: var(--e2);
+  min-height: 64px; border-radius: var(--r-m); font-size: var(--t3); font-weight: 800; color: #ffffff;
+  background: #c62828; animation: alt-pop 500ms var(--ease) both;
+}
+.veredito[data-certo="true"] { background: #26890c; }
+/* pódio final: o "e o primeiro lugar é…" pulsa e some quando o 1º sobe */
+.degraus { position: relative; }
+.rufar {
+  position: absolute; left: 50%; top: 24%; translate: -50% 0; z-index: 3; white-space: nowrap;
+  padding: var(--e1) var(--e3); border-radius: 999px; background: var(--papel); box-shadow: var(--sombra);
+  font-size: var(--t3); font-weight: 800; color: var(--atencao);
+  opacity: 0; animation: rufar 1.9s ease both; animation-delay: var(--atraso, 0ms);
+}
+@keyframes rufar {
+  0% { opacity: 0; transform: scale(0.8); }
+  15%, 35%, 55%, 75% { opacity: 1; transform: scale(1.08); }
+  25%, 45%, 65%, 85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+/* confete com atraso: escondido até a hora (o "both" segura o primeiro quadro) */
+.confete span { animation-fill-mode: both; }
+.lado-podio { position: relative; overflow: hidden; }
+/* atividade revisitada depois de passar: tudo travado, só para ler */
+.so-leitura { display: flex; flex-direction: column; flex: 1 0 auto; }
+.so-leitura [inert] { cursor: default; }
+.faixa-leitura {
+  display: flex; align-items: center; justify-content: center; gap: var(--e1);
+  min-height: var(--h-p); font-size: var(--t6); font-weight: 650;
+  color: var(--tinta-2); background: var(--papel-2); border-bottom: 1px solid var(--borda);
+}
+.so-leitura .alt, .so-leitura button { filter: saturate(0.6); }
+/* resposta de um exercício de escolha: faixa colorida, como o veredito do quiz */
+.veredito-widget {
+  display: flex; align-items: center; gap: var(--e2); flex-wrap: wrap;
+  padding: var(--e2); border-radius: var(--r-m); font-size: var(--t5);
+  background: var(--erro-suave); border: 2px solid var(--erro); color: var(--tinta);
+  animation: alt-pop 400ms var(--ease) both;
+}
+.veredito-widget[data-certo="true"] { background: var(--ok-suave); border-color: var(--ok); }
+/* a árvore de pastas do "Onde eu caio?": uma coluna, com recuo por nível */
+.alternativas.arvore-pastas { grid-template-columns: 1fr; gap: var(--e1); }
+.alternativas.arvore-pastas .alt { min-height: var(--h-g); }
+/* peças de montar (encanamento): as cores do quiz, em botão menor */
+.peca-colorida {
+  display: grid; gap: var(--e05); text-align: left; cursor: pointer;
+  min-height: var(--h-g); padding: var(--e1) var(--e2); border: 0; border-radius: var(--r-p);
+  font-family: var(--mono); font-weight: 700; color: #ffffff;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18); animation: alt-pop 380ms var(--ease) both;
+}
+.peca-colorida small { font-family: var(--sans); font-weight: 500; opacity: 0.9; }
+.peca-colorida[data-cor="0"] { background: #e21b3c; }
+.peca-colorida[data-cor="1"] { background: #1368ce; }
+.peca-colorida[data-cor="2"] { background: #c98a00; }
+.peca-colorida[data-cor="3"] { background: #26890c; }
+.peca-colorida:hover { filter: brightness(1.08); }
+/* recuo da árvore de pastas: um passo de 24px por nível (8px no celular) */
+.alternativas.arvore-pastas .alt { margin-left: calc(var(--nivel, 0) * 24px); overflow-wrap: anywhere; }
+@media (max-width: 560px) { .alternativas.arvore-pastas .alt { margin-left: calc(var(--nivel, 0) * 8px); } }

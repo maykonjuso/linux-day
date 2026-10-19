@@ -9,6 +9,9 @@ import { usuarioDoNick } from '@/deck/avatares';
 import { Texto } from '../Texto';
 import { Cabecalho } from '../Cabecalho';
 import { ReferenciasConteudo } from '../ReferenciasConteudo';
+import { Aguardando } from '../SceneRouter';
+import { ListaComandos } from '../ListaComandos';
+import { liberada, encerrada } from '@/deck/liberada';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -35,41 +38,68 @@ export function LabScene({
   const [dica, setDica] = useState<string | null>(null);
   const [dicaIndice, setDicaIndice] = useState(0);
   const [ocupado, setOcupado] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
   const ultimaResposta = useRef('');
 
   const souJogador = papel === 'player';
+  // Kahoot: primeiro a turma lê o que fazer; o terminal abre quando o apresentador libera
+  const passou = encerrada(arena, cena, papel);
+  // laboratório que já passou: sem terminal, sem resposta, só o que foi feito
+  const solto = liberada(arena, cena, papel) && !passou;
+  /** no chamado, o caminho da pasta da equipe (o servidor sabe onde ela fica) */
+  const pastaDaEquipe = cena.escopo === 'grupo' && arena.eu?.grupo && arena.labs[cena.taskSlug]?.pasta
+    ? `${arena.labs[cena.taskSlug].pasta}${arena.eu.grupo}` : null;
   const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes' || cena.taskSlug === 'boss-chamado';
 
   useEffect(() => { setResultados({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
   useEffect(() => { ultimaResposta.current = resposta; }, [resposta]);
 
+  /** itens que acabaram de ficar prontos: ganham a animação de conquista */
+  const [recentes, setRecentes] = useState<string[]>([]);
+  const [ganhoVisivel, setGanhoVisivel] = useState<{ xp: number; chave: number } | null>(null);
+  const prontosAntes = useRef<Set<string>>(new Set());
+
   const verificar = useCallback(async (silencioso = false) => {
     if (!souJogador || ocupado) return;
     setOcupado(true);
-    const r = await arena.verificar(cena.taskSlug, ultimaResposta.current);
+    const r = await arena.verificar(cena.taskSlug, ultimaResposta.current, silencioso);
     setOcupado(false);
     if (r.erro) { if (!silencioso) setMsg(r.erro); return; }
     setResultados(Object.fromEntries(r.resultados.map((x) => [x.id, x])));
-    if (!silencioso) {
-      setCooldown(10);
-      setMsg(r.todos ? '✅ tudo certo neste lab!' : r.ganho > 0 ? `+${r.ganho} XP` : null);
+
+    // o que ficou verde AGORA: anima o item e sobe o "+XP" na tela
+    const novos = r.resultados.filter((x) => x.passou && !prontosAntes.current.has(x.id) && !x.adesivo).map((x) => x.id);
+    r.resultados.forEach((x) => { if (x.passou) prontosAntes.current.add(x.id); });
+    if (novos.length) {
+      setRecentes(novos);
+      setTimeout(() => setRecentes([]), 1800);
     }
+    if (r.ganho > 0) setGanhoVisivel({ xp: r.ganho, chave: Date.now() });
+    if (r.todos && r.ganho > 0) setMsg('🎉 laboratório completo!');
+    else if (!silencioso) setMsg(r.ganho > 0 ? null : 'ainda não: veja a dica amarela no item');
   }, [arena, cena.taskSlug, ocupado, souJogador]);
 
-  // check de fundo: o feedback chega antes de a pessoa pedir
+  useEffect(() => { prontosAntes.current = new Set(arena.eu?.criterios ?? []); }, [cena.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /*
+   * Conferência automática. Ninguém precisa clicar em Verificar: a cada 5
+   * segundos o laboratório olha o terminal da pessoa e acende o que já está
+   * certo. O retorno chega enquanto ela ainda está pensando no comando, que é
+   * quando ele ensina; e some o "esqueci de verificar" do fim do tempo.
+   */
   useEffect(() => {
-    if (!souJogador || arena.estado.fase !== 'aberta') return;
-    const t = setInterval(() => verificar(true), 20_000);
+    if (!souJogador || !solto || arena.estado.fase !== 'aberta') return;
+    verificar(true);
+    const t = setInterval(() => verificar(true), 5_000);
     return () => clearInterval(t);
-  }, [souJogador, arena.estado.fase, verificar]);
+  }, [souJogador, solto, arena.estado.fase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    if (!ganhoVisivel) return;
+    const t = setTimeout(() => setGanhoVisivel(null), 2200);
     return () => clearTimeout(t);
-  }, [cooldown]);
+  }, [ganhoVisivel]);
+
 
   const totalDicas = arena.labs[cena.taskSlug]?.dicas ?? 0;
   const semDicas = dicaIndice >= totalDicas;
@@ -79,21 +109,29 @@ export function LabScene({
   const papeis = arena.meuGrupo?.papeis ?? {};
 
   return (
-    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+    <div className="cena" data-modulo={cena.modulo} data-denso="true" data-altura-fixa="true">
       <Cabecalho
         ilustra={cena.escopo === 'grupo' ? 'ferramenta' : 'terminal'}
         titulo={cena.titulo}
         olho={[
           cena.escopo === 'grupo' ? `chamado em equipe${arena.eu?.grupo ? ` · ${arena.eu.grupo}` : ''}` : 'mão na massa',
           tempo !== null ? `${Math.floor(tempo / 60)}:${String(tempo % 60).padStart(2, '0')}` : null,
-          `${feitos} de ${cena.criterios.length} prontos`,
         ].filter(Boolean).join(' · ')}
       />
+      {ganhoVisivel && <div key={ganhoVisivel.chave} className="ganho-xp">+{ganhoVisivel.xp} XP</div>}
       <p className="corpo-p"><Texto>{cena.objetivo}</Texto></p>
+      {cena.escopo === 'grupo' && souJogador && (
+        <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)' }}>
+          <Icone nome="pasta" tamanho={16} />
+          {pastaDaEquipe
+            ? <>pasta da equipe: <code className="kbd">cd {pastaDaEquipe}</code></>
+            : 'entre numa equipe para ver a pasta de vocês'}
+        </div>
+      )}
 
-      <div className="duas duas-lab" style={{ alignItems: 'start', gap: 'var(--e3)' }}>
+      <div className="duas duas-lab" style={{ gap: 'var(--e3)' }}>
         {/* coluna da esquerda: o que fazer */}
-        <div className="grade" style={{ gap: 'var(--e2)' }}>
+        <div className="coluna">
           <div className="progresso">
             <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', whiteSpace: 'nowrap' }}>
               <Icone nome="checklist" tamanho={15} /> {feitos} de {cena.criterios.length} prontos
@@ -103,16 +141,16 @@ export function LabScene({
             </div>
           </div>
 
-          <div className="checklist" style={{ maxHeight: 'min(26vh, 250px)', overflowY: 'auto' }}>
+          <div className="checklist">
             {cena.criterios.map((c, i) => {
               const r = resultados[c.id];
               const ok = r?.passou || arena.eu?.criterios?.includes(c.id);
               const meuPapel = arena.eu?.id ? papeis[arena.eu.id] : null;
               const bloqueado = !!(r?.papel && meuPapel && r.papel !== meuPapel);
               return (
-                <div key={c.id} className="item-check" data-ok={!!ok}>
+                <div key={c.id} className="item-check" data-ok={!!ok} data-novo={recentes.includes(c.id)}>
                   <span className="marca">
-                    {String(i + 1).padStart(2, '0')} {ok ? '[✓]' : '[ ]'}
+                    {String(i + 1).padStart(2, '0')} <span className="caixa-marca">{ok ? '✓' : ''}</span>
                   </span>
 
                   <span className="texto-item">
@@ -136,13 +174,14 @@ export function LabScene({
             })}
           </div>
 
-          <div>
-            <div className="olho" style={{ marginBottom: 'var(--e05)' }}>comandos deste módulo</div>
-            <div style={{ display: 'flex', gap: 'var(--e05)', flexWrap: 'wrap' }}>
-              {cena.comandosDoModulo.slice(0, 8).map((c) => <code key={c} className="kbd" style={{ fontSize: 'var(--t6)' }}>{c}</code>)}
-              {cena.comandosDoModulo.length > 8 && <span className="apoio">+{cena.comandosDoModulo.length - 8} na consulta (?)</span>}
-            </div>
-          </div>
+          {/* recolhido por padrão: a lista é consulta, não precisa roubar a tela */}
+          <details className="gaveta-comandos">
+            <summary>
+              <Icone nome="consultar" tamanho={16} />
+              <span>Comandos deste módulo <span className="apoio">({cena.comandosDoModulo.length}) · o que fazem e como usar</span></span>
+            </summary>
+            <ListaComandos comandos={cena.comandosDoModulo} compacta />
+          </details>
 
           {souJogador && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
@@ -157,26 +196,24 @@ export function LabScene({
         {/* coluna da direita: onde as mãos estão. Terminal, campo de resposta e
             ações ficam juntos e na mesma ordem em todos os laboratórios, para a
             pessoa não precisar procurar o botão em cada módulo. */}
-        <div className="grade" style={{ gap: 'var(--e1)' }}>
-          <div id={souJogador ? 'slot-terminal' : undefined} className="term"
-            style={{ minHeight: 'min(44vh, 400px)', display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#8e8e99' }}>
+        <div className="coluna">
+          {passou ? (
+            <div className="cartao"><Icone nome="cadeado" tamanho={18} /> Laboratório encerrado. Os itens que você fez continuam marcados ao lado.</div>
+          ) : !solto ? <Aguardando papel={papel} oque="o terminal" /> : (
+          <div id={souJogador ? 'slot-terminal' : undefined} className="term term-lab"
+            style={{ display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#a7a7b0' }}>
             {!souJogador && 'o terminal está na tela de cada participante'}
           </div>
+          )}
+          {papel === 'host' && arena.estado.fase === 'idle' && <Aguardando papel={papel} oque="o terminal" />}
 
-          {/*
-            O campo de resposta precisa gritar.
-            Nos laboratórios de achar algo (a flag escondida, a contagem do log)
-            a pessoa descobre a resposta no terminal e fica procurando onde
-            entregar. Antes era um input discreto entre dois blocos: agora é um
-            bloco com rótulo, borda de destaque e botão próprio.
-          */}
           {/*
             O campo de resposta precisa gritar.
             Nos laboratórios de achar algo (a flag escondida, a contagem do log)
             a pessoa descobre a resposta no terminal e fica procurando onde
             entregar. Então é um bloco com rótulo, borda de destaque e botão.
           */}
-          {precisaResposta && souJogador && (
+          {precisaResposta && souJogador && solto && (
             <div className="caixa-resposta" data-preenchida={!!resposta.trim()}>
               <div className="linha">
                 <Ilustra nome="bandeira" tamanho={20} />
@@ -188,9 +225,8 @@ export function LabScene({
                   placeholder="cole ou digite aqui"
                   value={resposta} onChange={(e) => setResposta(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') verificar(); }} />
-                <button className="btn-icone destaque" data-acao="enviar-resposta"
-                  style={{ padding: 'var(--e1) var(--e2)' }}
-                  disabled={!resposta.trim() || ocupado || cooldown > 0}
+                <button className="btn primario" data-acao="enviar-resposta"
+                  disabled={!resposta.trim() || ocupado}
                   onClick={() => verificar()}>
                   <Icone nome="proximo" tamanho={18} /> enviar
                 </button>
@@ -199,15 +235,13 @@ export function LabScene({
             </div>
           )}
 
-          {souJogador && (
-          <div className="controles" style={{ border: '1px solid var(--borda)', borderRadius: 'var(--r)', padding: 'var(--e1)' }}>
-            <button className="btn-icone destaque" data-acao="verificar"
-              style={{ flex: 1, justifyContent: 'center', padding: 'var(--e2)' }}
-              disabled={!souJogador || ocupado || cooldown > 0 || !arena.ambienteOk}
-              onClick={() => verificar()}>
-              <Icone nome="verificar" tamanho={18} />
-              {ocupado ? 'verificando…' : cooldown > 0 ? `Verificar (${cooldown}s)` : 'Verificar'}
-            </button>
+          {souJogador && solto && (
+          <div className="acoes-lab">
+            {/* sem botão de Verificar: a conferência é automática, e este
+                indicador mostra que ela está acontecendo */}
+            <span className="conferindo" data-ativo={ocupado}>
+              <span className="ponto" /> conferindo sozinho a cada 5 segundos
+            </span>
 
             <div className="bloco-controle">
               <button className="btn-icone" data-acao="dica" data-sem-dicas={semDicas}

@@ -34,7 +34,7 @@ export function abrirSessao(participanteId, conta, aoReceber, nomeVisivel = cont
        * usuário do Mac: a sala inteira aparecia como "aluno1".
        */
       PS1: `${nomeVisivel}@linuxday:\\w$ `,
-      TERM: 'xterm-256color', LANG: 'pt_BR.UTF-8', LC_ALL: 'pt_BR.UTF-8',
+      TERM: 'xterm-256color', LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8',
       // o bash do macOS imprime um aviso sobre o zsh em toda sessão
       // interativa; isto silencia e deixa a tela limpa para a pessoa
       BASH_SILENCE_DEPRECATION_WARNING: '1',

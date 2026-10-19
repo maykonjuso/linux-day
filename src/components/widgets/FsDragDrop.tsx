@@ -31,7 +31,7 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
     .concat('rm tmp_*');
 
   return (
-    <div className="grade" style={{ gap: 14 }}>
+    <div className="grade" style={{ gap: 'var(--e2)' }}>
       <div className="olho">clique num arquivo e depois na área da pasta certa</div>
       <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap', minHeight: 44 }}>
         {soltos.map((a) => (
@@ -47,7 +47,7 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
         {PASTAS.map((p) => {
           const dentro = Object.entries(onde).filter(([, v]) => v === p).map(([n]) => n);
           return (
-            <div key={p} className="cartao" style={{ display: 'grid', gap: 10 }}>
+            <div key={p} className="cartao" style={{ display: 'grid', gap: 'var(--e1)' }}>
               <strong style={{ fontFamily: 'var(--mono)' }}>{p === 'lixeira' ? '🗑 lixeira' : `${p}/`}</strong>
 
               {/* a área de soltar é um alvo próprio: antes, com os arquivos
@@ -58,16 +58,16 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
                 onClick={() => { if (sel) { setOnde({ ...onde, [sel]: p }); setSel(null); } }}
                 disabled={!sel}
                 style={{
-                  minHeight: 54, borderRadius: 10, cursor: sel ? 'pointer' : 'default',
+                  minHeight: 54, borderRadius: 'var(--r-p)', cursor: sel ? 'pointer' : 'default',
                   border: `1.5px ${sel ? 'dashed var(--acento)' : 'solid var(--borda)'}`,
-                  background: sel ? '#eff4ff' : 'var(--papel-2)',
+                  background: sel ? 'var(--acento-suave)' : 'var(--papel-2)',
                   color: 'var(--tinta-2)', fontSize: 14,
                 }}
               >
                 {sel ? `soltar ${sel} aqui` : 'solte aqui'}
               </button>
 
-              <div style={{ display: 'grid', gap: 4 }}>
+              <div style={{ display: 'grid', gap: 'var(--e1)' }}>
                 {dentro.map((n) => {
                   const certo = ARQUIVOS.find((a) => a.nome === n)?.pasta === p;
                   return (
@@ -76,7 +76,7 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
                       <button
                         aria-label={`tirar ${n} de ${p}`}
                         onClick={() => { const o = { ...onde }; delete o[n]; setOnde(o); }}
-                        style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--tinta-2)', padding: '0 4px' }}
+                        style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--tinta-2)', padding: '0 var(--e1)' }}
                       >
                         ×
                       </button>

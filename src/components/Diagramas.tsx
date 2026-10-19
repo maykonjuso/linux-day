@@ -24,8 +24,9 @@ function Seta() {
 
 const estiloSvg: React.CSSProperties = { width: '100%', maxHeight: '38vh', display: 'block' };
 
-export function Diagrama({ nome }: { nome: 'arvore' | 'processo' | 'cadeados' | 'encanamento' }) {
+export function Diagrama({ nome }: { nome: 'arvore' | 'distros' | 'processo' | 'cadeados' | 'encanamento' }) {
   if (nome === 'arvore') return <Arvore />;
+  if (nome === 'distros') return <Distros />;
   if (nome === 'processo') return <Processo />;
   if (nome === 'cadeados') return <Cadeados />;
   return <Encanamento />;
@@ -62,6 +63,45 @@ function Arvore() {
           )}
         </g>
       ))}
+    </svg>
+  );
+}
+
+/**
+ * Kernel e distribuição: as camadas à esquerda (o kernel é só a do meio) e as
+ * famílias à direita. Antes este slide reaproveitava a árvore de pastas, que
+ * não tem relação com o assunto e confundia quem nunca viu nenhum dos dois.
+ */
+function Distros() {
+  const camadas = [
+    { y: 18, rotulo: 'programas e interface', nota: 'navegador, terminal, janelas' },
+    { y: 74, rotulo: 'ferramentas + apt', nota: 'GNU e o instalador de programas' },
+    { y: 130, rotulo: 'kernel Linux', nota: 'o núcleo: fala com o hardware', forte: true },
+    { y: 186, rotulo: 'hardware', nota: 'processador, memória, disco' },
+  ];
+  const familias = [
+    { y: 40, texto: 'Debian → Ubuntu → Mint' },
+    { y: 96, texto: 'Red Hat → Fedora' },
+    { y: 152, texto: 'Arch → Manjaro' },
+  ];
+  return (
+    <svg viewBox="0 0 640 250" style={estiloSvg} role="img" aria-label="camadas de uma distribuição Linux e famílias de distros">
+      {camadas.map((c) => (
+        <g key={c.rotulo}>
+          <rect x="16" y={c.y} width="300" height="46" rx="10" {...CAIXA}
+            fill={c.forte ? 'var(--acento-suave)' : 'var(--papel)'} strokeWidth={c.forte ? 2.4 : 1.6} />
+          <text x="32" y={c.y + 20} fontFamily="var(--mono)" fontSize="16" fontWeight={c.forte ? 700 : 400}
+            fill={c.forte ? 'var(--acento)' : 'var(--tinta)'}>{c.rotulo}</text>
+          <text x="32" y={c.y + 38} fontFamily="var(--sans)" fontSize="12.5" fill="var(--tinta-2)">{c.nota}</text>
+        </g>
+      ))}
+      {/* a chave que junta as três camadas de cima: isso é a distro */}
+      <path d="M324 22 H334 V172 H324" {...TRACO} />
+      <text x="342" y="16" fontFamily="var(--sans)" fontSize="15" fontWeight="700" fill="var(--tinta)">distribuição (distro)</text>
+      {familias.map((f) => (
+        <text key={f.texto} x="352" y={f.y + 24} fontFamily="var(--mono)" fontSize="15.5" fill="var(--tinta)">{f.texto}</text>
+      ))}
+      <text x="342" y="236" fontFamily="var(--sans)" fontSize="13.5" fill="var(--tinta-2)">mesmo kernel, embalagens diferentes</text>
     </svg>
   );
 }
@@ -108,7 +148,7 @@ function Cadeados() {
           <text x="20" y="34" fontFamily="var(--sans)" fontSize="17" fontWeight="700" fill="var(--tinta)">{g.quem}</text>
           {g.bits.map((b, j) => (
             <g key={b} transform={`translate(${20 + j * 56} 54)`}>
-              <rect width="44" height="44" rx="10" {...CAIXA} fill={g.ligados[j] ? '#dbeafe' : 'var(--papel-2)'} />
+              <rect width="44" height="44" rx="10" {...CAIXA} fill={g.ligados[j] ? 'var(--acento-suave)' : 'var(--papel-2)'} />
               <text x="15" y="30" fontFamily="var(--mono)" fontSize="19" fontWeight="700"
                 fill={g.ligados[j] ? 'var(--acento)' : 'var(--borda)'}>{b}</text>
             </g>

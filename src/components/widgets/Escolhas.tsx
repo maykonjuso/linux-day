@@ -30,28 +30,31 @@ export function Escolhas({ rodadas, onConcluir }: { rodadas: Rodada[]; onConclui
   const op = escolha !== null ? r.opcoes[escolha] : null;
 
   return (
-    <div className="grade" style={{ gap: 16 }}>
-      <div className="olho">{i + 1} de {rodadas.length}</div>
+    <div className="grade" style={{ gap: 'var(--e2)' }}>
+      <div className="olho">rodada {i + 1} de {rodadas.length}</div>
       {r.mono
-        ? <div className="term" style={{ fontSize: 'clamp(15px, 1.6vw, 24px)' }}>{r.contexto}</div>
-        : <p className="corpo" style={{ maxWidth: '44em' }}>{r.contexto}</p>}
-      <strong style={{ fontSize: 'clamp(17px, 1.8vw, 26px)' }}>{r.pergunta}</strong>
+        ? <div className="term">{r.contexto}</div>
+        : <p className="corpo-p">{r.contexto}</p>}
+      <strong style={{ fontSize: 'var(--t3)' }}>{r.pergunta}</strong>
 
-      <div className="alternativas">
+      {/* mesmas cores e formas do quiz (o formato Kahoot que a turma já conhece);
+          a key reinicia a animação de entrada a cada rodada */}
+      <div className="alternativas kahoot" key={i}>
         {r.opcoes.map((o, j) => (
-          <button key={o.texto} className="alt"
+          <button key={o.texto} className="alt" data-cor={j % 4}
             data-estado={escolha === null ? undefined : o.certo ? 'certa' : j === escolha ? 'errada' : undefined}
+            disabled={escolha !== null}
             onClick={() => setEscolha(j)}
-            style={{ fontFamily: o.texto.length < 22 ? 'var(--mono)' : 'var(--sans)' }}>
-            <span className="letra">{String.fromCharCode(65 + j)}</span>
+            style={{ ['--ordem' as string]: j, fontFamily: o.texto.length < 22 ? 'var(--mono)' : 'var(--sans)' }}>
+            <span className="letra">{['▲', '◆', '●', '■'][j % 4]}</span>
             <span style={{ flex: 1 }}>{o.texto}</span>
           </button>
         ))}
       </div>
 
       {op && (
-        <div className="cartao" style={{ borderColor: op.certo ? 'var(--ok)' : 'var(--atencao)', display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span>{op.certo ? '✅' : '↩︎'} {op.porque}</span>
+        <div className="veredito-widget" data-certo={!!op.certo}>
+          <span><strong>{op.certo ? 'Isso!' : 'Ainda não.'}</strong> {op.porque}</span>
           {op.certo ? (
             <button className="btn primario" style={{ marginLeft: 'auto' }}
               onClick={() => { setEscolha(null); if (i + 1 < rodadas.length) setI(i + 1); else { setI(rodadas.length); onConcluir?.(); } }}>
@@ -72,7 +75,7 @@ export function Escolhas({ rodadas, onConcluir }: { rodadas: Rodada[]; onConclui
 export const ESCAPE: Rodada[] = [
   {
     mono: true, contexto: 'LS(1)                    User Commands\n\nNAME\n     ls - list directory contents\n\n:',
-    pergunta: 'Essa tela não fecha. Qual tecla te salva?',
+    pergunta: 'Você abriu o manual do ls e ele não fecha. Qual tecla te tira daqui?',
     opcoes: [
       { texto: 'q', certo: true, porque: 'q sai do man e do less. É a tecla que mais gente não conhece.' },
       { texto: 'Ctrl+C', porque: 'não faz nada aqui: o man não está "rodando", está exibindo.' },
@@ -92,7 +95,7 @@ export const ESCAPE: Rodada[] = [
   },
   {
     mono: true, contexto: '$ node app.js\napp no ar na porta 3000\n█',
-    pergunta: 'O prompt não volta. O que aconteceu?',
+    pergunta: 'Você rodou um programa e o prompt ($) não voltou. O que aconteceu, e o que fazer?',
     opcoes: [
       { texto: 'Está ocupado: Ctrl+C interrompe', certo: true, porque: 'não travou, está rodando. O Ctrl+C interrompe e devolve o prompt.' },
       { texto: 'O terminal travou, preciso fechar', porque: 'ele está ocupado, não travado. Essa confusão trava muita gente.' },
@@ -127,16 +130,16 @@ export const PERIGO: Rodada[] = [
 
 export const PREVER: Rodada[] = [
   {
-    mono: true, contexto: '$ node app.js',
+    mono: true, contexto: '$ node app/app.js',
     pergunta: 'O que acontece?',
     opcoes: [
-      { texto: 'A app roda e o prompt NÃO volta', certo: true, porque: 'ela ficou em primeiro plano, presa ao seu terminal. Fechou o terminal, morreu.' },
+      { texto: 'A app roda e o prompt NÃO volta', certo: true, porque: 'ela está ocupando o terminal. Para recuperar o prompt: Ctrl+C (encerra) ou rodar de novo com & no fim.' },
       { texto: 'A app roda e o prompt volta', porque: 'isso só com & no fim.' },
-      { texto: 'Dá erro', porque: 'o arquivo existe.' },
+      { texto: 'Dá erro', porque: 'o arquivo existe: a app sobe normalmente.' },
     ],
   },
   {
-    mono: true, contexto: '$ node app.js &',
+    mono: true, contexto: '$ node app/app.js &',
     pergunta: 'E agora?',
     opcoes: [
       { texto: 'O prompt volta e aparece um número', certo: true, porque: 'o & solta o processo. O número é o PID, e é por ele que você encerra depois.' },
@@ -145,12 +148,12 @@ export const PREVER: Rodada[] = [
     ],
   },
   {
-    mono: true, contexto: '$ ls -la',
-    pergunta: 'O que aparece a mais, comparado com ls?',
+    mono: true, contexto: '$ node app/app.js &\n[1] 4822\n$ kill 4822',
+    pergunta: 'O que o kill 4822 faz?',
     opcoes: [
-      { texto: 'Arquivos escondidos, permissões e dono', certo: true, porque: '-l dá a lista longa (permissões, dono, tamanho) e -a inclui os que começam com ponto.' },
-      { texto: 'Só as pastas', porque: 'isso não é o que -la faz.' },
-      { texto: 'O conteúdo dos arquivos', porque: 'para ver conteúdo é cat ou less.' },
+      { texto: 'Encerra o programa de PID 4822', certo: true, porque: 'kill + PID encerra aquele processo. É assim que você para um programa que está em segundo plano.' },
+      { texto: 'Fecha o terminal', porque: 'o terminal continua aberto: só o processo 4822 é encerrado.' },
+      { texto: 'Apaga o arquivo app.js', porque: 'kill mexe em processos, não em arquivos. Para apagar arquivo é rm.' },
     ],
   },
 ];
@@ -167,7 +170,7 @@ export const ERROS: Rodada[] = [
   },
   {
     mono: true, contexto: 'bash: ./deploy.sh: Permission denied',
-    pergunta: 'E essa?',
+    pergunta: 'Qual é a causa desta mensagem?',
     opcoes: [
       { texto: 'Falta permissão de execução: chmod +x', certo: true, porque: 'o arquivo existe e você pode lê-lo, mas ninguém marcou que ele é executável.' },
       { texto: 'O arquivo não existe', porque: 'se não existisse, a mensagem seria No such file.' },
@@ -176,7 +179,7 @@ export const ERROS: Rodada[] = [
   },
   {
     mono: true, contexto: 'bash: htop: command not found',
-    pergunta: 'E essa?',
+    pergunta: 'Qual é a causa desta mensagem?',
     opcoes: [
       { texto: 'O programa não está instalado nesta máquina', certo: true, porque: 'ou é erro de digitação. Instale com sudo apt install htop.' },
       { texto: 'Falta permissão', porque: 'permissão daria Permission denied.' },

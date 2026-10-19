@@ -42,18 +42,22 @@ export const DESAFIOS = {
   // ── caça ao erro: achar as linhas erradas ──
   'arena-caca-erro': {
     jogo: 'caca-erro',
-    enunciado: 'Três destas linhas não vão funcionar. Achem as três.',
+    enunciado: 'Três destes comandos dão erro. Achem os três.',
+    // sem saber o que existe na pasta, "cat Notas.txt" não tem como ser
+    // julgado: o contexto é parte do enunciado, não dica
+    contexto: 'Cada comando é rodado sozinho, na sua pasta pessoal. Nela existem: as pastas `projeto` e `fotos`, e os arquivos `notas.txt`, `deploy.sh`, `app.log` e `app.js`.',
     linhas: [
-      { id: 'l1', texto: 'cd ~/projeto' },
-      { id: 'l2', texto: 'mkdir -p src/app' },
-      { id: 'l3', texto: 'cat Notas.txt', erro: 'o arquivo é notas.txt: maiúscula importa' },
+      { id: 'l1', texto: 'cd projeto' },
+      { id: 'l2', texto: 'mkdir -p projeto/src' },
+      { id: 'l3', texto: 'cat Notas.txt', erro: 'o arquivo se chama notas.txt: maiúscula e minúscula são diferentes' },
       { id: 'l4', texto: 'chmod +x deploy.sh' },
-      { id: 'l5', texto: 'rm pasta', erro: 'é uma pasta: falta o -r' },
+      { id: 'l5', texto: 'rm fotos', erro: 'fotos é uma pasta: para apagar pasta precisa do -r' },
       { id: 'l6', texto: 'grep -c ERROR app.log' },
       { id: 'l7', texto: 'node app.js &' },
-      { id: 'l8', texto: 'kill node', erro: 'kill precisa do PID, não do nome' },
+      { id: 'l8', texto: 'kill node', erro: 'kill precisa do número do processo (PID), não do nome' },
     ],
   },
+
 };
 
 export const desafioDe = (cenaId) => DESAFIOS[cenaId] ?? null;
@@ -68,7 +72,7 @@ export function desafioPublico(cenaId, embaralhar = true) {
     return { jogo: d.jogo, enunciado: d.enunciado, pecas, tamanho: d.ordem.length };
   }
   return {
-    jogo: d.jogo, enunciado: d.enunciado,
+    jogo: d.jogo, enunciado: d.enunciado, contexto: d.contexto ?? null,
     // sem o campo `erro`: é exatamente o que a equipe tem de descobrir
     linhas: d.linhas.map(({ id, texto }) => ({ id, texto })),
     quantos: d.linhas.filter((l) => l.erro).length,

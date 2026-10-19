@@ -22,12 +22,12 @@ export default function Eu() {
   const comandos = PACOTE.flatMap((p) => p.itens).length;
 
   return (
-    <main style={{ padding: '40px 6vw 80px' }}>
+    <main style={{ padding: 'var(--e5) var(--e6) var(--e8)' }}>
       <style>{`@media print { .naoimprime { display: none } }`}</style>
       <div className="olho">Linux Day · {agora}</div>
       <h1 className="titulo" style={{ fontSize: 40 }}>{eu.emoji} {eu.nick}</h1>
 
-      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', margin: '22px 0', maxWidth: 820 }}>
+      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', margin: 'var(--e3) 0', maxWidth: 820 }}>
         <div className="cartao"><div className="olho">XP</div><strong style={{ fontSize: 30 }}>{eu.xp}</strong></div>
         <div className="cartao"><div className="olho">patente</div><strong style={{ fontSize: 22 }}>{n.patente}</strong></div>
         <div className="cartao"><div className="olho">posição</div><strong style={{ fontSize: 30 }}>{posicao || '—'}º</strong></div>
@@ -41,17 +41,17 @@ export default function Eu() {
 
       {(eu.badges?.length ?? 0) > 0 && (
         <>
-          <h2 style={{ fontSize: 22, margin: '26px 0 10px' }}>Badges</h2>
+          <h2 style={{ fontSize: 22, margin: 'var(--e3) 0 var(--e1)' }}>Badges</h2>
           <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             {eu.badges!.map((b) => <span key={b} className="chip forte">🏅 {b.replace(/-/g, ' ')}</span>)}
           </div>
         </>
       )}
 
-      <h2 style={{ fontSize: 22, margin: '26px 0 10px' }}>Certificado</h2>
+      <h2 style={{ fontSize: 22, margin: 'var(--e3) 0 var(--e1)' }}>Certificado</h2>
       <div className="cartao" style={{ maxWidth: 820, textAlign: 'center', padding: 'var(--e5)' }}>
         <div className="olho">certifico que</div>
-        <div style={{ fontSize: 30, fontWeight: 700, margin: '8px 0' }}>{eu.nick}</div>
+        <div style={{ fontSize: 30, fontWeight: 700, margin: 'var(--e1) 0' }}>{eu.nick}</div>
         <p style={{ color: 'var(--tinta-2)', maxWidth: '36em', margin: '0 auto' }}>
           participou do workshop <strong>Linux Day</strong>, completou laboratórios verificados de navegação,
           manipulação de arquivos, permissões, pipes e processos, e fechou um chamado de diagnóstico em equipe,
@@ -61,13 +61,13 @@ export default function Eu() {
         <button className="btn primario naoimprime" style={{ marginTop: 'var(--e3)' }} onClick={() => window.print()}>salvar em PDF</button>
       </div>
 
-      <p className="naoimprime" style={{ marginTop: 26 }}>
+      <p className="naoimprime" style={{ marginTop: 'var(--e3)' }}>
         <a className="btn" href="/cheatsheet">abrir o cheatsheet</a>{' '}
         <a className="btn" href="/regras">as regras</a>{' '}
         <a className="btn" href="/">voltar ao deck</a>
       </p>
 
-      <h2 style={{ fontSize: 22, margin: '30px 0 10px' }}>Próximos passos</h2>
+      <h2 style={{ fontSize: 22, margin: 'var(--e4) 0 var(--e1)' }}>Próximos passos</h2>
       <ul style={{ color: 'var(--tinta-2)', lineHeight: 1.8, maxWidth: '44em' }}>
         <li>Instale uma VM (ou WSL, no Windows) e repita o boss sozinho. É o melhor exercício que existe.</li>
         <li>Exercícios: <code className="kbd">overthewire.org/wargames/bandit</code>, um jogo de terminal que começa do zero.</li>

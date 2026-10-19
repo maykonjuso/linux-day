@@ -21,7 +21,7 @@ export default function PathQuiz({ onConcluir }: { onConcluir?: () => void }) {
 
   return (
     <div className="duas">
-      <div className="term" style={{ fontSize: 'clamp(16px, 1.8vw, 26px)' }}>
+      <div className="term">
         <span className="saida">você está em</span>
         <br />
         <span className="cmd">{r.de}</span>
@@ -33,28 +33,34 @@ export default function PathQuiz({ onConcluir }: { onConcluir?: () => void }) {
       </div>
 
       <div className="grade">
-        <div className="olho">clique onde você cai</div>
-        {ARVORE.map((p) => {
-          const estado = escolha ? (p === r.alvo ? 'certa' : p === escolha ? 'errada' : undefined) : undefined;
-          return (
-            <button
-              key={p}
-              className="alt"
-              data-estado={estado}
-              style={{ paddingLeft: 16 + p.split('/').filter(Boolean).length * 22, fontFamily: 'var(--mono)' }}
-              onClick={() => !escolha && setEscolha(p)}
-            >
-              {p}
-            </button>
-          );
-        })}
+        <div className="olho">clique na pasta onde você vai parar</div>
+        {/* cores do quiz; o recuo de cada pasta mostra a árvore */}
+        <div className="alternativas kahoot arvore-pastas" key={i}>
+          {ARVORE.map((p, j) => {
+            const estado = escolha ? (p === r.alvo ? 'certa' : p === escolha ? 'errada' : undefined) : undefined;
+            return (
+              <button
+                key={p}
+                className="alt"
+                data-cor={j % 4}
+                data-estado={estado}
+                disabled={!!escolha}
+                style={{ ['--ordem' as string]: j, ['--nivel' as string]: p.split('/').filter(Boolean).length, fontFamily: 'var(--mono)' }}
+                onClick={() => !escolha && setEscolha(p)}
+              >
+                <span className="letra">{['▲', '◆', '●', '■'][j % 4]}</span>
+                {p}
+              </button>
+            );
+          })}
+        </div>
         {escolha && (
-          <div className="cartao" style={{ borderColor: certo ? 'var(--ok)' : 'var(--atencao)' }}>
-            {certo ? '✅ isso. ' : '↩︎ quase. '}
+          <div className="veredito-widget" data-certo={certo}>
+            <strong>{certo ? 'Isso!' : 'Quase.'}</strong>&nbsp;
             <code className="kbd">{r.comando}</code> leva para <code className="kbd">{r.alvo}</code>.
             <button
               className="btn primario"
-              style={{ marginLeft: 12 }}
+              style={{ marginLeft: 'auto' }}
               onClick={() => {
                 setEscolha(null);
                 if (i + 1 < RODADAS.length) setI(i + 1);

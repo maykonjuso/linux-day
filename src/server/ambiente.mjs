@@ -62,7 +62,7 @@ function comoUsuario(conta, script, env = {}, timeout = 10_000) {
     HOME: home,
     USER: conta,
     LOGNAME: conta,
-    LANG: 'pt_BR.UTF-8',
+    LANG: 'C.UTF-8',
     TERM: 'xterm-256color',
     ...env,
   };
@@ -185,7 +185,7 @@ export function escreverBashrc(home, nomeVisivel) {
     `export PATH="${bin}:$PATH"`,
     `export PS1='${nomeVisivel}@linuxday:\\w$ '`,
     "export PS2='> '",
-    'export LANG=pt_BR.UTF-8',
+    'export LANG=C.UTF-8',
     'export HISTSIZE=500',
     // um alias de cortesia, e o módulo do alias no fim do workshop mostra como
     // criar os próprios

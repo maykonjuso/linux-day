@@ -11,18 +11,9 @@
  */
 export const GABARITOS = {
   'm0-q1': { correta: 'b', segundos: 20, xpBase: 40 },
-  'm0-q2': { correta: 'a', segundos: 20, xpBase: 40 },
   'm0-q3': { correta: 'b', segundos: 20, xpBase: 40 },
   'm0-q4': { correta: 'b', segundos: 20, xpBase: 40 },
-  'm0-q5': { correta: 'c', segundos: 20, xpBase: 40 },
-  'm0-q6': { correta: 'b', segundos: 20, xpBase: 40 },
   'm0-q7': { correta: 'c', segundos: 20, xpBase: 40 },
-  'm0-q8': { correta: 'd', segundos: 20, xpBase: 40 },
-  'm0-q9': { correta: 'b', segundos: 20, xpBase: 40 },
-  'kr-1': { correta: 'b', segundos: 20, xpBase: 40 },
-  'kr-2': { correta: 'a', segundos: 20, xpBase: 40 },
-  'kr-3': { correta: 'b', segundos: 20, xpBase: 40 },
-  'kr-4': { correta: 'b', segundos: 20, xpBase: 40 },
 };
 
 export const gabaritoDe = (cenaId) => GABARITOS[cenaId] ?? null;

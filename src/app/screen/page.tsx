@@ -4,6 +4,7 @@ import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
 import { useTema } from '@/deck/useTema';
+import { CartaoEvento } from '@/components/Celebracao';
 
 /**
  * A tela do projetor: só conteúdo.
@@ -33,7 +34,7 @@ export default function Screen() {
       <button onClick={() => trocar()} title="alternar claro e escuro"
         style={{
           position: 'fixed', bottom: 'var(--e2)', right: 'var(--e2)', zIndex: 50,
-          width: 34, height: 34, borderRadius: 999, cursor: 'pointer',
+          width: 32, height: 32, borderRadius: 999, cursor: 'pointer',
           border: '1px solid var(--borda)', background: 'var(--papel-2)', color: 'var(--tinta-2)',
           opacity: 0.35,
         }}>
@@ -41,11 +42,12 @@ export default function Screen() {
       </button>
 
       {aviso && <div className="toast">📣 {aviso}</div>}
+      <CartaoEvento arena={arena} />
 
       {estado.pausado && (
         <div style={{
-          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
-          padding: '10px 26px', borderRadius: 999, background: 'var(--tinta)', color: 'var(--papel)',
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
+          padding: 'var(--e1) var(--e3)', borderRadius: 999, background: 'var(--tinta)', color: 'var(--papel)',
           fontWeight: 650, fontSize: 'clamp(16px, 1.6vw, 24px)',
         }}>
           pausado

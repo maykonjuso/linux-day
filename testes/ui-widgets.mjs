@@ -51,7 +51,11 @@ await pg.fill('input[placeholder="seu nome"]', 'ana');
 await pg.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1500);
 
-const xp = async () => Number(((await pg.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent()) ?? '0').replace(/\D/g, ''));
+// o XP não aparece mais na barra do participante (só no pódio): lemos do
+// placar que o servidor manda para todo mundo
+let ultimoPlacar = null;
+host.on('placar', (p) => { ultimoPlacar = p; });
+const xp = async () => { await dormir(150); return ultimoPlacar?.individual.find((p) => p.nick === 'ana')?.xp ?? 0; };
 
 async function irPara(id) {
   const i = indiceDe(id);
@@ -80,7 +84,7 @@ async function jogarEscolhas(rodadas) {
   return true;
 }
 
-console.log('\n── os 9 widgets ──');
+console.log('\n── os 5 exercícios do deck ──');
 
 // 1 · escape-room
 let antes = await xp();
@@ -96,31 +100,7 @@ ok(await jogarEscolhas(3), 'path-quiz: três rodadas jogáveis');
 await dormir(600);
 ok(await xp() > antes, 'path-quiz paga XP');
 
-// 3 · spot-the-danger
-antes = await xp();
-await irPara('m2-perigo');
-ok(await jogarEscolhas(2), 'spot-the-danger: duas rodadas jogáveis');
-await dormir(600);
-ok(await xp() > antes, 'spot-the-danger paga XP');
-
-// 4 · fs-dragdrop
-antes = await xp();
-await irPara('m2-widget');
-const pastaDe = (nome) => /\.(png|jpg)$/.test(nome) ? 'imagens' : /^tmp_/.test(nome) ? 'lixeira' : /\.sh$/.test(nome) ? 'scripts' : 'docs';
-for (let i = 0; i < 14; i++) {
-  const soltos = pg.locator('[data-arquivo]');
-  if (!(await soltos.count())) break;
-  const nome = await soltos.first().getAttribute('data-arquivo');
-  await soltos.first().click();
-  await pg.locator(`[data-pasta="${pastaDe(nome)}"]`).click();
-  await dormir(140);
-}
-const ponte = pg.locator('.cartao', { hasText: 'você acabou de executar isto' });
-ok(await ponte.count() > 0, 'fs-dragdrop: arrastar tudo mostra os comandos mv equivalentes');
-if (await ponte.count()) { await pg.getByRole('button', { name: /agora no teclado/ }).click(); await dormir(500); }
-ok(await xp() > antes, 'fs-dragdrop paga XP');
-
-// 5 · permission-toggles
+// 3 · permission-toggles
 antes = await xp();
 await irPara('m3-widget');
 const numeroAtual = async () => (((await pg.locator('.term').first().textContent()) ?? '').match(/\d{3}/) ?? ['000'])[0];
@@ -145,7 +125,7 @@ for (const alvo of ['700', '644', '755']) {
 await dormir(500);
 ok(await xp() > antes, 'permission-toggles paga XP');
 
-// 6 · pipe-builder
+// 4 · pipe-builder
 antes = await xp();
 await irPara('m4-widget');
 for (const peca of ['grep', 'cut', 'sort', 'uniq', 'sortrn', 'head']) {
@@ -157,31 +137,12 @@ ok(await certo.count() > 0, 'pipe-builder: a ordem correta é reconhecida e most
 if (await certo.count()) { await pg.getByRole('button', { name: 'concluir' }).click(); await dormir(500); }
 ok(await xp() > antes, 'pipe-builder paga XP');
 
-// 7 · predict-output
+// 5 · predict-output
 antes = await xp();
 await irPara('m5-prever');
 ok(await jogarEscolhas(3), 'predict-output: três rodadas jogáveis');
 await dormir(500);
 ok(await xp() > antes, 'predict-output paga XP');
-
-// 8 · command-builder
-antes = await xp();
-await irPara('m5-builder');
-for (const peca of ['sudo', 'apt', 'install', '-y', 'htop']) {
-  await pg.locator('button').filter({ hasText: new RegExp(`^${peca}`) }).first().click();
-  await dormir(160);
-}
-ok((await pg.locator('.cartao', { hasText: 'é exatamente isso' }).count()) > 0, 'command-builder: a ordem certa é reconhecida');
-await pg.getByRole('button', { name: 'concluir' }).click();
-await dormir(500);
-ok(await xp() > antes, 'command-builder paga XP');
-
-// 9 · error-match
-antes = await xp();
-await irPara('pre-boss-erros');
-ok(await jogarEscolhas(3), 'error-match: três rodadas jogáveis');
-await dormir(500);
-ok(await xp() > antes, 'error-match paga XP');
 
 console.log('\n── controles do participante ──');
 
@@ -191,7 +152,7 @@ await pg.locator('.alt').nth(1).click();
 await dormir(300);
 host.emit('host:revelar', { cenaId: 'm0-q1', correta: 'b', xpBase: 40, segundos: 20 });
 await dormir(500);
-await irPara('m0-q2');
+await irPara('m0-q3');
 ok(await pg.locator('.alt').first().isEnabled(), 'na pergunta seguinte as alternativas destravam');
 await pg.locator('.alt').first().click();
 await dormir(400);
@@ -199,7 +160,8 @@ ok(await pg.locator('.chip', { hasText: /resposta enviada/ }).count() > 0, 'e ac
 
 // cena de placar
 await irPara('fim-placar');
-ok((await pg.locator('.cartao', { hasText: 'ana' }).count()) > 0, 'a cena de placar lista os participantes');
+ok((await pg.locator('.lado-podio', { hasText: 'ana' }).count()) > 0, 'o pódio final lista os participantes');
+ok((await pg.locator('.lado-podio').count()) === 2, 'e mostra pessoas e equipes lado a lado');
 
 // consulta (tecla ?) — precisa de uma cena de lab para ter o que consultar
 await irPara('m2-lab');
@@ -259,7 +221,7 @@ await pg.reload({ waitUntil: 'domcontentloaded' });
 await dormir(2000);
 ok((await pg.locator('.controles').count()) > 0, 'depois do F5 a pessoa volta direto, sem reentrar');
 ok(await xp() === xpAntesF5, 'e com o XP intacto', `(${xpAntesF5})`);
-ok((await pg.locator('.titulo').first().textContent())?.length > 0, 'e na cena em que a sala está');
+ok((await pg.locator('.titulo, .titulo-cena').first().textContent())?.length > 0, 'e na cena em que a sala está');
 
 ok(erros.length === 0, 'nenhum erro de JavaScript', erros.length ? `\n   ${erros.slice(0, 5).join('\n   ')}` : '');
 

@@ -15,7 +15,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 const PISO = 0.62;
 
-export function Encaixe({ children, chave }: { children: React.ReactNode; chave: string }) {
+/**
+ * `modo`:
+ *  - 'escala'  (projetor): a cena é reduzida até caber, porque ninguém rola a
+ *    parede da sala;
+ *  - 'rolagem' (participante e apresentador): a página se comporta como um site
+ *    normal. Letra em tamanho de leitura e, se não couber, rola. Encolher no
+ *    notebook deixava o texto borrado (o navegador reduz a imagem já desenhada)
+ *    e cortava quando o conteúdo crescia depois (exercício liberado).
+ */
+export function Encaixe({ children, chave, modo = 'escala' }: { children: React.ReactNode; chave: string; modo?: 'escala' | 'rolagem' }) {
   const fora = useRef<HTMLDivElement>(null);
   const dentro = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(1);
@@ -29,7 +38,35 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
     // mede sem escala e sem altura fixa para saber o tamanho natural
     conteudo.style.transform = 'none';
     conteudo.style.height = 'auto';
+    conteudo.style.minHeight = '0px';
     const alturaDisponivel = caixa.clientHeight;
+
+    if (modo === 'rolagem') {
+      // sem escala: só garante a altura mínima (para centralizar o que é
+      // pequeno) e, nas cenas de altura fixa, a altura exata da tela
+      const fixa = conteudo.querySelector('[data-altura-fixa]') && window.innerWidth > 900;
+      conteudo.style.height = fixa ? `${alturaDisponivel}px` : 'auto';
+      conteudo.style.minHeight = fixa ? '0px' : `${alturaDisponivel}px`;
+      setEscala(1);
+      setRolar(false);
+      return;
+    }
+
+    /*
+     * Cenas de altura fixa (laboratório, jogos com terminal): nada de escala.
+     * Elas ocupam exatamente a tela e quem rola é a coluna de dentro. Reduzir
+     * a cena inteira deixava a letra do checklist e do terminal pequena demais
+     * só porque a lista de comandos era comprida. No celular (uma coluna só)
+     * volta ao comportamento normal, porque lá rolar a página é o natural.
+     */
+    if (conteudo.querySelector('[data-altura-fixa]') && window.innerWidth > 900) {
+      conteudo.style.height = `${alturaDisponivel}px`;
+      conteudo.style.minHeight = '0px';
+      setEscala(1);
+      setRolar(false);
+      return;
+    }
+
     const alturaNatural = conteudo.scrollHeight;
     if (!alturaDisponivel || !alturaNatural) return;
 
@@ -59,7 +96,19 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
      * concordar com o que a pessoa vê, e a barra de rolagem desaparece.
      */
     conteudo.style.height = `${Math.ceil(alturaNatural * nova)}px`;
-  }, []);
+
+    /*
+     * Quando o conteúdo é MENOR que a tela, a cena ocupa a altura inteira
+     * mesmo assim. Sem isso ela ficava com a altura natural, grudada no topo,
+     * e a metade de baixo da tela sobrava vazia em quase todo slide; com a
+     * altura cheia, a própria cena distribui o conteúdo (centraliza, ou deixa
+     * o terminal crescer no laboratório).
+     */
+    if (nova === 1) {
+      conteudo.style.height = 'auto';
+      conteudo.style.minHeight = `${alturaDisponivel}px`;
+    }
+  }, [modo]);
 
   useEffect(() => {
     // duas medições: uma agora e outra depois da animação de entrada da cena
@@ -73,18 +122,33 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
     const ro = new ResizeObserver(() => medir());
     if (dentro.current) ro.observe(dentro.current);
     if (fora.current) ro.observe(fora.current);
+    /*
+     * Observa também a CENA (o filho), não só a caixa de fora: depois de
+     * medida, a caixa tem altura fixada por nós, então quando o conteúdo cresce
+     * (o exercício aparece ao ser liberado) só a cena muda de tamanho. Sem isto
+     * o conteúdo novo ficava cortado até alguém recarregar a página.
+     */
+    const observarCena = () => {
+      const cena = dentro.current?.firstElementChild;
+      if (cena) ro.observe(cena);
+    };
+    observarCena();
+    const mo = new MutationObserver(() => { observarCena(); medir(); });
+    if (dentro.current) mo.observe(dentro.current, { childList: true });
     window.addEventListener('resize', medir);
     document.fonts?.ready?.then(() => medir()).catch(() => {});
-    return () => { ro.disconnect(); window.removeEventListener('resize', medir); };
+    return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener('resize', medir); };
   }, [medir]);
 
   return (
     <div
       ref={fora}
       data-encaixe={escala < 1 ? 'reduzido' : 'inteiro'}
-      style={{ position: 'relative', minHeight: 0, overflowY: rolar ? 'auto' : 'hidden', overflowX: 'hidden' }}
+      style={{ position: 'relative', minHeight: 0, overflowY: rolar || modo === 'rolagem' ? 'auto' : 'hidden', overflowX: 'hidden' }}
     >
-      <div ref={dentro} style={{ transformOrigin: 'top center', willChange: 'transform', width: '100%' }}>
+      {/* sem will-change: com ele o navegador rasteriza a cena em tamanho cheio
+          e reduz a imagem, e o texto fica borrado */}
+      <div ref={dentro} style={{ transformOrigin: 'top center', width: '100%', display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>
       {rolar && (

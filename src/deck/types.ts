@@ -65,6 +65,13 @@ interface CenaBase {
    * participante clicar e revisar diretamente.
    */
   referencias?: ReferenciaSlide[];
+  /**
+   * Minutos planejados para esta cena, contando a explicação de quem
+   * apresenta e o tempo de a turma fazer. A soma do deck inteiro tem de caber
+   * em 120 (o teste `npm run teste:tempo` confere), e o painel do apresentador
+   * mostra se a sala está adiantada ou atrasada.
+   */
+  minutos: number;
 }
 
 export interface CenaCapa extends CenaBase {
@@ -73,11 +80,23 @@ export interface CenaCapa extends CenaBase {
   xpDoModulo: number;
 }
 
+/** Quem está apresentando: nome e GitHub, sem cargo. */
+export interface CenaApresentacao extends CenaBase {
+  tipo: 'Apresentacao';
+  pessoas: { nome: string; github: string; foto: string }[];
+}
+
+/** Como usar a tela: cada controle, onde fica e o que faz. */
+export interface CenaControles extends CenaBase {
+  tipo: 'Controles';
+  legenda: string;
+}
+
 export interface CenaModeloMental extends CenaBase {
   tipo: 'MentalModel';
   legenda: string;
   /** nome do diagrama inline (um componente SVG por nome) */
-  diagrama: 'arvore' | 'processo' | 'cadeados' | 'encanamento';
+  diagrama: 'arvore' | 'distros' | 'processo' | 'cadeados' | 'encanamento';
 }
 
 export interface CenaAnatomia extends CenaBase {
@@ -188,6 +207,8 @@ export interface CenaRecap extends CenaBase {
 
 export type Cena =
   | CenaCapa
+  | CenaApresentacao
+  | CenaControles
   | CenaModeloMental
   | CenaAnatomia
   | CenaTerminalDemo

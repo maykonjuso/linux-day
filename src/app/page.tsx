@@ -7,12 +7,14 @@ import { Encaixe } from '@/components/Encaixe';
 import { TerminalHost } from '@/components/TerminalHost';
 import { Consulta } from '@/components/Consulta';
 import { Icone } from '@/components/Icone';
+import { Ilustra } from '@/components/Ilustra';
 import { Tour } from '@/components/Tour';
 import { Perfil } from '@/components/Perfil';
 import { useTema, useTemaTerminal } from '@/deck/useTema';
 import { TEMAS_TERMINAL, temaTerminalPorId } from '@/deck/temas';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
+import { CartaoEvento, CartaoConquista, Confete } from '@/components/Celebracao';
 
 import { AVATARES, AVATAR_PADRAO, usuarioDoNick } from '@/deck/avatares';
 
@@ -41,7 +43,9 @@ export default function Player() {
   /** índice da cena que estou olhando por conta própria (null = ao vivo) */
   const [livre, setLivre] = useState<number | null>(null);
 
-  const tetoSlide = Math.min(DECK.length - 1, Math.max(estado.maxCenaIndex ?? 0, estado.cenaIndex));
+  // só para trás: o participante revê o que já passou, mas nunca adianta o
+  // que o apresentador ainda não mostrou (o teto é o slide ao vivo)
+  const tetoSlide = Math.min(DECK.length - 1, estado.cenaIndex);
 
   // volta ao vivo quando o apresentador pede, ou quando a sala muda de cena
   useEffect(() => {
@@ -61,7 +65,8 @@ export default function Player() {
       if (e.key === 'Escape') { setConsulta(false); setLivre(null); }
       // navegação livre: só com as setas, travada no último slide já mostrado pelo apresentador
       if (e.key === 'ArrowLeft') setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1));
-      if (e.key === 'ArrowRight') setLivre((l) => Math.min(tetoSlide, (l ?? estado.cenaIndex) + 1));
+      // → só anda de volta em direção ao ao vivo; chegando nele, volta ao vivo
+      if (e.key === 'ArrowRight') setLivre((l) => (l === null || l + 1 >= tetoSlide ? null : l + 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -83,7 +88,7 @@ export default function Player() {
     }
     return (
       <div className="centro">
-        <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 16 }}>
+        <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 'var(--e2)' }}>
           <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
             <Icone nome="shell" tamanho={16} /> Linux Day
           </div>
@@ -94,7 +99,7 @@ export default function Player() {
             onKeyDown={(e) => { if (e.key === 'Enter' && nick.trim()) entrar(nick.trim(), emoji); }} />
 
           {arena.nomeRecusado && (
-            <div className="cartao" style={{ borderColor: 'var(--erro)', display: 'grid', gap: 8 }}>
+            <div className="cartao" style={{ borderColor: 'var(--erro)', display: 'grid', gap: 'var(--e1)' }}>
               <span style={{ fontSize: 14 }}>
                 Já tem alguém chamado <strong>{arena.nomeRecusado.nome}</strong> na sala. Escolha outro para
                 ninguém confundir o seu XP com o dele.
@@ -118,7 +123,7 @@ export default function Player() {
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(46px, 1fr))',
               gap: 'var(--e05)', maxHeight: 210, overflowY: 'auto', padding: 'var(--e05)',
-              border: '1px solid var(--borda)', borderRadius: 12, background: 'var(--papel-2)',
+              border: '1px solid var(--borda)', borderRadius: 'var(--r-p)', background: 'var(--papel-2)',
             }}>
               {AVATARES.map((e) => {
                 // avatar já escolhido por alguém: ainda dá para usar, mas fica
@@ -129,7 +134,7 @@ export default function Player() {
                     title={emUso ? 'já escolhido por alguém' : undefined}
                     style={{
                       fontSize: 24, lineHeight: 1, padding: 'var(--e1) 0', cursor: 'pointer',
-                      borderRadius: 9, background: emoji === e ? '#eff4ff' : 'var(--papel)',
+                      borderRadius: 'var(--r-p)', background: emoji === e ? 'var(--acento-suave)' : 'var(--papel)',
                       border: `1.5px solid ${emoji === e ? 'var(--acento)' : 'transparent'}`,
                       opacity: emUso && emoji !== e ? 0.32 : 1,
                     }}>
@@ -187,14 +192,14 @@ export default function Player() {
   }
 
   const nivel = nivelDe(eu.xp);
-  const posicao = arena.placar.individual.findIndex((p) => p.id === eu.id) + 1;
   const indiceAtual = livre ?? estado.cenaIndex;
   const cenaVista = livre === null ? arena.cena : DECK[livre];
   /**
    * O terminal entra na cena quando a tarefa é digitada nele: nos laboratórios
    * e na corrida de equipes. Nos outros jogos ele fica disponível na gaveta.
    */
-  const emLab = livre === null && (
+  // só depois de o apresentador liberar: antes disso a turma lê o enunciado
+  const emLab = livre === null && estado.fase !== 'idle' && (
     cenaVista.tipo === 'LabScene' ||
     (cenaVista.tipo === 'ArenaScene' && cenaVista.jogo === 'corrida')
   );
@@ -208,7 +213,7 @@ export default function Player() {
 
   return (
     <div className="palco" data-papel="player">
-      <Encaixe chave={`${cenaVista.id}:${estado.passo}:${estado.fase}`}>
+      <Encaixe modo="rolagem" chave={`${cenaVista.id}:${estado.passo}:${estado.fase}`}>
         <SceneRouter
           arena={arena}
           papel="player"
@@ -242,14 +247,11 @@ export default function Player() {
           <strong style={{ fontSize: 14 }}>{eu.nick}</strong>
         </div>
 
-        <div className="bloco-controle" title="seus pontos, tokens de dica e nível">
-          <span className="rotulo">placar</span>
-          <span className="btn-icone" style={{ color: 'var(--acento)', fontWeight: 700 }}>
-            <Icone nome="xp" tamanho={15} /> {eu.xp} XP
-          </span>
-          <span className="btn-icone"><Icone nome="token" tamanho={15} /> {eu.tokens}</span>
-          {posicao > 0 && <span className="btn-icone"><Icone nome="troféu" tamanho={15} /> {posicao}º</span>}
-          {(eu.combo ?? 1) > 1 && <span className="btn-icone" style={{ color: 'var(--ok)' }}>combo ×{eu.combo}</span>}
+        {/* sem placar aqui de propósito: a posição de cada um só aparece no
+            pódio, quando o apresentador mostra (como no Kahoot). Fica só o
+            saldo de tokens, que a pessoa precisa para decidir pedir dica. */}
+        <div className="bloco-controle" title="tokens: moedas para comprar dicas nos laboratórios">
+          <span className="btn-icone"><Icone nome="token" tamanho={15} /> {eu.tokens} tokens</span>
         </div>
 
         <div className="bloco-controle">
@@ -258,12 +260,6 @@ export default function Player() {
             disabled={indiceAtual <= 0}
             onClick={() => setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1))}>
             <Icone nome="anterior" tamanho={16} /><span className="texto">voltar</span>
-          </button>
-          <button className="btn-icone"
-            title={indiceAtual >= tetoSlide ? 'você já está no último slide liberado pelo apresentador' : 'olhar o próximo slide'}
-            disabled={indiceAtual >= tetoSlide}
-            onClick={() => setLivre((l) => Math.min(tetoSlide, (l ?? estado.cenaIndex) + 1))}>
-            <span className="texto">avançar</span><Icone nome="proximo" tamanho={16} />
           </button>
           {livre !== null && (
             <button className="btn-icone destaque" onClick={() => setLivre(null)}>
@@ -346,12 +342,12 @@ export default function Player() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
                       <strong style={{ fontSize: 14 }}>{t.nome}</strong>
                       {!aberto && <span className="xp-item">nível {t.nivelMinimo}</span>}
-                      {atual && <span className="xp-item" style={{ marginLeft: 'auto', background: 'var(--acento)', borderColor: 'var(--acento)', color: '#fff' }}>em uso</span>}
+                      {atual && <span className="xp-item" style={{ marginLeft: 'auto', background: 'var(--acento)', borderColor: 'var(--acento)', color: 'var(--sobre-acento)' }}>em uso</span>}
                     </span>
                     {/* amostra: o mesmo prompt, nas cores do tema */}
                     <span style={{
                       fontFamily: 'var(--mono)', fontSize: 12, borderRadius: 'var(--r-p)', padding: 'var(--e1)',
-                      background: t.cores.background, color: t.cores.foreground, display: 'grid', gap: 2,
+                      background: t.cores.background, color: t.cores.foreground, display: 'grid', gap: 'var(--e1)',
                     }}>
                       <span><span style={{ color: t.cores.green }}>{usuarioDoNick(eu.nick)}@linuxday</span>:~$ ls</span>
                       <span style={{ color: t.cores.blue }}>bagunca  app  docs</span>
@@ -393,15 +389,15 @@ export default function Player() {
 
       {/* avisos */}
       {arena.ganho && (
-        <div className="flutuante" style={{ right: 28, bottom: 90, fontSize: 30, fontWeight: 800, color: 'var(--ok)' }}>
+        <div className="flutuante ganho-flutuante" key={arena.ganho.em}>
           +{arena.ganho.xp} XP{arena.ganho.mult > 1 ? ` ×${arena.ganho.mult}` : ''}
         </div>
       )}
-      {arena.badge && <div className="toast">🏅 {arena.badge.nick}: {arena.badge.badge.replace(/-/g, ' ')}</div>}
+      <CartaoConquista arena={arena} />
       {aviso && <div className="toast">📣 {aviso}</div>}
-      {arena.evento && <div className="toast">⚡ {arena.evento.replace(/-/g, ' ')}</div>}
+      <CartaoEvento arena={arena} />
       {arena.avisoTerminal && (
-        <div className="toast" style={{ background: 'var(--atencao)', maxWidth: '90vw', textAlign: 'center' }}>
+        <div className="toast" style={{ background: 'var(--atencao)', color: 'var(--papel)', borderColor: 'var(--atencao)', maxWidth: '90vw', textAlign: 'center' }}>
           Seu terminal foi reiniciado porque {arena.avisoTerminal}. Seus arquivos e seu XP continuam lá:
           clique no terminal para abrir de novo.
         </div>
@@ -409,12 +405,15 @@ export default function Player() {
       {eu.silenciado && <div className="chip forte" style={{ position: 'fixed', top: 'var(--e2)', right: 'var(--e2)', zIndex: 50 }}>chat silenciado pelo apresentador</div>}
       {arena.subiuNivel && (
         <div className="nivel-cheio">
-          <div style={{ textAlign: 'center' }}>
+          <Confete />
+          <div className="nivel-cartao">
+            <Ilustra nome="trofeu" tamanho={64} />
             <div className="olho">subiu de nível</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(26px, 4vw, 56px)', fontWeight: 700 }}>
               {nivelDe(eu.xp).prompt.replace('{nick}', usuarioDoNick(eu.nick))}
             </div>
-            <div className="chip forte" style={{ marginTop: 'var(--e2)' }}>{arena.subiuNivel.patente}</div>
+            <div className="chip forte grande" style={{ marginTop: 'var(--e2)' }}>{arena.subiuNivel.patente}</div>
+            <p className="apoio" style={{ marginTop: 'var(--e2)' }}>esse é o seu novo prompt no terminal</p>
           </div>
         </div>
       )}

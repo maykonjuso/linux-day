@@ -13,10 +13,10 @@ export default function Cheatsheet() {
     <main className="folha">
       <style>{`
         body { overflow: auto; }
-        .folha { padding: 28px 5vw 60px; }
-        .colunas { columns: 2; column-gap: 26px; }
+        .folha { padding: 32px 48px 64px; }
+        .colunas { columns: 2; column-gap: 24px; }
         .bloco { break-inside: avoid; margin-bottom: 16px; }
-        .bloco h3 { font-size: 14px; margin: 0 0 6px; }
+        .bloco h3 { font-size: 14px; margin: 0 0 8px; }
         .bloco code { display: block; font-family: var(--mono); font-size: 12.5px; color: var(--tinta); padding: 1px 0; }
         @media print {
           @page { size: A4; margin: 10mm; }
@@ -28,7 +28,7 @@ export default function Cheatsheet() {
         }
       `}</style>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--e2)', marginBottom: 'var(--e2)' }}>
         <h1 style={{ fontSize: 26 }}>Pacote de sobrevivência do Linux</h1>
         <small style={{ color: 'var(--tinta-2)' }}>~40 comandos, por situação</small>
         <button className="btn naoimprime" style={{ marginLeft: 'auto' }} onClick={() => window.print()}>imprimir</button>

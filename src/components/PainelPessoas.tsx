@@ -90,7 +90,7 @@ export function PainelPessoas({
             <span className="texto-item">
               <span>
                 <strong>{p.nick}</strong>
-                {p.travado && <span className="xp-item" style={{ marginLeft: 'var(--e1)', background: 'var(--atencao)', color: '#fff', borderColor: 'var(--atencao)' }}>travada</span>}
+                {p.travado && <span className="xp-item" style={{ marginLeft: 'var(--e1)', background: 'var(--atencao)', color: 'var(--papel)', borderColor: 'var(--atencao)' }}>travada</span>}
                 {p.silenciado && <span className="xp-item" style={{ marginLeft: 'var(--e05)' }}>sem chat</span>}
               </span>
               <small style={{ color: 'var(--tinta-2)', fontFamily: 'var(--mono)', fontSize: 12 }}>

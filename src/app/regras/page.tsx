@@ -6,9 +6,9 @@ import { NIVEIS } from '@/deck/types';
 /** Jogo com regra escondida gera reclamação no fim. Esta página fica aberta. */
 export default function Regras() {
   return (
-    <main style={{ padding: '40px 6vw', maxHeight: '100vh', overflow: 'auto' }}>
+    <main style={{ padding: 'var(--e5) var(--e6)', maxHeight: '100vh', overflow: 'auto' }}>
       <div className="olho">Linux Day Arena</div>
-      <h1 className="titulo" style={{ fontSize: 40, marginBottom: 20 }}>As regras, todas</h1>
+      <h1 className="titulo" style={{ fontSize: 40, marginBottom: 'var(--e3)' }}>As regras, todas</h1>
 
       <div className="grade" style={{ maxWidth: 880 }}>
         <div className="cartao">
@@ -28,7 +28,7 @@ export default function Regras() {
             <tbody>
               {ECONOMIA.map((e) => (
                 <tr key={e.fonte} style={{ borderTop: '1px solid var(--borda)' }}>
-                  <td style={{ padding: '8px 0' }}><strong>{e.fonte}</strong><br /><small style={{ color: 'var(--tinta-2)' }}>{e.detalhe}</small></td>
+                  <td style={{ padding: 'var(--e1) 0' }}><strong>{e.fonte}</strong><br /><small style={{ color: 'var(--tinta-2)' }}>{e.detalhe}</small></td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{e.total} XP</td>
                 </tr>
               ))}

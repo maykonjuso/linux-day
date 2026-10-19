@@ -6,7 +6,7 @@ mkdir -p "$HOME/app" "$HOME/.arena"
 # todos instalassem o mesmo, do segundo em diante o apt diria "already the
 # newest version" e o lab perderia o sentido.
 if [ ! -f "$HOME/.pacote" ]; then
-  PKGS="htop jq cowsay figlet ncdu sl neofetch tree"
+  PKGS="cmatrix jq cowsay figlet ncdu sl neofetch tree"
   n=$(( $(od -An -N1 -tu1 /dev/urandom | tr -d ' ') % 8 + 1 ))
   echo "$PKGS" | cut -d' ' -f"$n" > "$HOME/.pacote"
 fi

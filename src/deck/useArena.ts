@@ -6,10 +6,14 @@ import { DECK } from './content';
 import type { EstadoEvento, Papel, Participante } from './types';
 
 export interface GrupoPublico {
-  nome: string; cor: string; capacidade: number; media: number;
+  nome: string; cor: string; capacidade: number; media: number; xp: number;
   papeis: Record<string, string>; membros: Participante[];
 }
-export interface Placar { individual: Participante[]; grupos: GrupoPublico[] }
+export interface Placar {
+  individual: Participante[]; grupos: GrupoPublico[];
+  /** XP no começo da cena da vez (o servidor guarda), para o "+X nesta rodada" */
+  base?: { cenaId: string; ind: Record<string, number>; grp: Record<string, number> } | null;
+}
 
 /** estado de um jogo de equipe em andamento (vem do servidor) */
 export interface EstadoArena {
@@ -22,7 +26,7 @@ export interface EstadoArena {
   erradas?: string[];
   resolvido?: boolean;
   desafio?: {
-    jogo: string; enunciado: string;
+    jogo: string; enunciado: string; contexto?: string | null;
     pecas?: { id: string; rotulo: string }[]; tamanho?: number;
     linhas?: { id: string; texto: string }[]; quantos?: number;
   } | null;
@@ -70,7 +74,7 @@ export function useArena(papel: Papel) {
   /** gabaritos do quiz: o servidor só manda para o apresentador autenticado */
   const [gabaritos, setGabaritos] = useState<Record<string, { correta: string; segundos: number; xpBase: number }>>({});
   /** quantas dicas cada lab tem (vem do servidor) */
-  const [labs, setLabs] = useState<Record<string, { dicas: number }>>({});
+  const [labs, setLabs] = useState<Record<string, { dicas: number; pasta?: string | null }>>({});
   /** ninguém mexeu há muito tempo: a tela pergunta se a pessoa ainda está aí */
   const [ocioso, setOcioso] = useState(false);
   const ultimaInteracao = useRef(Date.now());
@@ -94,7 +98,7 @@ export function useArena(papel: Papel) {
     s.on('connect', () => {
       setConectado(true);
       if (papel !== 'player') return;
-      const salvo = typeof localStorage !== 'undefined' ? localStorage.getItem(CHAVE) : null;
+      const salvo = typeof window !== 'undefined' ? localStorage.getItem(CHAVE) : null;
       if (salvo) {
         const { id, nick, emoji } = JSON.parse(salvo);
         s.emit('entrar', { id, nick, emoji }, (r: { eu: Participante; codigo?: string; ambientePronto?: boolean }) => {
@@ -134,7 +138,7 @@ export function useArena(papel: Papel) {
     s.on('papel', (papelCarta: string | null) => setEu((p) => (p ? { ...p, papel: papelCarta } : p)));
     s.on('criterios', (lista: string[]) => setEu((p) => (p ? { ...p, criterios: lista } : p)));
     s.on('badges', (lista: string[]) => setEu((p) => (p ? { ...p, badges: lista } : p)));
-    s.on('labs', (info: Record<string, { dicas: number }>) => setLabs(info));
+    s.on('labs', (info: Record<string, { dicas: number; pasta?: string | null }>) => setLabs(info));
     s.on('expulso', ({ motivo }: { motivo: string }) => {
       localStorage.removeItem(CHAVE);
       setEu(null);
@@ -204,9 +208,9 @@ export function useArena(papel: Papel) {
     });
   }, []);
 
-  const verificar = useCallback((taskSlug: string, resposta = '') =>
+  const verificar = useCallback((taskSlug: string, resposta = '', auto = false) =>
     new Promise<{ resultados: ResultadoCriterio[]; ganho: number; todos: boolean; erro?: string }>((ok) => {
-      socketRef.current?.emit('lab:verificar', { taskSlug, resposta }, ok);
+      socketRef.current?.emit('lab:verificar', { taskSlug, resposta, auto }, ok);
     }), []);
 
   const pedirDica = useCallback((taskSlug: string, indice: number) =>
@@ -253,8 +257,11 @@ export function useArena(papel: Papel) {
 
   /** quem estava usando este navegador antes de sair */
   const ultimaPessoa = useMemo(() => {
-    if (typeof localStorage === 'undefined') return null;
-    const bruto = localStorage.getItem(ULTIMO);
+    // no servidor (pré-render) não há navegador; o Node 25 expõe um
+    // localStorage global incompleto, então a guarda é por `window`
+    if (typeof window === 'undefined') return null;
+    let bruto: string | null = null;
+    try { bruto = localStorage.getItem(ULTIMO); } catch { return null; }
     if (!bruto) return null;
     try { return JSON.parse(bruto) as { id: string; nick: string; emoji: string }; } catch { return null; }
   }, [eu]);

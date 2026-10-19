@@ -8,6 +8,8 @@ import { Ilustra } from '../Ilustra';
 import { Icone } from '../Icone';
 import { Texto } from '../Texto';
 import { ReferenciasConteudo } from '../ReferenciasConteudo';
+import { Aguardando } from '../SceneRouter';
+import { liberada, encerrada } from '@/deck/liberada';
 
 type CenaArena = Extract<Cena, { tipo: 'ArenaScene' }>;
 
@@ -143,7 +145,7 @@ function Montagem({
           <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             {pecas.filter((p) => !linha.includes(p.id)).map((p) => (
               <button key={p.id} className="btn" data-peca={p.id}
-                style={{ display: 'grid', gap: 2, textAlign: 'left', fontFamily: 'var(--mono)' }}
+                style={{ display: 'grid', gap: 'var(--e1)', textAlign: 'left', fontFamily: 'var(--mono)' }}
                 onClick={() => setLinha([...linha, p.id])}>
                 {p.rotulo}
                 <small className="apoio" style={{ fontFamily: 'var(--sans)' }}>{explicaPeca(p.rotulo)}</small>
@@ -248,62 +250,73 @@ function CacaAoErro({
   }
 
   return (
-    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+    <div className="cena" data-modulo={cena.modulo} data-denso="true" data-altura-fixa="true">
       <Cabecalho ilustra="lupa" titulo={cena.titulo}
         olho={`caça ao erro em equipe${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
-      <p className="corpo-p"><Texto>{desafio?.enunciado ?? cena.enunciado}</Texto></p>
+      <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
       <div style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
         <Premios premios={rodada?.premios ?? cena.premios ?? [300, 200, 140, 90]} />
         {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
       </div>
 
-      <div className="term" style={{ display: 'grid', gap: 'var(--e05)' }}>
-        {linhas.map((l) => {
-          const marcada = marcadas.includes(l.id);
-          return (
-            <button key={l.id}
-              disabled={papel !== 'player' || !!jaAcertou}
-              onClick={() => setMarcadas(marcada ? marcadas.filter((m) => m !== l.id) : [...marcadas, l.id])}
-              style={{
-                textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', cursor: 'pointer',
-                background: marcada ? '#3a1f1f' : 'transparent', color: marcada ? '#ffa198' : '#e8e8ea',
-                border: `1px solid ${marcada ? '#ff7b72' : 'transparent'}`,
-                borderRadius: 'var(--r-p)', padding: 'var(--e05) var(--e1)',
-              }}>
-              <span style={{ color: '#7dd3a0' }}>$ </span>{l.texto}{marcada ? '   ← erro' : ''}
-            </button>
-          );
-        })}
-      </div>
+      {/* duas colunas: à esquerda o que a equipe lê e marca, à direita a
+          classificação. Empilhado, o jogo ficava mais alto que a tela e a
+          cena inteira encolhia */}
+      <div className="duas duas-lab">
+        <div className="coluna">
+          {!desafio && <Aguardando papel={papel === 'host' ? 'player' : papel} oque="os comandos" />}
+          {desafio?.contexto && (
+            <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
+              <Icone nome="pasta" tamanho={20} cor="var(--acento)" />
+              <p className="corpo-p"><Texto>{desafio.contexto}</Texto></p>
+            </div>
+          )}
 
-      {papel === 'player' && !jaAcertou && (
-        <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="btn-icone destaque" data-acao="enviar-arena"
-            disabled={!minhaEquipe || marcadas.length === 0} onClick={enviar}>
-            <Icone nome="verificar" tamanho={16} /> enviar ({marcadas.length} de {quantos})
-          </button>
-          {recado && <span className="chip forte">{recado}</span>}
-          {acertos !== null && (
-            <span className="chip" title="quantas das suas marcações realmente têm erro">
-              {acertos} de {quantos} certas
-            </span>
+          {desafio && <div className="term linhas-caca">
+            {linhas.map((l) => {
+              const marcada = marcadas.includes(l.id);
+              return (
+                <button key={l.id} className="linha-caca" data-marcada={marcada}
+                  disabled={papel !== 'player' || !!jaAcertou}
+                  onClick={() => setMarcadas(marcada ? marcadas.filter((m) => m !== l.id) : [...marcadas, l.id])}>
+                  <span style={{ color: '#7dd3a0' }}>$ </span>{l.texto}{marcada ? '   ← erro' : ''}
+                </button>
+              );
+            })}
+          </div>}
+
+          {papel === 'player' && !jaAcertou && desafio && (
+            <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn primario" data-acao="enviar-arena"
+                disabled={!minhaEquipe || marcadas.length === 0} onClick={enviar}>
+                <Icone nome="verificar" tamanho={16} /> enviar ({marcadas.length} de {quantos})
+              </button>
+              {recado && <span className="chip forte">{recado}</span>}
+              {acertos !== null && (
+                <span className="chip" title="quantas das suas marcações realmente têm erro">
+                  {acertos} de {quantos} certas
+                </span>
+              )}
+            </div>
           )}
         </div>
-      )}
 
-      {/* a resposta da sala, quando o apresentador decide mostrar */}
-      {(explicacoes ?? rodada?.explicacao) && (
-        <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-          {(explicacoes ?? rodada?.explicacao ?? []).map((e) => (
-            <div key={e.texto} className="cartao" style={{ borderColor: 'var(--ok)' }}>
-              <code className="kbd">{e.texto}</code>
-              <p className="apoio" style={{ marginTop: 'var(--e05)' }}>{e.erro}</p>
+        <div className="coluna">
+          <div className="olho">classificação</div>
+          <Pista cena={cena} arena={arena} />
+          {/* a resposta da sala, quando o apresentador decide mostrar */}
+          {(explicacoes ?? rodada?.explicacao) && (
+            <div className="grade" style={{ gap: 'var(--e1)' }}>
+              {(explicacoes ?? rodada?.explicacao ?? []).map((e) => (
+                <div key={e.texto} className="cartao" style={{ borderColor: 'var(--ok)', padding: 'var(--e2)' }}>
+                  <code className="kbd">{e.texto}</code>
+                  <p className="apoio" style={{ marginTop: 'var(--e1)' }}>{e.erro}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
-
-      <Pista cena={cena} arena={arena} />
+      </div>
     </div>
   );
 }
@@ -347,9 +360,25 @@ function Corrida({
   const minhaEquipe = arena.eu?.grupo ?? null;
   const minhaPosicao = chegadas.find((c) => c.equipe === minhaEquipe)?.posicao ?? null;
   const premios = rodada?.premios ?? cena.premios ?? [300, 200, 140, 90];
+  const solto = liberada(arena, cena, papel) && !encerrada(arena, cena, papel);
+
+  // conferência automática, igual ao laboratório: ninguém perde a corrida por
+  // esquecer de clicar; quem terminou aparece na pista em até 4 segundos
+  useEffect(() => {
+    if (papel !== 'player' || !solto || arena.estado.fase !== 'aberta' || !minhaEquipe || minhaPosicao || !cena.taskSlug) return;
+    const conferir = async () => {
+      setOcupado(true);
+      const r = await arena.verificar(cena.taskSlug!, '', true);
+      setOcupado(false);
+      setRecado(r.todos ? 'tarefa fechada!' : r.resultados?.[0]?.mensagem ?? null);
+    };
+    conferir();
+    const t = setInterval(conferir, 4_000);
+    return () => clearInterval(t);
+  }, [papel, solto, arena.estado.fase, minhaEquipe, minhaPosicao, cena.taskSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+    <div className="cena" data-modulo={cena.modulo} data-denso="true" data-altura-fixa="true">
       <Cabecalho ilustra="foguete" titulo={cena.titulo}
         olho={`corrida de equipes${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
@@ -358,30 +387,42 @@ function Corrida({
         <Premios premios={premios} />
         {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
       </div>
-      <Pista cena={cena} arena={arena} />
-
-      {/* o terminal entra aqui: a tarefa da corrida é digitada nele */}
-      {papel === 'player' && (
-        <div className="grade" style={{ gap: 'var(--e1)' }}>
-          <div id="slot-terminal" className="term" style={{ minHeight: 'min(30vh, 260px)' }} />
-          <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button className="btn-icone destaque" data-acao="verificar-corrida"
-              disabled={!minhaEquipe || !!minhaPosicao || ocupado}
-              onClick={async () => {
-                if (!cena.taskSlug) return;
-                setOcupado(true);
-                const r = await arena.verificar(cena.taskSlug);
-                setOcupado(false);
-                setRecado(r.todos ? 'tarefa fechada!' : r.resultados?.[0]?.mensagem ?? 'ainda não');
-              }}>
-              <Icone nome="verificar" tamanho={16} /> {ocupado ? 'verificando…' : 'terminei, verificar'}
-            </button>
-            {!minhaEquipe && <span className="chip">entre numa equipe para correr</span>}
-            {minhaPosicao && <span className="chip forte">sua equipe chegou em {minhaPosicao}º</span>}
-            {recado && <span className="chip">{recado}</span>}
-          </div>
+      <div className="duas duas-lab">
+        <div className="coluna">
+          {/* o nome exato do arquivo, já com a equipe da pessoa: é o detalhe em
+              que todo mundo erra ("o nome da equipe" com maiúscula, sem .txt…) */}
+          {papel === 'player' && (
+            <div className="caixa-resposta">
+              <div className="linha"><Icone nome="arquivo" tamanho={18} /><strong>O arquivo da sua equipe</strong></div>
+              {minhaEquipe
+                ? <code className="kbd" style={{ justifySelf: 'start', fontSize: 'var(--t4)' }}>~/corrida/{minhaEquipe}.txt</code>
+                : <span className="apoio">entre numa equipe para correr</span>}
+            </div>
+          )}
+          <div className="olho">classificação</div>
+          <Pista cena={cena} arena={arena} />
         </div>
-      )}
+
+        <div className="coluna">
+          {!solto && <Aguardando papel={papel} oque="o terminal" />}
+          {papel === 'host' && arena.estado.fase === 'idle' && <Aguardando papel={papel} oque="o terminal" />}
+          {/* o terminal entra aqui: a tarefa da corrida é digitada nele */}
+          {papel === 'player' && solto && (
+            <>
+              <div id="slot-terminal" className="term term-lab" />
+              <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
+                {!minhaPosicao && (
+                  <span className="conferindo" data-ativo={ocupado}>
+                    <span className="ponto" /> conferindo sozinho a cada 4 segundos
+                  </span>
+                )}
+                {minhaPosicao && <span className="chip forte">sua equipe chegou em {minhaPosicao}º</span>}
+                {recado && <span className="chip">{recado}</span>}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -398,6 +439,7 @@ function Buzzer({
   const [apertei, setApertei] = useState(false);
   useEffect(() => setApertei(false), [cena.id]);
 
+  const solto = liberada(arena, cena, papel) && !encerrada(arena, cena, papel);
   const souAVez = fila[0]?.equipe === minhaEquipe;
   const jaErrei = minhaEquipe ? erradas.includes(minhaEquipe) : false;
   const naFila = fila.some((f) => f.equipe === minhaEquipe);
@@ -406,18 +448,24 @@ function Buzzer({
     <div className="cena" data-modulo={cena.modulo} data-denso="true">
       <Cabecalho ilustra="alarme" titulo={cena.titulo} olho="quem aperta primeiro responde" />
       <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta ?? cena.enunciado}</Texto></h2>
+      <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
       {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
-      {papel === 'player' && (
+      {!solto && <Aguardando papel={papel} oque="o botão" />}
+      {papel === 'host' && arena.estado.fase === 'idle' && <Aguardando papel={papel} oque="o botão" />}
+
+      {papel === 'player' && solto && (
         <button
           onClick={() => { arena.emit('arena:buzz'); setApertei(true); }}
           disabled={!minhaEquipe || naFila || jaErrei || rodada?.resolvido}
           style={{
-            justifySelf: 'center', width: 'min(360px, 80vw)', aspectRatio: '2.4',
+            justifySelf: 'center', alignSelf: 'center', width: 'min(360px, 80vw)', aspectRatio: '2.4',
             borderRadius: 'var(--r-g)', cursor: 'pointer', fontSize: 'var(--t2)', fontWeight: 800,
-            border: '3px solid var(--tinta)',
-            background: souAVez ? 'var(--ok)' : naFila ? 'var(--papel-2)' : 'var(--atencao)',
-            color: souAVez ? '#fff' : 'var(--tinta)',
+            // cores fixas de propósito: um botão de game show precisa ser o mesmo
+            // vermelho/verde nos dois temas, e o texto sempre legível sobre ele
+            border: 0, boxShadow: '0 8px 0 rgba(0,0,0,.25)',
+            background: souAVez ? '#16a34a' : naFila ? '#64748b' : '#dc2626',
+            color: '#ffffff',
             opacity: !minhaEquipe || jaErrei || rodada?.resolvido ? 0.4 : 1,
           }}>
           {!minhaEquipe ? 'entre numa equipe'

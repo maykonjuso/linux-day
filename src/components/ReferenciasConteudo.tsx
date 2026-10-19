@@ -27,7 +27,7 @@ export function ReferenciasConteudo({
           style={{
             cursor: 'pointer',
             fontSize: '12px',
-            padding: '3px 10px',
+            padding: '0 var(--e2)',
             borderColor: 'var(--acento)',
             color: 'var(--acento)',
             background: 'color-mix(in srgb, var(--acento) 8%, var(--papel))',

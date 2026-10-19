@@ -5,20 +5,26 @@ import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
 import { useTema } from '@/deck/useTema';
-import { DECK, INICIO_DOS_MODULOS } from '@/deck/content';
+import { DECK, INICIO_DOS_MODULOS, MINUTOS_TOTAIS, minutosAte } from '@/deck/content';
 import { Icone } from '@/components/Icone';
 import { PainelPessoas, type PessoaDaSala } from '@/components/PainelPessoas';
 
 const ROTULO_DA_CENA: Record<string, string> = {
   ArenaScene: 'jogo de equipes',
+  Apresentacao: 'apresentação', Controles: 'controles da tela',
   ModuleCover: 'capa de módulo', MentalModel: 'diagrama', CommandAnatomy: 'anatomia do comando',
   TerminalDemo: 'demonstração', WillGoWrong: 'erros comuns', QuizScene: 'pergunta',
   WidgetScene: 'exercício na tela', LabScene: 'laboratório', GroupScene: 'grupos',
   Scoreboard: 'placar', Recap: 'fecho do módulo',
 };
 
+/** o que o avançar faz numa cena interativa ainda fechada */
+const LIBERAR: Record<string, string> = {
+  QuizScene: 'liberar opções', WidgetScene: 'liberar exercício', LabScene: 'liberar terminal', ArenaScene: 'liberar jogo',
+};
+
 const FASE_EM_PORTUGUES: Record<string, string> = {
-  idle: 'fechada', aberta: 'aberta para a turma', encerrada: 'tempo esgotado', revelada: 'resposta revelada',
+  idle: 'só o enunciado', aberta: 'aberta para a turma', encerrada: 'tempo esgotado', revelada: 'pódio / resposta',
 };
 
 interface Grade {
@@ -69,23 +75,43 @@ export default function Host() {
   }, []);
 
   /**
-   * Cenas em que a pessoa AGE (quiz, widget, lab) abrem sozinhas ao chegar.
-   * Antes era preciso lembrar de apertar "abrir": sem isso o participante
-   * clicava nas alternativas e nada acontecia, sem nenhuma explicação na tela.
+   * Ritmo do Kahoot: toda cena chega FECHADA. Nas cenas em que a turma age
+   * (quiz, exercício, lab, jogo) a sala vê só o enunciado, e quem apresenta
+   * explica; o avançar seguinte libera as opções e só aí o tempo começa.
+   * Enquanto está fechada, o participante não vê opção nenhuma para clicar
+   * (ver src/deck/liberada.ts), então não existe o "cliquei e nada aconteceu".
    */
   const ir = useCallback((i: number) => {
     const alvo = Math.min(Math.max(0, i), DECK.length - 1);
     const c = DECK[alvo];
-    const interativa = c.tipo === 'QuizScene' || c.tipo === 'WidgetScene' || c.tipo === 'LabScene' || c.tipo === 'ArenaScene';
-    const segs = 'segundos' in c ? (c as unknown as { segundos: number }).segundos : null;
-    emit('host:ir', {
-      cenaIndex: alvo, cenaId: c.id, passo: 0,
-      fase: interativa ? 'aberta' : 'idle',
-      segundos: interativa ? segs : null,
-      arena: c.tipo === 'ArenaScene' ? c.jogo : null,
-      premios: c.tipo === 'ArenaScene' ? c.premios ?? null : null,
-    });
+    emit('host:ir', { cenaIndex: alvo, cenaId: c.id, passo: 0, fase: 'idle', segundos: null, arena: null, premios: null });
   }, [emit]);
+
+  /**
+   * Relógio do workshop: começa quando o apresentador sai da abertura e fica
+   * guardado no navegador, para sobreviver a um recarregar da página. O painel
+   * compara com os minutos planejados de cada cena (content.ts).
+   */
+  const [inicio, setInicio] = useState<number | null>(null);
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    try { const v = Number(localStorage.getItem('linuxday:inicio')); if (v) setInicio(v); } catch { /* aba privada */ }
+    const t = setInterval(() => setAgora(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => {
+    if (inicio || estado.cenaIndex === 0) return;
+    const v = Date.now();
+    setInicio(v);
+    try { localStorage.setItem('linuxday:inicio', String(v)); } catch { /* aba privada */ }
+  }, [estado.cenaIndex, inicio]);
+  const zerarRelogio = () => {
+    setInicio(null);
+    try { localStorage.removeItem('linuxday:inicio'); } catch { /* aba privada */ }
+  };
+  const decorrido = inicio ? Math.round((agora - inicio) / 60000) : 0;
+  const planejado = Math.round(minutosAte(estado.cenaIndex));
+  const atraso = decorrido - planejado;
 
   const abrir = useCallback(
     () => emit('host:fase', {
@@ -98,13 +124,14 @@ export default function Host() {
 
   /**
    * Um botão só, que faz a coisa certa para cada tipo de cena:
-   *  - quiz:   aberta → revela (e pontua) → próxima cena
-   *  - widget/lab: aberta → próxima cena
+   *  - quiz:   enunciado → opções → revela (com o pódio) → próxima cena
+   *  - widget/lab/jogo: enunciado → liberado → pódio → próxima cena
    *  - resto:  anda os passos internos e depois vai para a próxima cena
    */
   const avancar = useCallback(() => {
     if (cena.tipo === 'QuizScene') {
-      // já revelou: segue para a próxima cena
+      // já revelou: primeiro o pódio (passo 1), depois a próxima cena
+      if (estado.fase === 'revelada' && estado.passo < 1) return emit('host:passo', 1);
       if (estado.fase === 'revelada') return ir(estado.cenaIndex + 1);
       // nunca abriu: abre
       if (estado.fase === 'idle') return abrir();
@@ -115,6 +142,8 @@ export default function Host() {
     }
     if (cena.tipo === 'WidgetScene' || cena.tipo === 'LabScene' || cena.tipo === 'ArenaScene') {
       if (estado.fase === 'idle') return abrir();
+      // como no Kahoot: antes de seguir, o pódio com o XP que cada um ganhou
+      if (estado.fase !== 'revelada') return emit('host:fase', { fase: 'revelada', cenaId: cena.id });
       return ir(estado.cenaIndex + 1);
     }
     if (estado.passo + 1 < cena.passos) return emit('host:passo', 1);
@@ -221,25 +250,25 @@ export default function Host() {
             <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 6 }}>pessoa</th>
+                  <th style={{ textAlign: 'left', padding: 'var(--e1)' }}>pessoa</th>
                   {Object.entries(grade.labs).map(([slug, cs]) =>
                     cs.map((c) => <th key={c.id} title={`${slug} · ${c.descricao}`} style={{ padding: 'var(--e05)', writingMode: 'vertical-rl', fontWeight: 500, color: 'var(--tinta-2)' }}>{c.id}</th>))}
-                  <th style={{ padding: 6 }}>XP</th>
+                  <th style={{ padding: 'var(--e1)' }}>XP</th>
                 </tr>
               </thead>
               <tbody>
                 {grade.pessoas.sort((a, b) => b.xp - a.xp).map((p) => (
-                  <tr key={p.id} style={{ background: p.travado ? '#fff4f4' : undefined }}>
-                    <td style={{ padding: 6, whiteSpace: 'nowrap' }}>
+                  <tr key={p.id} style={{ background: p.travado ? 'var(--erro-suave)' : undefined }}>
+                    <td style={{ padding: 'var(--e1)', whiteSpace: 'nowrap' }}>
                       {p.emoji} {p.nick}
                       <span style={{ color: 'var(--tinta-2)' }}>{p.presenca === 'ativo' ? '' : p.presenca === 'ocioso' ? ' ·ocioso' : ' ·off'}</span>
                     </td>
                     {Object.values(grade.labs).flat().map((c) => (
-                      <td key={c.id} style={{ textAlign: 'center', padding: 2, color: p.feitos.includes(c.id) ? 'var(--ok)' : 'var(--borda)' }}>
+                      <td key={c.id} style={{ textAlign: 'center', padding: 'var(--e1)', color: p.feitos.includes(c.id) ? 'var(--ok)' : 'var(--borda)' }}>
                         {p.feitos.includes(c.id) ? '■' : '·'}
                       </td>
                     ))}
-                    <td style={{ padding: 6, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.xp}</td>
+                    <td style={{ padding: 'var(--e1)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.xp}</td>
                   </tr>
                 ))}
               </tbody>
@@ -254,7 +283,7 @@ export default function Host() {
           )}
         </div>
       ) : (
-        <Encaixe chave={`${cena.id}:${estado.passo}:${estado.fase}`}>
+        <Encaixe modo="rolagem" chave={`${cena.id}:${estado.passo}:${estado.fase}`}>
           <SceneRouter arena={arena} papel="host" />
         </Encaixe>
       )}
@@ -271,12 +300,14 @@ export default function Host() {
             <Icone nome="anterior" tamanho={17} /><span className="texto">voltar</span>
           </button>
           <button className="btn-icone destaque" onClick={avancar} title="avançar (→ ou espaço)">
-            <Icone nome={cena.tipo === 'QuizScene' && (estado.fase === 'aberta' || estado.fase === 'encerrada') ? 'olho' : 'proximo'} tamanho={17} />
+            <Icone nome={cena.tipo === 'QuizScene' && (estado.fase === 'aberta' || estado.fase === 'encerrada') ? 'olho' : estado.fase === 'idle' && LIBERAR[cena.tipo] ? 'tocar' : 'proximo'} tamanho={17} />
             <span className="texto">
-              {cena.tipo === 'QuizScene' && (estado.fase === 'aberta' || estado.fase === 'encerrada') ? 'revelar resposta'
-                : cena.tipo === 'QuizScene' && estado.fase === 'revelada' ? 'próxima'
+              {estado.fase === 'idle' && LIBERAR[cena.tipo] ? LIBERAR[cena.tipo]
+                : cena.tipo === 'QuizScene' && (estado.fase === 'aberta' || estado.fase === 'encerrada') ? 'revelar resposta'
+                : cena.tipo === 'QuizScene' && estado.fase === 'revelada' && estado.passo < 1 ? 'mostrar pódio'
+                : LIBERAR[cena.tipo] && cena.tipo !== 'QuizScene' && estado.fase !== 'revelada' ? 'mostrar pódio'
                 : cena.passos > 1 && estado.passo + 1 < cena.passos ? `avançar (${estado.passo + 1}/${cena.passos})`
-                : 'avançar'}
+                : 'próxima cena'}
             </span>
           </button>
           <select className="btn-icone" value="" title="ir direto para um módulo"
@@ -288,8 +319,8 @@ export default function Host() {
 
         <div className="bloco-controle">
           <span className="rotulo">cena</span>
-          <button className="btn-icone" onClick={abrir} title="abrir para a turma responder / fazer (A)">
-            <Icone nome="tocar" tamanho={17} /><span className="texto">abrir</span>
+          <button className="btn-icone" onClick={abrir} title="libera as opções / o exercício / o terminal e começa o tempo (A)">
+            <Icone nome="tocar" tamanho={17} /><span className="texto">liberar</span>
           </button>
           {taskSlug && (
             <button className="btn-icone" title="aplica a solução no ambiente de todos, para ninguém ficar atrás"
@@ -345,9 +376,9 @@ export default function Host() {
           <select className="btn-icone" value="" title="eventos para mexer com a energia da sala"
             onChange={(e) => { if (e.target.value) { emit('host:evento', { tipo: e.target.value }); avisar(`evento: ${e.target.value.replace(/-/g, ' ')}`); e.currentTarget.blur(); } }}>
             <option value="">evento…</option>
-            <option value="xp-dobrado">XP dobrado (3 min)</option>
-            <option value="sabotagem">sabotagem</option>
-            <option value="resgate">resgate dos 5 últimos</option>
+            <option value="xp-dobrado">XP dobrado: todo XP vale 2× por 3 min</option>
+            <option value="sabotagem">sabotagem: tira o x do deploy.sh de todos (depois do módulo 3)</option>
+            <option value="resgate">resgate: +80 XP para os 5 com menos XP</option>
           </select>
           <button className="btn-icone" onClick={() => trocar()} title="alternar claro e escuro nesta tela">
             <Icone nome="olho" tamanho={17} /><span className="texto">{tema === 'claro' ? 'claro' : 'escuro'}</span>
@@ -359,6 +390,12 @@ export default function Host() {
 
         <div className="estado-faixa">
           <span className="chip">cena {estado.cenaIndex + 1}/{DECK.length}</span>
+          <button className="chip" title={`planejado até esta cena: ${planejado} min de ${Math.round(MINUTOS_TOTAIS)}. Clique para zerar o relógio.`}
+            onClick={zerarRelogio}
+            style={{ cursor: 'pointer', borderColor: atraso > 3 ? 'var(--erro)' : undefined, color: atraso > 3 ? 'var(--erro)' : undefined }}>
+            <Icone nome="tempo" tamanho={14} />
+            {inicio ? `${decorrido} min · plano ${planejado}${atraso > 1 ? ` · ${atraso} atrasado` : atraso < -1 ? ` · ${-atraso} adiantado` : ''}` : `plano: ${Math.round(MINUTOS_TOTAIS)} min`}
+          </button>
           <span className="chip" title="o que está na tela e em que estado">
             {ROTULO_DA_CENA[cena.tipo] ?? cena.tipo}
             {cena.passos > 1 && ` · passo ${estado.passo + 1} de ${cena.passos}`}

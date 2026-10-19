@@ -18,6 +18,10 @@ import { LabScene } from './scenes/LabScene';
 import { GroupScene } from './scenes/GroupScene';
 import { ArenaScene } from './scenes/ArenaScene';
 import { ReferenciasConteudo } from './ReferenciasConteudo';
+import { ITENS as CONTROLES } from './Tour';
+import { ListaComandos } from './ListaComandos';
+import { liberada, encerrada } from '@/deck/liberada';
+import { PodioDaCena } from './Celebracao';
 
 /**
  * Uma cena, três projeções. O conteúdo é o mesmo objeto; quem muda é o papel:
@@ -33,8 +37,38 @@ export function SceneRouter({
 }) {
   // no modo livre o participante olha outra cena sem tirar a sala do lugar
   const cena = cenaForcada ?? arena.cena;
+
+  /*
+   * Pódio: depois de exercício, laboratório e jogo de equipe, o avançar do
+   * apresentador passa pela fase "revelada", que mostra o placar animado com o
+   * XP que cada um ganhou naquela rodada (o quiz mostra o dele junto da
+   * resposta). Quem está revendo a cena no modo livre vê a cena, não o pódio.
+   */
+  if (!cenaForcada && arena.estado.fase === 'revelada' && arena.estado.cenaId === cena.id
+      && (cena.tipo === 'WidgetScene' || cena.tipo === 'LabScene' || cena.tipo === 'ArenaScene'
+        // no quiz o pódio é o passo depois da resposta, como no Kahoot
+        || (cena.tipo === 'QuizScene' && arena.estado.passo >= 1))) {
+    return <PodioDaCena arena={arena} titulo={cena.titulo} />;
+  }
+
+  // atividade que já passou: aparece para rever, mas travada
+  const interativa = ['QuizScene', 'WidgetScene', 'LabScene', 'ArenaScene', 'GroupScene'].includes(cena.tipo);
+  if (interativa && encerrada(arena, cena, papel)) {
+    return (
+      <div className="so-leitura">
+        <div className="faixa-leitura"><Icone nome="cadeado" tamanho={15} /> atividade encerrada: só para rever, não dá para mudar nada</div>
+        {/* inert: nada aqui dentro recebe clique, foco ou digitação */}
+        <div inert style={{ display: 'contents' }}>{desenhar(cena)}</div>
+      </div>
+    );
+  }
+  return desenhar(cena);
+
+  function desenhar(cena: Cena) {
   switch (cena.tipo) {
     case 'ModuleCover': return <Capa cena={cena} />;
+    case 'Apresentacao': return <Apresentacao cena={cena} />;
+    case 'Controles': return <Controles cena={cena} />;
     case 'MentalModel': return <Modelo cena={cena} />;
     case 'CommandAnatomy': return <Anatomia cena={cena} />;
     case 'TerminalDemo': return <Demo cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
@@ -44,8 +78,10 @@ export function SceneRouter({
     case 'LabScene': return <LabScene cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
     case 'GroupScene': return <GroupScene cena={cena} arena={arena} papel={papel} />;
     case 'ArenaScene': return <ArenaScene cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
-    case 'Scoreboard': return <Placar cena={cena} arena={arena} />;
+    // o placar final é o mesmo slide de pódio duplo (pessoas e equipes)
+    case 'Scoreboard': return <PodioDaCena arena={arena} titulo={cena.titulo} olho="resultado final" final />;
     case 'Recap': return <Recap cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
+  }
   }
 }
 
@@ -56,6 +92,93 @@ const ILUSTRA_DO_MODULO: NomeIlustra[] = ['pinguim', 'bussola', 'pasta', 'cadead
 
 const ilustraDa = (cena: { ilustra?: string; modulo: number }): NomeIlustra =>
   (cena.ilustra as NomeIlustra) ?? ILUSTRA_DO_MODULO[cena.modulo] ?? 'pinguim';
+
+/**
+ * O que a turma vê enquanto a cena ainda não foi liberada. Para quem
+ * apresenta aparece o contrário: um aviso de que aquilo é só prévia.
+ */
+export function Aguardando({ papel, oque }: { papel: Papel; oque: string }) {
+  if (papel === 'host') {
+    return (
+      <div className="chip" style={{ justifySelf: 'start' }}>
+        <Icone nome="olho" tamanho={15} /> prévia: a turma ainda não vê {oque}. Avance para liberar.
+      </div>
+    );
+  }
+  return (
+    <div className="cartao aguardando" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+      <Icone nome="relogio" tamanho={26} cor="var(--acento)" />
+      <span className="corpo-p">
+        Leia o enunciado com calma. {oque[0].toUpperCase() + oque.slice(1)} {/^(as|os) /.test(oque) ? 'aparecem' : 'aparece'} quando a gente liberar, e só aí o tempo começa.
+      </span>
+    </div>
+  );
+}
+
+/** o ícone do GitHub, desenhado aqui: nada vem da internet no dia */
+function MarcaGithub({ tamanho = 18 }: { tamanho?: number }) {
+  return (
+    <svg width={tamanho} height={tamanho} viewBox="0 0 16 16" aria-hidden style={{ flex: 'none' }}>
+      <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+function Apresentacao({ cena }: { cena: C<'Apresentacao'> }) {
+  return (
+    <div className="cena" data-modulo={cena.modulo}>
+      <Cabecalho ilustra={ilustraDa(cena)} olho="apresentação" titulo={cena.titulo} />
+      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--e3)' }}>
+        {cena.pessoas.map((p) => (
+          <div key={p.github} className="cartao" style={{ display: 'grid', justifyItems: 'center', gap: 'var(--e2)', padding: 'var(--e4) var(--e3)', textAlign: 'center' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.foto} alt={`foto de ${p.nome}`} width={160} height={160}
+              style={{ width: 'clamp(110px, 13vw, 180px)', height: 'auto', aspectRatio: '1', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--tinta)' }} />
+            <strong className="titulo" style={{ fontSize: 'var(--t3)' }}>{p.nome}</strong>
+            <span style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', color: 'var(--tinta-2)' }}>
+              <MarcaGithub /> @{p.github}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** os atalhos de teclado do participante, os mesmos de src/app/page.tsx */
+const TECLAS: { tecla: string; faz: string }[] = [
+  { tecla: '←', faz: 'rever os slides que já passaram' },
+  { tecla: 'Esc', faz: 'voltar ao vivo, para o slide da turma' },
+  { tecla: 'Esc Esc', faz: 'tirar o teclado do terminal e devolver ao slide' },
+  { tecla: '?', faz: 'abrir a consulta de comandos' },
+];
+
+function Controles({ cena }: { cena: C<'Controles'> }) {
+  return (
+    <div className="cena" data-modulo={cena.modulo}>
+      <Cabecalho ilustra={ilustraDa(cena)} olho="antes de começar" titulo={cena.titulo} />
+      <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
+        <Ilustra nome="ideia" tamanho={26} />
+        <p className="corpo-p"><Texto>{cena.legenda}</Texto></p>
+      </div>
+      <div className="grade-controles">
+        {CONTROLES.map((i) => (
+          <div key={i.titulo} className="item-controle">
+            <span className="icone"><Icone nome={i.icone} tamanho={20} cor="var(--acento)" /></span>
+            <span><strong>{i.titulo}</strong>{i.texto}</span>
+          </div>
+        ))}
+      </div>
+      <div className="grade-teclas">
+        {TECLAS.map((t) => (
+          <span key={t.tecla} style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+            <code className="kbd">{t.tecla}</code><span className="apoio">{t.faz}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Capa({ cena }: { cena: C<'ModuleCover'> }) {
   return (
@@ -75,16 +198,16 @@ function Capa({ cena }: { cena: C<'ModuleCover'> }) {
   );
 }
 
-const ICONE_DO_DIAGRAMA = { arvore: 'arvore', processo: 'processo', cadeados: 'cadeado', encanamento: 'juntar' } as const;
+const ICONE_DO_DIAGRAMA = { arvore: 'arvore', distros: 'arvore', processo: 'processo', cadeados: 'cadeado', encanamento: 'juntar' } as const;
 
 function Modelo({ cena }: { cena: C<'MentalModel'> }) {
   return (
     <div className="cena" data-modulo={cena.modulo}>
       <Cabecalho ilustra={ilustraDa(cena)} olho="como isso funciona" titulo={cena.titulo} />
       <Diagrama nome={cena.diagrama} />
-      <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start', maxWidth: '58em' }}>
+      <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
         <Ilustra nome="ideia" tamanho={26} />
-        <p className="corpo-p" style={{ maxWidth: 'none' }}><Texto>{cena.legenda}</Texto></p>
+        <p className="corpo-p"><Texto>{cena.legenda}</Texto></p>
       </div>
     </div>
   );
@@ -147,7 +270,7 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
 
       <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
         <span>passo {atual + 1} de {cena.linhas.length}</span>
-        <span style={{ display: 'flex', gap: 4 }}>
+        <span style={{ display: 'flex', gap: 'var(--e1)' }}>
           {cena.linhas.map((_, i) => (
             <span key={i} style={{
               width: 22, height: 4, borderRadius: 99,
@@ -169,9 +292,9 @@ function Erros({ cena }: { cena: C<'WillGoWrong'> }) {
   return (
     <div className="cena" data-modulo={cena.modulo}>
       <Cabecalho ilustra="extintor" olho="o que vai dar errado" titulo={cena.titulo} />
-      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 12 }}>
+      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 'var(--e2)' }}>
         {cena.erros.map((e) => (
-          <div key={e.mensagem} className="cartao" style={{ padding: 'var(--e2)', display: 'grid', gap: 4 }}>
+          <div key={e.mensagem} className="cartao" style={{ padding: 'var(--e2)', display: 'grid', gap: 'var(--e1)' }}>
             <code style={{ fontFamily: 'var(--mono)', color: 'var(--erro)', fontSize: 'clamp(13px, 1.25vw, 18px)' }}>
               {e.mensagem}
             </code>
@@ -201,32 +324,46 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
 
   const contagem = arena.respostas?.cenaId === cena.id ? arena.respostas : null;
   const faltam = contagem ? Math.max(0, contagem.esperados - contagem.total) : null;
+  // Kahoot: primeiro só o enunciado; as opções aparecem quando o apresentador libera
+  const mostrarOpcoes = liberada(arena, cena, papel);
+  const passou = encerrada(arena, cena, papel);
 
   return (
     <div className="cena" data-modulo={cena.modulo}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)', flexWrap: 'wrap' }}>
         <div className="olho"><Ilustra nome={ilustraDa(cena)} tamanho={18} /> {cena.titulo}</div>
         {estado.restante !== null && !revelado && (
-          <span className="chip forte" style={{ fontSize: 'clamp(16px, 1.8vw, 26px)', padding: 'var(--e1) var(--e2)' }}>
+          <span className="chip forte grande">
             <Icone nome="relogio" tamanho={18} /> {estado.restante}s
           </span>
         )}
         {contagem && !revelado && (
-          <span className="chip" style={{ fontSize: 'clamp(14px, 1.5vw, 22px)', padding: 'var(--e1) var(--e2)' }}>
+          <span className="chip grande">
             <Icone nome="pessoas" tamanho={18} /> {contagem.total} de {contagem.esperados} responderam
             {faltam ? ` · faltam ${faltam}` : ' · todos!'}
           </span>
         )}
       </div>
-      <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta}</Texto></h2>
+      <h2 className="titulo pergunta-quiz" key={`p-${cena.id}`} style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta}</Texto></h2>
+      {/* a barra de tempo encolhendo, como no Kahoot */}
+      {estado.restante !== null && !revelado && mostrarOpcoes && (
+        <div className="barra-tempo" aria-hidden>
+          <span style={{ width: `${(estado.restante / cena.segundos) * 100}%` }} data-pouco={estado.restante <= 5} />
+        </div>
+      )}
 
-      <div className="alternativas">
+      {!mostrarOpcoes && <Aguardando papel={papel} oque="as opções" />}
+      {papel === 'host' && estado.fase === 'idle' && <Aguardando papel={papel} oque="as opções" />}
+
+      {mostrarOpcoes && <div className="alternativas kahoot">
         {cena.alternativas.map((a, i) => {
           const votos = revelacao?.distribuicao?.[a.id] ?? 0;
           return (
             <button
               key={a.id}
               className="alt"
+              data-cor={i % 4}
+              style={{ ['--ordem' as string]: i }}
               data-escolhida={escolha === a.id}
               data-estado={revelado ? (a.id === revelacao?.correta ? 'certa' : 'errada') : undefined}
               disabled={!podeResponder}
@@ -238,7 +375,8 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
                   });
               }}
             >
-              <span className="letra">{String.fromCharCode(65 + i)}</span>
+              {/* forma + letra: a cor ajuda, mas quem não distingue cores se guia pela forma */}
+              <span className="letra" aria-label={`alternativa ${String.fromCharCode(65 + i)}`}>{['▲', '◆', '●', '■'][i % 4]}</span>
               <span style={{ flex: 1 }}>{a.texto}</span>
               {revelado && (
                 <span style={{ display: 'grid', gap: 'var(--e05)', minWidth: 90 }}>
@@ -252,18 +390,25 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
             </button>
           );
         })}
-      </div>
+      </div>}
 
-      {revelado && (
-        <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start', maxWidth: '46em' }}>
+      {/* o momento Kahoot de quem respondeu: acertou ou não, em letras grandes */}
+      {revelado && papel === 'player' && (
+        <div className="veredito" data-certo={escolha === revelacao?.correta} key={`v-${cena.id}`}>
+          {escolha === revelacao?.correta
+            ? <><Icone nome="feito" tamanho={28} /> Acertou!{arena.ganho ? ` +${arena.ganho.xp} XP` : ''}</>
+            : escolha
+              ? <><Icone nome="erro" tamanho={28} /> Não foi dessa vez. A certa era a {['▲', '◆', '●', '■'][cena.alternativas.findIndex((a) => a.id === revelacao?.correta)]}</>
+              : <><Icone nome="relogio" tamanho={28} /> Você não respondeu a tempo</>}
+        </div>
+      )}
+      {(revelado || passou) && (
+        <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
           <Ilustra nome="ideia" tamanho={30} />
-          <p className="corpo-p" style={{ maxWidth: 'none' }}><Texto>{cena.explicacao}</Texto></p>
+          <p className="corpo-p"><Texto>{cena.explicacao}</Texto></p>
         </div>
       )}
       {papel === 'player' && escolha && !revelado && <div className="chip forte">resposta enviada · segure a ansiedade</div>}
-      {papel === 'player' && !escolha && !revelado && !aberta && (
-        <div className="chip"><Icone nome="relogio" tamanho={15} /> aguardando o apresentador abrir a pergunta</div>
-      )}
       {papel === 'player' && !escolha && tempoEsgotado && (
         <div className="chip"><Icone nome="tempo" tamanho={15} /> o tempo acabou, mas você ainda pode responder (sem o bônus de velocidade)</div>
       )}
@@ -290,6 +435,7 @@ function Widget({
 
   // no projetor o widget não é jogável: o exercício está na tela de cada um
   const interativo = papel !== 'screen';
+  const solto = liberada(arena, cena, papel);
 
   const qual = () => {
     switch (cena.widget) {
@@ -313,7 +459,8 @@ function Widget({
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
       {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
-      {interativo ? qual() : (
+      {papel === 'host' && arena.estado.fase === 'idle' && <Aguardando papel={papel} oque="o exercício" />}
+      {!solto ? <Aguardando papel={papel} oque="o exercício" /> : interativo ? qual() : (
         <div className="cartao" style={{ fontSize: 'clamp(18px, 2vw, 30px)' }}>
           👉 o exercício está na tela de vocês. Mãos no mouse.
         </div>
@@ -329,71 +476,22 @@ function Widget({
   );
 }
 
-function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
-  const { individual, grupos } = arena.placar;
-  const linhas = cena.escopo === 'grupo'
-    ? grupos.filter((g) => g.membros.length).map((g) => ({ chave: g.nome, nome: `grupo ${g.nome}`, cor: g.cor, xp: g.media, extra: `${g.membros.length} pessoa${g.membros.length > 1 ? 's' : ''}` }))
-    : individual.slice(0, 10).map((p) => ({ chave: p.id, nome: `${p.emoji} ${p.nick}`, cor: undefined, xp: p.xp, extra: `nível ${p.nivel}` }));
-
-  /**
-   * Pódio em destaque e o resto numa lista que rola dentro da própria caixa.
-   * Com dez grupos, a lista inteira em cartões do mesmo tamanho não caberia na
-   * tela, e encolher tudo deixaria o primeiro lugar do tamanho do oitavo.
-   */
-  const podio = linhas.slice(0, 3);
-  const resto = linhas.slice(3);
-
-  return (
-    <div className="cena" data-modulo={cena.modulo}>
-      <Cabecalho ilustra="trofeu" olho={cena.escopo === 'grupo' ? 'placar das equipes' : 'placar individual'} titulo={cena.titulo} />
-
-      {linhas.length === 0 && <p className="corpo-p">ninguém pontuou ainda.</p>}
-
-      {podio.length > 0 && (
-        <div className="grade" style={{ gridTemplateColumns: `repeat(${podio.length}, 1fr)`, gap: 'var(--e2)' }}>
-          {podio.map((l, i) => (
-            <div key={l.chave} className="cartao"
-              style={{
-                display: 'grid', gap: 'var(--e05)', textAlign: 'center',
-                borderColor: i === 0 ? 'var(--atencao)' : l.cor ?? 'var(--borda)',
-                borderWidth: i === 0 ? 2 : 1,
-                transform: i === 0 ? 'scale(1.03)' : undefined,
-              }}>
-              <div style={{ display: 'grid', placeItems: 'center' }}>
-                <Ilustra nome={i === 0 ? 'trofeu' : 'medalha'} tamanho={i === 0 ? 40 : 30} />
-              </div>
-              <strong className="titulo-secao" style={{ textTransform: 'capitalize' }}>{l.nome}</strong>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 'var(--t3)', fontWeight: 700 }}>{l.xp}</span>
-              <small className="apoio">XP · {l.extra}</small>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {resto.length > 0 && (
-        <div className="checklist" style={{ maxHeight: 'min(30vh, 260px)', overflowY: 'auto' }}>
-          {resto.map((l, i) => (
-            <div key={l.chave} className="item-check" style={{ alignItems: 'center' }}>
-              <span className="marca">{String(i + 4).padStart(2, '0')}º</span>
-              <span style={{ textTransform: 'capitalize' }}>{l.nome}</span>
-              <span className="xp-item">{l.xp} XP</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function Recap({ cena, passo }: { cena: C<'Recap'>; passo: number }) {
   return (
     <div className="cena" data-modulo={cena.modulo}>
       <Cabecalho ilustra="bandeira" olho="fecho do módulo" titulo={cena.titulo} />
       <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.perguntaDeRecuperacao}</Texto></h2>
       {passo > 0 ? (
-        <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
-          {cena.resumo.map((c) => <code key={c} className="kbd" style={{ fontSize: 'var(--t4)' }}>{c}</code>)}
-        </div>
+        cena.resumo.length > 12 ? (
+          // lista longa (o fecho final): três colunas, só "o que faz", senão a
+          // tabela sai da tela; os exemplos já apareceram no fecho de cada módulo
+          <div className="grade-resumo">
+            {[0, 1, 2].map((k) => {
+              const n = Math.ceil(cena.resumo.length / 3);
+              return <ListaComandos key={k} resumo comandos={cena.resumo.slice(k * n, (k + 1) * n)} />;
+            })}
+          </div>
+        ) : <ListaComandos comandos={cena.resumo} />
       ) : (
         <p className="corpo-p">Tente lembrar antes de ver a resposta. O resumo aparece no próximo passo. Lembrar sozinho é o que faz o conteúdo ficar.</p>
       )}

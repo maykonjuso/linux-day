@@ -18,6 +18,9 @@ awk 'BEGIN {
   }
   # o 10.0.0.7 aparece mais que os outros: é a resposta do segundo critério
   for (i = 1; i <= 400; i++) print "2026-10-19T09:00:00 INFO 10.0.0.7 requisicao atendida";
+  # e o 172.16.0.3 é o que mais dá ERROR: é o que a demonstração do slide acha
+  # (de propósito diferente da resposta do lab, para o slide não entregar o lab)
+  for (i = 1; i <= 250; i++) print "2026-10-19T09:05:00 ERROR 172.16.0.3 conexao recusada";
   print "2026-10-19T09:10:00 FATAL 10.0.0.7 disco cheio em /var";
   print "2026-10-19T09:11:00 FATAL 10.0.0.9 processo morto pelo kernel";
 }' > app.log

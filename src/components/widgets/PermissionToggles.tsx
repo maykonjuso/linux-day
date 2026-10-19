@@ -10,9 +10,9 @@ const BITS = [
 ] as const;
 
 const DESAFIOS = [
-  { alvo: '700', texto: 'Deixe que só o dono faça tudo, e mais ninguém entre.' },
-  { alvo: '644', texto: 'Todos podem ler, só o dono pode editar. (o padrão de um arquivo de texto)' },
-  { alvo: '755', texto: 'Todos podem executar, só o dono pode editar. (o padrão de um script)' },
+  { alvo: '700', texto: 'Só o dono pode ler, escrever e executar. Grupo e outros não podem nada.' },
+  { alvo: '644', texto: 'Todos podem ler, mas só o dono pode escrever. (o padrão de um arquivo de texto)' },
+  { alvo: '755', texto: 'Todos podem ler e executar, mas só o dono pode escrever. (o padrão de um script)' },
 ];
 
 /**
@@ -65,10 +65,10 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
                 aria-pressed={grade[q][b]}
                 className="btn"
                 style={{
-                  flex: '1 1 52px', minWidth: 48, maxWidth: 90, padding: '10px 0',
+                  flex: '1 1 52px', minWidth: 48, maxWidth: 90, padding: 'var(--e1) 0',
                   fontFamily: 'var(--mono)', fontWeight: 700,
                   background: grade[q][b] ? 'var(--acento)' : 'var(--papel)',
-                  color: grade[q][b] ? '#fff' : 'var(--tinta-2)',
+                  color: grade[q][b] ? 'var(--sobre-acento)' : 'var(--tinta-2)',
                   borderColor: grade[q][b] ? 'var(--acento)' : 'var(--borda)',
                 }}
               >
@@ -93,7 +93,7 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
             <div className="olho">desafio {i + 1} de {DESAFIOS.length}</div>
             <p style={{ marginTop: 'var(--e1)' }}>{desafio.texto}</p>
             {acertou && (
-              <div style={{ marginTop: 'var(--e2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ marginTop: 'var(--e2)', display: 'flex', alignItems: 'center', gap: 'var(--e2)' }}>
                 <strong style={{ color: 'var(--ok)' }}>✅ é isso</strong>
                 <code className="kbd">chmod {numero} arquivo</code>
                 <button className="btn primario" onClick={proximo} style={{ marginLeft: 'auto' }}>

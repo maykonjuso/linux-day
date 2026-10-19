@@ -50,9 +50,15 @@ responderam, quantos estão ativos e quem travou.
 Atalhos: `→` ou espaço avança · `←` volta · `A` abre a cena · `P` pausa ·
 `V` traz todos ao vivo · `G` abre a grade.
 
-Numa cena de pergunta, o avançar faz a coisa certa sozinho: abre, depois
-revela, depois passa para a próxima. A pergunta também **revela sozinha quando
-todos responderam**, como no Kahoot, e quem responde mais rápido ganha mais XP.
+O avançar segue o ritmo do Kahoot em toda cena em que a turma age: primeiro a
+sala vê **só o enunciado** (você explica), o próximo avançar **libera** as opções
+(ou o exercício, o terminal, o botão do jogo) e começa o tempo, e depois vem o
+**pódio** de pessoas e equipes com o XP que cada um ganhou naquela rodada. No
+quiz há um passo a mais, a revelação da resposta. A pergunta também **revela
+sozinha quando todos responderam**, e quem responde mais rápido ganha mais XP.
+
+O painel mostra o relógio do workshop contra o plano (cada cena declara seus
+minutos em `content.ts`; o total é 119 de 120) e avisa quando a sala atrasa.
 
 ### Identidade de cada pessoa
 
@@ -66,8 +72,9 @@ sendo `alunoNN`, e é ela que aparece na grade do apresentador, para suporte.
 
 ### Controles do participante
 
-Ele segue o apresentador, mas pode olhar os slides sozinho com as setas (um
-botão grande oferece voltar ao vivo). Tem também **consultar** (comandos que já
+Ele segue o apresentador e pode **voltar** para rever slides que já passaram
+(nunca adiantar). Atividades revisitadas ficam travadas, só para ler, e o placar
+não fica na barra: ele aparece no pódio, quando o apresentador mostra. Tem também **consultar** (comandos que já
 vimos, lista por situação e glossário), **me perdi** (avisa o monitor, sem
 custo), o ícone de informação (explica cada item da tela) e o terminal.
 
@@ -146,8 +153,9 @@ hora e o olho percebe o desalinho sem saber dizer onde está.
 ```bash
 npm run teste           # 38 verificações no servidor (socket, XP, checkers)
 npm run teste:ui        # navegador clicando na interface inteira
-npm run teste:widgets   # os 9 exercícios jogados até o fim, um por um
-npm run teste:deck      # as 63 cenas medidas em 3 telas: nada cortado
+npm run teste:tempo     # o deck cabe em 120 min, todo comando tem explicação, referências apontam para trás
+npm run teste:widgets   # os exercícios do deck jogados até o fim, um por um
+npm run teste:deck      # todas as cenas medidas em 3 telas e percorridas só com o avançar
 npm run teste:tudo      # tudo acima, em sequência
 ```
 
@@ -162,17 +170,18 @@ src/server/jogo.mjs        XP, tokens, níveis, combos, badges, eventos ao vivo
 src/server/labs.mjs        os checkers, em bash: só leem, são idempotentes e explicam a falha
 src/server/ambiente.mjs    contas, seed, gabarito, reset, execução de check (dois modos)
 src/server/pty.mjs         uma sessão de terminal por pessoa, viva do começo ao fim
-src/server/fila.mjs        concorrência limitada: 30 Verificar simultâneos não derrubam o Mac
-src/deck/content.ts        o DECK: 61 cenas, M0 ao encerramento
+src/server/fila.mjs        concorrência limitada: 30 conferências simultâneas não derrubam o Mac
+src/deck/content.ts        o DECK: 54 cenas, M0 ao encerramento, com os minutos de cada uma
+src/deck/comandos.ts       o que cada comando faz e um exemplo (lab e fechos de módulo)
 src/deck/pacote.ts         o pacote de sobrevivência (cheatsheet e slide final)
-src/components/            SceneRouter · TerminalHost · 9 widgets · diagramas SVG inline
+src/components/            SceneRouter · TerminalHost · widgets · Celebracao (pódio, eventos, conquistas) · diagramas SVG
 infra/                     lima.yaml · setup-vm.sh · provision.sh · reset.sh · seed/ · solve/
 testes/e2e.mjs             o fluxo inteiro, contra um servidor real
 ```
 
 ## O que está pronto
 
-**Conteúdo:** 61 cenas — 13 perguntas de quiz (9 de história + 4 do relâmpago), 9 widgets jogáveis, 6 labs verificados (20 critérios, 1.920 XP), 8 demonstrações de terminal com saída real, 5 diagramas de modelo mental, 6 fechos de módulo. Teto de ~3.370 XP.
+**Conteúdo:** 54 cenas em 119 minutos: abertura com apresentação (Ian e Maykon) e um slide de controles da tela; 4 perguntas de quiz com cores e formas do Kahoot; 2 rodadas de passa ou repassa; 5 exercícios na tela; 6 labs com conferência automática a cada 5 segundos (20 critérios, 1.920 XP); corrida e caça ao erro entre equipes; 7 demonstrações de terminal com saída real do ambiente; 5 diagramas; 6 fechos de módulo com o que cada comando faz. Toda pergunta só cobra o que um slide anterior ensinou (o `teste:tempo` confere as referências).
 
 **Jogo:** XP em livro-caixa append-only (nunca diminui), tokens `sudo` gastáveis em dicas, 5 níveis com o prompt como troféu, combo de precisão até ×1.3, 17 badges, bônus de velocidade, predições, diagnóstico de erro, mentoria, eventos ao vivo (XP dobrado, sabotagem, resgate), placar individual e de grupos por média.
 

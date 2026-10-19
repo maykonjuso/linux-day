@@ -27,7 +27,7 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
   return (
     <div
       onClick={onFechar}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,12,.45)', zIndex: 55, display: 'grid', placeItems: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,12,.45)', zIndex: 55, display: 'grid', placeItems: 'center', padding: 'var(--e3)' }}
     >
       <div className="cartao" onClick={(e) => e.stopPropagation()}
         style={{ width: 'min(960px, 100%)', maxHeight: '84vh', display: 'grid', gridTemplateRows: 'auto 1fr', gap: 'var(--e2)', overflow: 'hidden' }}>
@@ -78,7 +78,7 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
               {PACOTE.map((p) => (
                 <div key={p.situacao} className="cartao" style={{ background: 'var(--papel-2)' }}>
                   <strong style={{ fontSize: 14 }}>{p.situacao}</strong>
-                  <div style={{ display: 'grid', gap: '2px', marginTop: 'var(--e1)' }}>
+                  <div style={{ display: 'grid', gap: 'var(--e1)', marginTop: 'var(--e1)' }}>
                     {p.itens.map((i) => <code key={i} style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{i}</code>)}
                   </div>
                 </div>

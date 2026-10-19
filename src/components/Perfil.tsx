@@ -74,7 +74,7 @@ export function Perfil({ arena, onFechar }: { arena: Arena; onFechar: () => void
             <button key={e} onClick={() => setEmoji(e)} aria-label={`avatar ${e}`}
               style={{
                 fontSize: 22, lineHeight: 1, padding: 'var(--e1) 0', cursor: 'pointer',
-                borderRadius: 'var(--r-p)', background: emoji === e ? '#eff4ff' : 'var(--papel)',
+                borderRadius: 'var(--r-p)', background: emoji === e ? 'var(--acento-suave)' : 'var(--papel)',
                 border: `1.5px solid ${emoji === e ? 'var(--acento)' : 'transparent'}`,
               }}>
               {e}

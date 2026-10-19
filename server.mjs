@@ -53,7 +53,22 @@ const jogo = criarJogo({
 });
 jogo.recarregarDoBanco();
 
-const emitirPlacar = () => io.emit('placar', jogo.placar());
+/**
+ * XP de cada pessoa e equipe no começo da cena da vez. Vai junto com o placar
+ * para o pódio mostrar quanto cada um ganhou NAQUELA rodada. Precisa ser
+ * guardado aqui: o navegador só recebe o placar quando alguém pontua, então
+ * uma foto tirada lá chegava atrasada (depois da revelação) e o ganho dava 0.
+ */
+let baseDaCena = null;
+function fotografarCena(cenaId) {
+  const p = jogo.placar();
+  baseDaCena = {
+    cenaId,
+    ind: Object.fromEntries(p.individual.map((x) => [x.id, x.xp])),
+    grp: Object.fromEntries(p.grupos.map((g) => [g.nome, g.media])),
+  };
+}
+const emitirPlacar = () => io.emit('placar', { ...jogo.placar(), base: baseDaCena });
 
 /** os jogos de equipe (corrida e buzzer) */
 const arena = criarArena({
@@ -164,8 +179,13 @@ io.on('connection', (socket) => {
   let ouvinteTerm = null;
 
   socket.emit('estado', estado);
-  socket.emit('placar', jogo.placar());
-  socket.emit('labs', Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, { dicas: l.dicas?.length ?? 0 }])));
+  socket.emit('placar', { ...jogo.placar(), base: baseDaCena });
+  // a pasta do chamado vai junto para o enunciado poder dizer o caminho exato
+  // (muda entre o modo local e a VM, então não pode ficar escrita no deck)
+  socket.emit('labs', Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, {
+    dicas: l.dicas?.length ?? 0,
+    pasta: l.seed === 'boss.sh' ? amb.dirDoGrupo('') : null,
+  }])));
   socket.emit('arena', arena.estadoPublico());
 
   /**
@@ -243,6 +263,9 @@ io.on('connection', (socket) => {
     dao.salvarParticipante(eu);
     ack?.({ eu: jogo.publico(eu), codigo: codigoDe(eu.id), estado, placar: jogo.placar(), ambientePronto });
     emitirPresenca();
+    // quem chega entra no placar de todas as telas (senão só aparecia no
+    // pódio depois da primeira vez que alguém pontuasse)
+    emitirPlacar();
   }
 
   socket.on('entrar', registrar);
@@ -283,7 +306,11 @@ io.on('connection', (socket) => {
   socket.on('term:resize', ({ cols, rows }) => { if (eu) pty.redimensionar(eu.id, cols, rows); });
 
   // ──────────────────────────────── labs ───────────────────────────────────
-  socket.on('lab:verificar', async ({ taskSlug, resposta = '' }, ack) => {
+  // `auto`: a verificação que o laboratório faz sozinho a cada poucos segundos.
+  // Ela premia igual, mas só deixa rastro (combo, submissão, aviso ao
+  // apresentador) quando algo novo passou; senão um item ainda por fazer
+  // zerava o combo a cada 5 segundos e o banco enchia de linhas repetidas.
+  socket.on('lab:verificar', async ({ taskSlug, resposta = '', auto = false }, ack) => {
     if (!eu?.conta) return ack?.({ erro: 'sem ambiente' });
     const lab = labDe(taskSlug);
     if (!lab) return ack?.({ erro: 'lab desconhecido' });
@@ -295,7 +322,9 @@ io.on('connection', (socket) => {
       io.emit('equipes', { trancadas: true });
     }
 
-    const extra = { NICK: eu.nick, RESPOSTA: String(resposta).trim() };
+    // USUARIO é o nome do prompt (sem acento nem espaço): é o que a pessoa vê
+    // na tela, então os checkers aceitam ele tanto quanto o nick
+    const extra = { NICK: eu.nick, USUARIO: usuarioDoNick(eu.nick), RESPOSTA: String(resposta).trim() };
     if (lab.escopo === 'grupo') {
       if (!eu.grupo) return ack?.({ erro: 'entre num grupo primeiro' });
       extra.GRUPO = eu.grupo;
@@ -311,7 +340,13 @@ io.on('connection', (socket) => {
       if (!r.passou || antes.has(r.id)) continue;
       const criterio = lab.criterios.find((c) => c.id === r.id);
       // carta de função: no boss, só quem tem o papel pode fechar o critério
-      if (criterio.papel && eu.papel && criterio.papel !== eu.papel) {
+      // Só bloqueia se a carta deste critério tem dono e não é você. Carta sem
+      // dono (equipe com menos de 4 pessoas) pode ser entregue por qualquer um;
+      // antes, numa equipe de 3, o quarto item não tinha quem entregasse.
+      const donoDaCarta = lab.escopo === 'grupo' && criterio.papel
+        ? Object.entries(jogo.grupos.get(eu.grupo)?.papeis ?? {}).find(([, p]) => p === criterio.papel)?.[0]
+        : null;
+      if (criterio.papel && donoDaCarta && donoDaCarta !== eu.id) {
         r.passou = false;
         r.mensagem = `esse critério é da carta "${criterio.papel}" — quem está com ela submete`;
         continue;
@@ -339,7 +374,11 @@ io.on('connection', (socket) => {
     }
 
     const todos = resultados.every((r) => r.passou);
-    jogo.mexerCombo(eu.id, todos);
+    if (auto && ganho === 0) {
+      ack?.({ resultados, ganho, todos });
+      return;
+    }
+    if (ganho > 0 || !auto) jogo.mexerCombo(eu.id, todos || ganho > 0);
     if (todos) {
       if (antes.size === 0) { jogo.darBadge(eu.id, 'mao-de-vidro'); jogo.mexerTokens(eu.id, 1, 'lab-limpo'); }
       if (jogo.contador(eu.id).tokensGastos === 0) jogo.darBadge(eu.id, 'autodidata');
@@ -616,6 +655,8 @@ io.on('connection', (socket) => {
 
   socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }) => {
     const maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, cenaIndex);
+    // voltar para a mesma cena não refaz a foto (senão o ganho da rodada some)
+    if (cenaId && baseDaCena?.cenaId !== cenaId) { fotografarCena(cenaId); emitirPlacar(); }
     Object.assign(estado, { cenaIndex, maxCenaIndex, cenaId, passo, fase });
     pararTimer(); estado.restante = null;
     // o gabarito vem do servidor, nunca do cliente
@@ -672,6 +713,7 @@ io.on('connection', (socket) => {
   }));
 
   socket.on('host:evento', soHost(async ({ tipo, segundos = 180 }) => {
+    let contemplados = [];
     if (tipo === 'xp-dobrado') {
       jogo.multiplicadorGlobal = 2;
       setTimeout(() => { jogo.multiplicadorGlobal = 1; io.emit('evento:fim', { tipo }); }, segundos * 1000);
@@ -684,9 +726,11 @@ io.on('connection', (socket) => {
     if (tipo === 'resgate') {
       const atrasados = [...jogo.participantes.values()].sort((a, b) => a.xp - b.xp).slice(0, 5);
       for (const p of atrasados) jogo.premiar(p.id, 80, 'resgate', 'evento');
+      contemplados = atrasados.map((p) => p.id);
       emitirPlacar();
     }
-    io.emit('evento', { tipo, segundos });
+    // quem foi contemplado vai junto: cada tela diz o que mudou para ELA
+    io.emit('evento', { tipo, segundos, contemplados });
   }));
 
   /**
@@ -779,7 +823,12 @@ io.on('connection', (socket) => {
     let n = 0;
     for (const g of jogo.grupos.values()) {
       if (!g.membros.size) continue;
-      const conta = jogo.participantes.get([...g.membros][0])?.conta;
+      // O processo travado nasce na conta do Operador. Com hidepid=2 cada
+      // pessoa só enxerga os próprios processos: semeado na conta de outro
+      // membro, o Operador não via nem conseguia matar, e o checker (que roda
+      // como quem verifica) achava que ele já estava morto.
+      const operador = Object.entries(g.papeis).find(([, p]) => p === 'operador')?.[0];
+      const conta = jogo.participantes.get(operador ?? [...g.membros][0])?.conta;
       if (!conta) continue;
       const r = await amb.semear(conta, 'boss.sh', { GRUPO: g.nome, DIR_GRUPO: amb.dirDoGrupo(g.nome) });
       if (r.ok) n++; else console.warn('[boss]', g.nome, r.saida);

@@ -62,8 +62,11 @@ const rb = await pedir(bia, 'entrar', { nick: 'Bia', emoji: '🦊' });
 await espera(2200);
 
 // ─────────────────────── gabarito fora do navegador ───────────────────────
-ok(!!gabaritosDoHost && Object.keys(gabaritosDoHost).length >= 10,
-  'o apresentador recebe os gabaritos do servidor', `(${Object.keys(gabaritosDoHost ?? {}).length})`);
+// um gabarito para cada pergunta de múltipla escolha do deck, nem mais nem menos
+const { DECK: DECK_J } = await import('../src/deck/content.ts');
+const quizzes = DECK_J.filter((c) => c.tipo === 'QuizScene').map((c) => c.id);
+ok(!!gabaritosDoHost && quizzes.every((id) => id in gabaritosDoHost) && Object.keys(gabaritosDoHost).length === quizzes.length,
+  'o apresentador recebe os gabaritos do servidor, um por pergunta do deck', `(${Object.keys(gabaritosDoHost ?? {}).length} de ${quizzes.length})`);
 let gabaritoVazou = false;
 ana.on('gabaritos', () => { gabaritoVazou = true; });
 await espera(500);

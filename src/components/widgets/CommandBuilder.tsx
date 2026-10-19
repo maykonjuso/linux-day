@@ -27,8 +27,8 @@ export default function CommandBuilder({ onConcluir }: { onConcluir?: () => void
   const certo = linha.join(' ') === DESAFIO.alvo.join(' ');
 
   return (
-    <div className="grade" style={{ gap: 16 }}>
-      <p className="corpo" style={{ maxWidth: '44em' }}>{DESAFIO.objetivo}</p>
+    <div className="grade" style={{ gap: 'var(--e2)' }}>
+      <p className="corpo">{DESAFIO.objetivo}</p>
 
       <div className="term" style={{ fontSize: 'clamp(18px, 2.2vw, 34px)', minHeight: 72 }}>
         <span className="cmd">{linha.join(' ') || '…'}</span>
@@ -37,7 +37,7 @@ export default function CommandBuilder({ onConcluir }: { onConcluir?: () => void
       <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
         {DESAFIO.pecas.filter((p) => !linha.includes(p.t)).map((p) => (
           <button key={p.t} className="btn" onClick={() => setLinha([...linha, p.t])}
-            style={{ display: 'grid', gap: '2px', textAlign: 'left' }}>
+            style={{ display: 'grid', gap: 'var(--e1)', textAlign: 'left' }}>
             <code style={{ fontFamily: 'var(--mono)', fontWeight: 700 }}>{p.t}</code>
             <small style={{ color: 'var(--tinta-2)' }}>{p.papel}</small>
           </button>

@@ -6,9 +6,16 @@ set -euo pipefail
 echo "▸ pacotes"
 sudo apt-get update -y
 sudo apt-get install -y --no-install-recommends \
-  nodejs npm quota tree htop less nano vim curl ca-certificates \
-  bash-completion locales tldr jq cowsay figlet ncdu sl fortune-mod neofetch \
-  procps psmisc
+  nodejs npm quota htop less nano vim curl ca-certificates \
+  bash-completion locales tldr procps psmisc
+
+# Os pacotes do sorteio do M5 só são BAIXADOS (ficam no cache do apt), não
+# instalados: assim o `sudo apt install` do laboratório funciona sem internet e
+# é rápido, mas instala de verdade. Instalados de antemão, o critério "seu
+# pacote está instalado" ficava verde antes de a pessoa digitar qualquer coisa.
+# O htop fica instalado de propósito: o boss usa ele para achar o processo.
+sudo apt-get install -y --download-only --no-install-recommends \
+  jq cowsay figlet ncdu sl neofetch tree cmatrix
 
 echo "▸ locale pt_BR"
 sudo locale-gen pt_BR.UTF-8
@@ -31,13 +38,13 @@ sudo tee /etc/security/limits.d/90-workshop.conf >/dev/null <<'LIM'
 LIM
 
 echo "▸ sudo em lista branca (real para a aula, inofensivo para a máquina)"
+# o deck ensina `sudo apt install -y <pacote>`: o apt precisa estar liberado,
+# não só o apt-get (antes o comando do slide era recusado)
 sudo tee /etc/sudoers.d/workshop >/dev/null <<'SUDO'
+%alunos ALL=(root) NOPASSWD: /usr/bin/apt update
+%alunos ALL=(root) NOPASSWD: /usr/bin/apt install -y jq, /usr/bin/apt install -y cowsay, /usr/bin/apt install -y figlet, /usr/bin/apt install -y ncdu, /usr/bin/apt install -y sl, /usr/bin/apt install -y neofetch, /usr/bin/apt install -y tree, /usr/bin/apt install -y cmatrix
 %alunos ALL=(root) NOPASSWD: /usr/bin/apt-get update
-%alunos ALL=(root) NOPASSWD: /usr/bin/apt-get install -y htop, /usr/bin/apt-get install -y jq, \
-  /usr/bin/apt-get install -y cowsay, /usr/bin/apt-get install -y figlet, \
-  /usr/bin/apt-get install -y ncdu, /usr/bin/apt-get install -y sl, \
-  /usr/bin/apt-get install -y neofetch, /usr/bin/apt-get install -y tree, \
-  /usr/bin/apt-get install -y fortune-mod
+%alunos ALL=(root) NOPASSWD: /usr/bin/apt-get install -y jq, /usr/bin/apt-get install -y cowsay, /usr/bin/apt-get install -y figlet, /usr/bin/apt-get install -y ncdu, /usr/bin/apt-get install -y sl, /usr/bin/apt-get install -y neofetch, /usr/bin/apt-get install -y tree, /usr/bin/apt-get install -y cmatrix
 %alunos ALL=(root) NOPASSWD: /bin/cat /srv/cofre/*
 SUDO
 sudo chmod 440 /etc/sudoers.d/workshop

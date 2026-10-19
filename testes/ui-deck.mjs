@@ -1,7 +1,7 @@
 /**
  * Varredura do deck inteiro, cena por cena, nas três telas.
  *
- * Para cada uma das 63 cenas verifica:
+ * Para cada cena do deck verifica:
  *   - avançar realmente sai da cena (nenhum passo "engole" o clique)
  *   - o participante e o projetor mostram a mesma coisa
  *   - nada é cortado: ou cabe na tela, ou rola (nunca conteúdo invisível)
@@ -95,12 +95,13 @@ const divergentes = [];
 
 for (let i = 0; i < DECK.length; i++) {
   const c = DECK[i];
-  const interativa = ['QuizScene', 'WidgetScene', 'LabScene'].includes(c.tipo);
+  // mede a cena já liberada (o estado mais cheio: opções, exercício, terminal)
+  const interativa = ['QuizScene', 'WidgetScene', 'LabScene', 'ArenaScene'].includes(c.tipo);
   host.emit('host:ir', {
     cenaIndex: i, cenaId: c.id, passo: 0,
     fase: interativa ? 'aberta' : 'idle',
     segundos: interativa ? (c.segundos ?? null) : null,
-    quiz: c.tipo === 'QuizScene' ? { cenaId: c.id, correta: c.correta, xpBase: 40, segundos: c.segundos } : null,
+    arena: c.tipo === 'ArenaScene' ? c.jogo : null, premios: c.premios ?? null,
   });
   await dormir(c.tipo === 'LabScene' ? 900 : 420);
 
@@ -116,7 +117,7 @@ for (let i = 0; i < DECK.length; i++) {
     // No celular, laboratório, equipes, exercícios e jogos rolam de propósito:
     // o terminal e os painéis não cabem numa tela de 390px, e lá a pessoa rola
     // com o dedo sem estranhar. O que não pode rolar é o projetor e o notebook.
-    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene'].includes(c.tipo);
+    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene', 'Controles', 'Recap'].includes(c.tipo);
     if (m.precisaRolar && !rolarTolerado) cortadas.push(`${c.id} (${nome}: precisa rolar)`);
     if (m.escala < (nome === 'celular' ? 0.62 : 0.72)) cortadas.push(`${c.id} (${nome}: encolheu para ${m.escala})`);
     if (!m.tituloVisivel) cortadas.push(`${c.id} (${nome}: título fora da tela)`);
@@ -178,8 +179,11 @@ for (let n = 0; n < DECK.length + 40; n++) {
   const antes = await indice();
   const cenaAtual = DECK[antes - 1];
   // uma cena pode consumir vários cliques de propósito: os passos internos
-  // (linhas do terminal demonstrado) e, no quiz, a revelação
-  const cliquesEsperados = (cenaAtual?.passos ?? 1) + (cenaAtual?.tipo === 'QuizScene' ? 1 : 0) + 1;
+  // (linhas do terminal demonstrado); no quiz, liberar as opções, revelar e o
+  // pódio; nas outras cenas em que a turma age, liberar e o pódio
+  const extra = cenaAtual?.tipo === 'QuizScene' ? 3
+    : ['WidgetScene', 'LabScene', 'ArenaScene'].includes(cenaAtual?.tipo) ? 2 : 0;
+  const cliquesEsperados = (cenaAtual?.passos ?? 1) + extra + 1;
   let mudou = false;
   for (let k = 0; k < cliquesEsperados && !mudou; k++) {
     await hostPg.locator('button[title*="avançar"]').click();

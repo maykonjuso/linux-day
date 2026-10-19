@@ -28,7 +28,7 @@ export const LABS = {
     solve: 'm1.sh',
     dicas: [
       'Arquivos que começam com ponto são escondidos: `ls -la` mostra tudo.',
-      'Dá para procurar pelo nome em vez de abrir pasta por pasta: `find ~ -name flag.txt`.',
+      'O caminho é projetos → 2024 → uma pasta escondida → mais uma pasta. Use `cd` em cada uma e `ls -la` para ver.',
     ],
     criterios: [
       {
@@ -38,7 +38,7 @@ export const LABS = {
         check: `
           esperado="$(cat "$HOME/.arena/flag" 2>/dev/null)"
           [ -n "$esperado" ] || cai "ambiente sem seed — chame um monitor"
-          [ "$RESPOSTA" = "$esperado" ] || cai "não é essa. Procure por um arquivo escondido: ls -la"
+          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse texto. Confira se copiou tudo, e procure a pasta escondida com ls -la"
         `,
       },
     ],
@@ -54,32 +54,37 @@ export const LABS = {
       'Renomear é mover: `mv rascunho.txt docs/notas.md`.',
     ],
     criterios: [
-      { id: 'm2-c1', xp: 40, descricao: 'imagens/ com todos os .png e .jpg', check: `
+      // Os "soltos na raiz" são contados com find (e não com `ls *.png *.jpg`):
+      // o ls só falha quando TODOS os padrões somem, então com os .png movidos
+      // e um .jpg sobrando ele dava erro e o critério achava que estava limpo.
+      { id: 'm2-c1', xp: 40, descricao: 'Criar a pasta imagens e mover para ela todos os .png e .jpg', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -d imagens ] || cai "ainda não existe a pasta imagens/ — mkdir imagens"
-          ls *.png *.jpg >/dev/null 2>&1 && cai "ainda tem imagem solta na raiz de ~/bagunca"
+          [ -d imagens ] || cai "ainda não existe a pasta imagens: mkdir imagens"
+          [ -z "$(find . -maxdepth 1 -type f \\( -name '*.png' -o -name '*.jpg' \\) -print -quit)" ] || cai "ainda tem imagem solta em ~/bagunca: mv *.png *.jpg imagens/"
           [ "$(ls imagens | grep -cE '\\.(png|jpg)$')" -ge 6 ] || cai "faltou mover alguma imagem para imagens/"` },
-      { id: 'm2-c2', xp: 40, descricao: 'docs/ com todos os .txt e .md', check: `
+      // README.md fica de fora: ele é pedido justamente na raiz (critério 6)
+      { id: 'm2-c2', xp: 40, descricao: 'Criar a pasta docs e mover para ela todos os .txt e .md', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -d docs ] || cai "ainda não existe a pasta docs/"
-          ls *.txt *.md >/dev/null 2>&1 && cai "ainda tem .txt ou .md solto na raiz"
+          [ -d docs ] || cai "ainda não existe a pasta docs: mkdir docs"
+          [ -z "$(find . -maxdepth 1 -type f \\( -name '*.txt' -o -name '*.md' \\) ! -name README.md -print -quit)" ] || cai "ainda tem .txt ou .md solto em ~/bagunca: mv *.txt *.md docs/"
           [ "$(ls docs | grep -cE '\\.(txt|md)$')" -ge 5 ] || cai "faltou mover algum texto para docs/"` },
-      { id: 'm2-c3', xp: 40, descricao: 'scripts/ com todos os .sh', check: `
+      { id: 'm2-c3', xp: 40, descricao: 'Criar a pasta scripts e mover para ela todos os .sh', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -d scripts ] || cai "ainda não existe a pasta scripts/"
-          ls *.sh >/dev/null 2>&1 && cai "ainda tem .sh solto na raiz"
+          [ -d scripts ] || cai "ainda não existe a pasta scripts: mkdir scripts"
+          [ -z "$(find . -maxdepth 1 -type f -name '*.sh' -print -quit)" ] || cai "ainda tem .sh solto em ~/bagunca: mv *.sh scripts/"
           [ "$(ls scripts | grep -c '\\.sh$')" -ge 3 ] || cai "faltou mover algum script"` },
-      { id: 'm2-c4', xp: 40, descricao: 'rascunho.txt renomeado para docs/notas.md', check: `
+      { id: 'm2-c4', xp: 40, descricao: 'Renomear o rascunho.txt para notas.md, dentro de docs', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -f docs/notas.md ] || cai "não achei docs/notas.md — você renomeou rascunho.txt? (mv é renomear)"
-          [ ! -f rascunho.txt ] || cai "rascunho.txt ainda está aqui: renomeie em vez de copiar"` },
-      { id: 'm2-c5', xp: 40, descricao: 'nenhum arquivo tmp_* sobrando', check: `
+          [ -f docs/notas.md ] || cai "não achei docs/notas.md. Renomear é mover: mv rascunho.txt docs/notas.md (ou mv docs/rascunho.txt docs/notas.md)"
+          [ ! -f rascunho.txt ] && [ ! -f docs/rascunho.txt ] || cai "o rascunho.txt ainda existe: renomeie com mv em vez de copiar"` },
+      { id: 'm2-c5', xp: 40, descricao: 'Apagar os arquivos que começam com tmp_', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -z "$(find . -name 'tmp_*' -print -quit)" ] || cai "ainda sobrou algum tmp_* — rm tmp_*"` },
-      { id: 'm2-c6', xp: 40, descricao: 'README.md com a linha "organizado por <seu nick>"', check: `
+          [ -z "$(find . -name 'tmp_*' -print -quit)" ] || cai "ainda sobrou algum tmp_: rm tmp_*"` },
+      { id: 'm2-c6', xp: 40, descricao: 'Criar README.md em ~/bagunca com o texto: organizado por + o nome do seu prompt', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
-          [ -f README.md ] || cai "crie o README.md (echo ... > README.md ou nano)"
-          grep -qi "organizado por $NICK" README.md || cai "o README.md precisa da linha: organizado por $NICK"` },
+          [ -f README.md ] || cai "crie o README.md aqui em ~/bagunca: echo \\"organizado por $USUARIO\\" > README.md"
+          grep -qi "organizado por $USUARIO" README.md || grep -qi "organizado por $NICK" README.md \\
+            || cai "o README.md precisa da frase: organizado por $USUARIO"` },
     ],
   },
 
@@ -93,15 +98,15 @@ export const LABS = {
       'Para ler um arquivo você precisa do bit r: `chmod 644 relatorio.txt`.',
     ],
     criterios: [
-      { id: 'm3-c1', xp: 80, descricao: 'deploy.sh existe, tem shebang e é executável', check: `
+      { id: 'm3-c1', xp: 80, descricao: 'Criar ~/deploy.sh com a 1ª linha #!/bin/bash e deixá-lo executável', check: `
           f="$HOME/deploy.sh"
-          [ -f "$f" ] || cai "crie o ~/deploy.sh (nano deploy.sh)"
-          head -1 "$f" | grep -q '^#!' || cai "falta a primeira linha #!/bin/bash"
+          [ -f "$f" ] || cai "crie o ~/deploy.sh: echo '#!/bin/bash' > deploy.sh"
+          head -1 "$f" | grep -q '^#!' || cai "a 1ª linha precisa ser #!/bin/bash: echo '#!/bin/bash' > deploy.sh"
           [ -x "$f" ] || cai "ele existe mas não é executável — chmod +x deploy.sh"` },
-      { id: 'm3-c2', xp: 80, descricao: 'deploy.sh roda e imprime algo', check: `
+      { id: 'm3-c2', xp: 80, descricao: 'Fazer o deploy.sh imprimir uma frase quando roda', check: `
           out="$(cd "$HOME" && ./deploy.sh 2>&1)" || cai "o script deu erro ao rodar: $out"
-          [ -n "$out" ] || cai "ele roda, mas não imprime nada — use echo"` },
-      { id: 'm3-c3', xp: 40, descricao: 'relatorio.txt legível (e você leu)', check: `
+          [ -n "$out" ] || cai "ele roda, mas não imprime nada. Acrescente uma linha: echo 'echo \"deploy feito\"' >> deploy.sh"` },
+      { id: 'm3-c3', xp: 40, descricao: 'Liberar a leitura do relatorio.txt', check: `
           f="$HOME/relatorio.txt"
           [ -f "$f" ] || cai "não achei ~/relatorio.txt"
           [ "$(modo "$f")" != "000" ] || cai "ainda está com permissão 000 — chmod 644 relatorio.txt"
@@ -119,14 +124,14 @@ export const LABS = {
       'O top 3: `... | sort | uniq -c | sort -rn | head -3`.',
     ],
     criterios: [
-      { id: 'm4-c1', xp: 100, tipo: 'resposta', descricao: 'Quantas linhas de ERROR tem o app.log?', check: `
+      { id: 'm4-c1', xp: 100, tipo: 'resposta', descricao: 'Quantas linhas do log têm a palavra ERROR?', check: `
           esperado="$(grep -c ERROR "$HOME/app.log")"
           [ "$RESPOSTA" = "$esperado" ] || cai "não é esse número. Dica: grep -c conta em vez de listar"` },
-      { id: 'm4-c2', xp: 100, tipo: 'resposta', descricao: 'Qual IP aparece mais no log?', check: `
+      { id: 'm4-c2', xp: 100, tipo: 'resposta', descricao: 'Qual IP aparece mais vezes no log inteiro?', check: `
           esperado="$(grep -oE '([0-9]{1,3}\\.){3}[0-9]{1,3}' "$HOME/app.log" | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')"
-          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse IP. Monte o encanamento: sort | uniq -c | sort -rn | head -1"` },
-      { id: 'm4-c3', xp: 150, descricao: '~/fatais.txt com todas as linhas FATAL', check: `
-          [ -f "$HOME/fatais.txt" ] || cai "crie o arquivo com > fatais.txt"
+          [ "$RESPOSTA" = "$esperado" ] || cai "não é esse IP. Conte TODAS as linhas, não só as de erro: cut -d' ' -f3 app.log | sort | uniq -c | sort -rn | head -1"` },
+      { id: 'm4-c3', xp: 150, descricao: 'Guardar todas as linhas com FATAL em ~/fatais.txt', check: `
+          [ -f "$HOME/fatais.txt" ] || cai "crie o arquivo: grep FATAL app.log > fatais.txt"
           esperado="$(grep -c FATAL "$HOME/app.log")"
           achado="$(grep -c FATAL "$HOME/fatais.txt" 2>/dev/null || echo 0)"
           [ "$achado" = "$esperado" ] || cai "esperava $esperado linhas FATAL no arquivo, achei $achado"` },
@@ -143,21 +148,21 @@ export const LABS = {
       'Para achar o PID: `ps aux | grep app.js`. Para matar: `kill <PID>`.',
     ],
     criterios: [
-      { id: 'm5-c1', xp: 80, descricao: 'Seu pacote sorteado está instalado', check: `
+      { id: 'm5-c1', xp: 80, descricao: 'Instalar o programa que está em ~/.pacote', check: `
           pkg="$(cat "$HOME/.pacote" 2>/dev/null)"
           [ -n "$pkg" ] || cai "ambiente sem seed — chame um monitor"
           command -v "$pkg" >/dev/null 2>&1 || dpkg -s "$pkg" >/dev/null 2>&1 \
             || cai "o seu pacote é '$pkg' — sudo apt install -y $pkg"` },
       // adesivo: passa enquanto a app está no ar. Depois que a pessoa mata (c3),
       // este critério continua verde porque já foi premiado — ver `avaliar()`.
-      { id: 'm5-c2', xp: 80, descricao: 'app.js rodando em background (com &)', check: `
+      { id: 'm5-c2', xp: 80, descricao: 'Rodar node app/app.js & e esperar o item ficar verde', check: `
           # casa o caminho completo, não o usuário: funciona tanto com contas
           # reais (su - alunoNN) quanto no modo local de desenvolvimento
-          pgrep -f "$HOME/app/app.js" >/dev/null || cai "a app não está rodando — rode: node app/app.js &"
+          pgrep -f "$HOME/app/app.js" >/dev/null || cai "a app não está rodando. Rode node app/app.js & e espere este item ficar verde"
           mkdir -p "$HOME/.arena" && touch "$HOME/.arena/rodou"` },
-      { id: 'm5-c3', xp: 120, descricao: 'Você matou a app depois (nada de node no ar)', check: `
-          [ -f "$HOME/.arena/rodou" ] || cai "primeiro deixe a app rodando em background"
-          pgrep -f "$HOME/app/app.js" >/dev/null && cai "ela ainda está no ar: ache o PID com ps aux | grep node e use kill"
+      { id: 'm5-c3', xp: 120, descricao: 'Encerrar a app com kill + o PID', check: `
+          [ -f "$HOME/.arena/rodou" ] || cai "primeiro o item 2: rode node app/app.js & e espere ele ficar verde ANTES de encerrar"
+          pgrep -f "$HOME/app/app.js" >/dev/null && cai "ela ainda está no ar: ache o PID com ps aux | grep app.js e use kill PID"
           exit 0` },
     ],
   },
@@ -192,14 +197,14 @@ export const LABS = {
     seed: 'boss.sh',
     solve: 'boss.sh',
     dicas: [
-      'O log não está na sua casa. `find /srv/chamado -name "*.log"`.',
-      'O processo travado aparece no topo do `top` — ou em `ps aux --sort=-pcpu | head`.',
+      'O log está na pasta `log`, dentro da pasta da equipe: `grep FATAL log/relatorio.log`.',
+      'Abra o `htop`: o processo travado fica no topo, com a CPU perto de 100%. O PID é a 1ª coluna. Saia com q e rode `kill` + o PID.',
     ],
     criterios: [
       { id: 'b-c1', xp: 150, papel: 'investigador', tipo: 'resposta',
         descricao: 'Investigador: qual é a mensagem de erro do log?', check: `
           esperado="$(grep -m1 FATAL "$DIR_GRUPO/log/relatorio.log" | sed 's/.*FATAL //')"
-          echo "$RESPOSTA" | grep -qiF "$esperado" || cai "ache a linha FATAL no log do grupo (grep FATAL)"` },
+          echo "$RESPOSTA" | grep -qiF "$esperado" || cai "não é essa mensagem. Na pasta da equipe: grep FATAL log/relatorio.log"` },
       { id: 'b-c2', xp: 150, papel: 'operador',
         descricao: 'Operador: o processo travado foi morto', check: `
           pgrep -f "arena-travado-$GRUPO" >/dev/null && cai "ele ainda está vivo — ache o PID e use kill"
@@ -214,9 +219,9 @@ export const LABS = {
         descricao: 'Relator: laudo.txt com grupo, contagem de ERROR e o PID morto', check: `
           l="$DIR_GRUPO/laudo.txt"
           [ -f "$l" ] || cai "crie o laudo.txt no diretório do grupo"
-          grep -qi "$GRUPO" "$l" || cai "o laudo precisa dizer qual é o grupo"
+          grep -qi "$GRUPO" "$l" || cai "o laudo precisa ter o nome da equipe ($GRUPO)"
           n="$(grep -c ERROR "$DIR_GRUPO/log/relatorio.log")"
-          grep -q "$n" "$l" || cai "o laudo precisa da contagem de ERROR do log (grep -c ERROR)"
+          grep -q "$n" "$l" || cai "o laudo precisa da quantidade de linhas ERROR do log: grep -c ERROR log/relatorio.log"
           grep -qE '[0-9]{2,}' "$l" || cai "o laudo precisa do PID do processo que vocês mataram"` },
     ],
   },

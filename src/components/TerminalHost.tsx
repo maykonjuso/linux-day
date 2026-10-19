@@ -193,8 +193,8 @@ export function TerminalHost({
     ro.observe(document.body);
     window.addEventListener('resize', posicionar);
     window.addEventListener('scroll', posicionar, true);
-    // a cena entra com uma animação de 200ms: reposiciona quando ela terminar
-    const t = setTimeout(posicionar, 240);
+    // a cena entra com uma animação de 380ms: reposiciona quando ela terminar
+    const t = setTimeout(posicionar, 420);
     const i = setInterval(posicionar, 1000);   // rede de segurança, barata
     return () => {
       ro.disconnect();
@@ -233,12 +233,12 @@ export function TerminalHost({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 4,
+            gap: 'var(--e1)',
             background: 'rgba(22, 22, 26, 0.88)',
             border: '1px solid #3a3a42',
             color: '#e8e8ea',
-            borderRadius: 6,
-            padding: '2px 8px',
+            borderRadius: 'var(--r-p)',
+            padding: '0 var(--e1)',
             fontSize: 12,
             fontFamily: 'var(--sans)',
             cursor: 'pointer',
@@ -253,7 +253,7 @@ export function TerminalHost({
         {focado ? 'o teclado está no terminal' : 'clique aqui para digitar'}
         <button
           onClick={() => { termRef.current?.blurir(); }}
-          style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 6, padding: '2px var(--e1)', fontSize: 11, cursor: 'pointer' }}
+          style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 'var(--r-p)', padding: '2px var(--e1)', fontSize: 11, cursor: 'pointer' }}
         >
           devolver teclado ao slide (Esc Esc)
         </button>

@@ -9,6 +9,7 @@
 import { spawn, execSync } from 'node:child_process';
 import { rmSync } from 'node:fs';
 import { chromium } from 'playwright';
+import { io } from 'socket.io-client';
 
 const PORTA = 3098;
 const URL = `http://localhost:${PORTA}`;
@@ -33,6 +34,13 @@ const srv = spawn('node', ['server.mjs'], {
 let subiu = false;
 srv.stderr.on('data', (d) => { const t = String(d); if (/EADDRINUSE/.test(t)) console.error('  ⚠ porta ocupada'); });
 await new Promise((r) => { const t = setTimeout(r, 40_000); srv.stdout.on('data', (d) => { if (String(d).includes('apresentador')) { subiu = true; clearTimeout(t); r(); } }); });
+
+// o XP não aparece mais na barra do participante (só no pódio): um socket
+// espião lê o placar que o servidor manda para todas as telas
+let ultimoPlacar = null;
+const espiao = io(URL, { path: '/rt', transports: ['websocket'] });
+espiao.on('placar', (p) => { ultimoPlacar = p; });
+const xpDaAna = async () => { await new Promise((r) => setTimeout(r, 200)); return ultimoPlacar?.individual.find((p) => p.nick === 'ana')?.xp ?? 0; };
 ok(subiu, 'servidor no ar (processo novo, estado limpo)');
 if (!subiu) { srv.kill('SIGKILL'); process.exit(1); }
 
@@ -57,8 +65,8 @@ await aluno.fill('input[placeholder="seu nome"]', 'ana');
 await aluno.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1200);
 ok(await aluno.locator('.controles').isVisible(), 'participante entra e vê a barra de controles');
-ok((await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent())?.includes('20'), 'o XP do check-in aparece na barra',
-  `(${(await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent())?.trim()})`);
+ok((await xpDaAna()) >= 20, 'o XP do check-in entra no placar', `(${await xpDaAna()})`);
+ok((await aluno.locator('.controles', { hasText: /XP/ }).count()) === 0, 'a barra do participante não mostra placar (ele só aparece no pódio)');
 
 // nome repetido: a sala não pode ter dois "ana"
 const repetido = await abrir('/');
@@ -123,12 +131,18 @@ ok(await host.locator('.estado-faixa .chip', { hasText: /pergunta/ }).count() > 
 await dormir(400);
 
 const alternativas = aluno.locator('.alt');
+// Kahoot: ao chegar, a turma vê só o enunciado (quem apresenta explica)
+ok((await alternativas.count()) === 0, 'ao chegar na pergunta, as alternativas ainda NÃO aparecem (só o enunciado)');
+ok(await aluno.locator('.aguardando').isVisible(), 'e a tela avisa que as opções aparecem quando o apresentador liberar');
+ok((await host.locator('.alt').count()) >= 2, 'o apresentador já vê a prévia das alternativas');
+await host.locator('button[title*="avançar"]').click();   // liberar opções
+await dormir(600);
 const nAlt = await alternativas.count();
-ok(nAlt >= 2, 'as alternativas aparecem para o participante', `(${nAlt})`);
+ok(nAlt >= 2, 'o avançar libera as alternativas para o participante', `(${nAlt})`);
 const primeiraHabilitada = await alternativas.first().isEnabled();
-ok(primeiraHabilitada, 'a pergunta JÁ está aberta ao chegar (não precisa apertar "abrir")');
+ok(primeiraHabilitada, 'e elas já podem ser clicadas');
 
-const xpAntes = await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent();
+const xpAntes = await xpDaAna();
 await alternativas.nth(1).click();   // a correta do m0-q1 é a B
 await dormir(250);
 ok(!(await alternativas.first().isEnabled()), 'depois de responder, as alternativas travam');
@@ -140,7 +154,7 @@ const revelouSozinho = await aluno.locator('.alt[data-estado="certa"]')
 ok(revelouSozinho, 'quando todos respondem, a resposta é revelada sozinha (igual ao Kahoot)');
 ok(await aluno.locator('.alt[data-estado="certa"]').count() === 1, 'a alternativa correta é destacada na revelação');
 ok((await host.locator('.estado-faixa .chip', { hasText: /responderam/ }).count()) > 0, 'o painel mostra quantos já responderam');
-const xpDepois = await aluno.locator('.controles .btn-icone', { hasText: /XP/ }).first().textContent();
+const xpDepois = await xpDaAna();
 ok(xpAntes !== xpDepois, 'o XP do participante muda com o acerto', `(${xpAntes} → ${xpDepois})`);
 ok((await projetor.locator('.barra-votos').count()) > 0, 'o projetor mostra a distribuição de respostas');
 
@@ -154,6 +168,9 @@ for (let i = 0; i < 12; i++) {
 }
 ok((await host.locator('.estado-faixa .chip', { hasText: /exercício na tela/ }).count()) > 0, 'cheguei na cena de widget');
 await dormir(300);
+ok((await aluno.locator('button', { hasText: /^[rwx]$/ }).count()) === 0, 'o exercício só aparece depois de liberado');
+await host.locator('button[title*="avançar"]').click();   // liberar exercício
+await dormir(500);
 const botoesRwx = aluno.locator('button', { hasText: /^[rwx]$/ });
 ok((await botoesRwx.count()) === 9, 'o widget de permissões mostra os 9 cadeados', `(${await botoesRwx.count()})`);
 const numeroAntes = await aluno.locator('.term').first().textContent();
@@ -171,6 +188,9 @@ for (let i = 0; i < 14; i++) {
   await dormir(250);
 }
 ok((await host.locator('.estado-faixa .chip', { hasText: /laboratório/ }).count()) > 0, 'cheguei na cena de lab');
+await dormir(500);
+ok((await aluno.locator('#slot-terminal').count()) === 0, 'o terminal só aparece depois de o apresentador liberar');
+await host.locator('button[title*="avançar"]').click();   // liberar terminal
 await dormir(2500);
 
 ok((await aluno.locator('.item-check').count()) === 6, 'os 6 critérios aparecem na tela do lab', `(${await aluno.locator('.item-check').count()})`);
@@ -207,7 +227,7 @@ ok(!/aluno\d/.test(quemSouEu), 'e não aparece aluno01 em lugar nenhum do termin
 
 const btnDica = aluno.locator('[data-acao="dica"]');
 ok(await btnDica.isEnabled(), 'o botão de dica está habilitado (há token e há dica)');
-const saldo = async () => Number(((await aluno.locator('.controles .btn-icone', { hasText: /^\s*\d+\s*$/ }).first().textContent()) ?? '0').replace(/\D/g, ''));
+const saldo = async () => Number(((await aluno.locator('.controles .btn-icone', { hasText: /tokens/ }).first().textContent()) ?? '0').replace(/\D/g, ''));
 const tokensAntes = await saldo();
 await btnDica.click();
 await dormir(900);
@@ -220,17 +240,18 @@ await dormir(700);
 ok((await aluno.locator('[data-acao="dica"][data-sem-dicas="true"]').count()) > 0,
   'quando as dicas acabam, o botão diz isso e desabilita');
 
-await aluno.locator('[data-acao="verificar"]').click();
-await dormir(2500);
-ok((await aluno.locator('.item-check .pista').count()) > 0, 'Verificar devolve mensagem por critério que aponta o próximo passo');
+// sem botão de Verificar: o laboratório confere sozinho a cada 5 segundos
+ok((await aluno.locator('[data-acao="verificar"]').count()) === 0, 'não existe botão de Verificar (a conferência é automática)');
+await dormir(6000);
+ok((await aluno.locator('.item-check .pista').count()) > 0, 'a conferência automática devolve mensagem por critério que aponta o próximo passo');
 
 // resolve mesmo, pelo terminal
 await aluno.locator('.xterm').click();
 await aluno.keyboard.type('cd ~/bagunca && mkdir -p imagens docs scripts && mv *.png *.jpg imagens/ && mv rascunho.txt docs/notas.md && mv *.txt *.md docs/ && mv *.sh scripts/ && rm -f tmp_* && echo "organizado por ana" > README.md\n');
-await dormir(2500);
-await aluno.locator('[data-acao="verificar"]').click();
+await aluno.locator('.item-check[data-novo="true"]').first().waitFor({ timeout: 9000 }).catch(() => {});
+ok((await aluno.locator('.item-check[data-novo="true"]').count()) > 0, 'os itens que acabaram de ficar prontos ganham a animação de conquista');
 await dormir(3000);
-ok((await aluno.locator('.item-check[data-ok="true"]').count()) === 6, 'depois dos comandos, os 6 critérios acendem na tela', `(${await aluno.locator('.item-check[data-ok="true"]').count()})`);
+ok((await aluno.locator('.item-check[data-ok="true"]').count()) === 6, 'depois dos comandos, os 6 critérios acendem sozinhos', `(${await aluno.locator('.item-check[data-ok="true"]').count()})`);
 
 // ──────────────────────── botões do apresentador ──────────────────────────
 await host.locator('button[title*="grade pessoas"]').click();
@@ -293,16 +314,9 @@ ok((await aluno.locator('.toast').first().textContent())?.includes('segundo'),
 // ───────────────────── grupos, cartas e extras ────────────────────────────
 await host.locator('button[title*="distribui todos"]').click();
 await dormir(900);
-await host.locator('select').first().selectOption({ label: 'módulo 6' });
-await dormir(600);
-for (let i = 0; i < 6; i++) {
-  if ((await host.locator('.estado-faixa .chip', { hasText: /grupos/ }).count()) > 0) break;
-  await host.locator('button[title*="avançar"]').click();
-  await dormir(250);
-}
-// equipes e cartas são duas cenas agora: a primeira escolhe a equipe, a
-// segunda divide as cartas de função
-await host.locator('select').first().selectOption({ label: 'módulo 6' });
+// a escolha de equipe é no começo do workshop (módulo 0); no módulo 6 ficam
+// só as cartas de função do chamado
+await host.locator('select').first().selectOption({ label: 'módulo 0' });
 await dormir(600);
 for (let i = 0; i < 8; i++) {
   if ((await host.locator('.estado-faixa .chip', { hasText: /grupos/ }).count()) > 0) break;
@@ -323,11 +337,13 @@ for (let i = 0; i < 4 && !(await dentroDeUmaEquipe()); i++) {
 }
 ok(await dentroDeUmaEquipe(), 'entrar numa equipe acende o card dela');
 
-// avança para a cena das cartas
+// vai para a cena das cartas, no módulo 6
+await host.locator('select').first().selectOption({ label: 'módulo 6' });
+await dormir(600);
 for (let i = 0; i < 4; i++) {
+  if (((await aluno.locator('.cena').textContent()) ?? '').includes('carta livre')) break;
   await host.locator('button[title*="avançar"]').click();
   await dormir(300);
-  if (((await aluno.locator('.cena').textContent()) ?? '').includes('carta livre')) break;
 }
 const carta = aluno.locator('.cartao', { hasText: 'Investigador' }).first();
 if (await carta.count()) {

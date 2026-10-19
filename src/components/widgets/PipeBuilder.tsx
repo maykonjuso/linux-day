@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 /**
  * Widget `pipe-builder` — o melhor widget do workshop.
  * A pessoa monta o encanamento peça por peça e **vê a saída se transformando**:
- * 50.000 linhas → 400 → cortadas → ordenadas → contadas → top 3.
+ * 50.652 linhas → 1.281 → cortadas → ordenadas → contadas → top 3.
  * O pipe é abstrato demais para ser só explicado; aqui ele acontece.
  *
  * Toque, não arrastar: clicar para encaixar funciona com o dedo, e metade da
@@ -22,14 +22,15 @@ const PECAS = [
 
 const ORDEM = ['grep', 'cut', 'sort', 'uniq', 'sortrn', 'head'];
 
+// saídas reais do ~/app.log semeado por infra/seed/m4.sh (confira lá se mudar o seed)
 const SAIDAS: Record<string, string[]> = {
-  '': ['08:01:00 INFO 10.0.0.7 requisicao atendida', '08:02:00 ERROR 10.0.0.9 conexao recusada', '08:03:00 INFO 172.16.0.3 requisicao atendida', '… 50.000 linhas'],
-  grep: ['08:02:00 ERROR 10.0.0.9 conexao recusada', '08:04:00 ERROR 10.0.0.7 timeout', '08:09:00 ERROR 10.0.0.7 timeout', '… 1.031 linhas'],
-  'grep|cut': ['10.0.0.9', '10.0.0.7', '10.0.0.7', '192.168.0.14', '… 1.031 linhas'],
-  'grep|cut|sort': ['10.0.0.7', '10.0.0.7', '10.0.0.9', '172.16.0.3', '… ordenadas'],
-  'grep|cut|sort|uniq': ['    512 10.0.0.7', '    260 10.0.0.9', '    140 172.16.0.3', '    119 192.168.0.14'],
-  'grep|cut|sort|uniq|sortrn': ['    512 10.0.0.7', '    260 10.0.0.9', '    140 172.16.0.3', '    119 192.168.0.14'],
-  'grep|cut|sort|uniq|sortrn|head': ['    512 10.0.0.7', '    260 10.0.0.9', '    140 172.16.0.3'],
+  '': ['2026-10-19T08:01:00 INFO 10.0.0.9 requisicao atendida', '2026-10-19T08:02:00 INFO 192.168.0.14 requisicao atendida', '2026-10-19T08:03:00 INFO 172.16.0.3 requisicao atendida', '… 50.652 linhas'],
+  grep: ['2026-10-19T08:13:00 ERROR 10.0.0.9 conexao recusada', '2026-10-19T08:37:00 ERROR 10.0.0.9 timeout ao gravar no banco', '2026-10-19T08:50:00 ERROR 192.168.0.14 conexao recusada', '… 1.281 linhas'],
+  'grep|cut': ['10.0.0.9', '10.0.0.9', '192.168.0.14', '… 1.281 linhas, só o IP'],
+  'grep|cut|sort': ['10.0.0.7', '10.0.0.7', '10.0.0.7', '… 1.281 linhas, em ordem'],
+  'grep|cut|sort|uniq': ['    257 10.0.0.7', '    258 10.0.0.9', '    508 172.16.0.3', '    258 192.168.0.14'],
+  'grep|cut|sort|uniq|sortrn': ['    508 172.16.0.3', '    258 192.168.0.14', '    258 10.0.0.9', '    257 10.0.0.7'],
+  'grep|cut|sort|uniq|sortrn|head': ['    508 172.16.0.3', '    258 192.168.0.14', '    258 10.0.0.9'],
 };
 
 export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void }) {
@@ -40,11 +41,11 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
   const errou = !SAIDAS[chave];
 
   return (
-    <div className="grade" style={{ gap: 16 }}>
+    <div className="grade" style={{ gap: 'var(--e2)' }}>
       <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap', alignItems: 'center' }}>
         <code className="kbd" style={{ fontSize: '1.05em' }}>cat app.log</code>
         {tubo.map((id, i) => (
-          <span key={`${id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span key={`${id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
             <strong style={{ color: 'var(--acento)' }}>|</strong>
             <button className="btn" data-tubo={id} onClick={() => setTubo(tubo.slice(0, i))}
               title="clique para remover esta peça e as seguintes"
@@ -59,11 +60,12 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
 
       <div className="olho">peças disponíveis. Clique para encaixar no fim do encanamento</div>
       <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
+        {/* peças nas cores do quiz: são as "opções" deste exercício */}
         {PECAS.filter((p) => !tubo.includes(p.id)).map((p) => (
-          <button key={p.id} className="btn" data-peca={p.id} onClick={() => setTubo([...tubo, p.id])}
-            style={{ display: 'grid', gap: 2, textAlign: 'left', fontFamily: 'var(--mono)' }}>
+          <button key={p.id} className="peca-colorida" data-peca={p.id} data-cor={PECAS.indexOf(p) % 4}
+            onClick={() => setTubo([...tubo, p.id])}>
             {p.rotulo}
-            <small style={{ color: 'var(--tinta-2)', fontFamily: 'var(--sans)' }}>{p.explica}</small>
+            <small>{p.explica}</small>
           </button>
         ))}
       </div>
