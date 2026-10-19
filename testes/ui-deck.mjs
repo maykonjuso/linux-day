@@ -113,7 +113,10 @@ for (let i = 0; i < DECK.length; i++) {
   for (const [nome, pg] of Object.entries(telas)) {
     const m = await medir(pg);
     if (!m) { cortadas.push(`${c.id} (${nome}: sem cena)`); continue; }
-    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene'].includes(c.tipo);
+    // No celular, laboratório, equipes, exercícios e jogos rolam de propósito:
+    // o terminal e os painéis não cabem numa tela de 390px, e lá a pessoa rola
+    // com o dedo sem estranhar. O que não pode rolar é o projetor e o notebook.
+    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene'].includes(c.tipo);
     if (m.precisaRolar && !rolarTolerado) cortadas.push(`${c.id} (${nome}: precisa rolar)`);
     if (m.escala < (nome === 'celular' ? 0.62 : 0.72)) cortadas.push(`${c.id} (${nome}: encolheu para ${m.escala})`);
     if (!m.tituloVisivel) cortadas.push(`${c.id} (${nome}: título fora da tela)`);

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { temaTerminalPadrao, type TemaTerminal } from '@/deck/temas';
 
 /**
  * O terminal.
@@ -17,14 +18,20 @@ import type { Socket } from 'socket.io-client';
  * para uma gaveta — ainda vivo, porque alguém sempre vai querer testar um
  * comando no meio de um slide de teoria, e deixar isso acontecer é ótimo.
  */
-export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null; ativo: boolean; gaveta: boolean }) {
+export function TerminalHost({
+  socket, ativo, gaveta, tema = temaTerminalPadrao,
+}: { socket: Socket | null; ativo: boolean; gaveta: boolean; tema?: TemaTerminal }) {
   const [focado, setFocado] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
   const termRef = useRef<{
     term: unknown; fit: { fit: () => void }; write: (d: string) => void;
     cols: () => number; rows: () => number; blurir: () => void;
+    aplicarTema: (t: TemaTerminal) => void;
   } | null>(null);
   const abriu = useRef(false);
+  /** o tema atual num ref: o xterm é montado uma vez, e trocamos depois */
+  const temaRef = useRef(tema);
+  temaRef.current = tema;
 
   // monta o xterm.js uma única vez
   useEffect(() => {
@@ -56,15 +63,7 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
         drawBoldTextInBrightColors: true,
         minimumContrastRatio: 4.5,
         // "escuro = é aqui que se digita": o único bloco escuro da tela
-        theme: {
-          background: '#16161a', foreground: '#e8e8ea',
-          cursor: '#7dd3a0', cursorAccent: '#16161a', selectionBackground: '#33415588',
-          black: '#16161a', red: '#ff7b72', green: '#7dd3a0', yellow: '#ffd479',
-          blue: '#79b8ff', magenta: '#d2a8ff', cyan: '#76e3ea', white: '#e8e8ea',
-          brightBlack: '#6b6b76', brightRed: '#ffa198', brightGreen: '#a2f0c1',
-          brightYellow: '#ffe3a3', brightBlue: '#a5d6ff', brightMagenta: '#e2c5ff',
-          brightCyan: '#a5f3f6', brightWhite: '#ffffff',
-        },
+        theme: temaRef.current.cores,
         scrollback: 2000,
       });
       const fit = new FitAddon();
@@ -101,6 +100,7 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
         term, fit, write: (d: string) => term.write(d),
         cols: () => term.cols, rows: () => term.rows,
         blurir: () => { term.blur(); (document.activeElement as HTMLElement | null)?.blur(); },
+        aplicarTema: (t: TemaTerminal) => { term.options.theme = t.cores; },
       };
 
       const ro = new ResizeObserver(() => {
@@ -116,6 +116,13 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
 
     return () => { vivo = false; };
   }, [socket]);
+
+  /** troca de tema no terminal já aberto, sem recriar nada */
+  useEffect(() => {
+    const t = termRef.current;
+    if (!t) return;
+    t.aplicarTema(tema);
+  }, [tema]);
 
   // recebe a saída do PTY
   useEffect(() => {
@@ -201,14 +208,14 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
     <div
       style={{
         position: 'fixed', top: 0, left: 0, zIndex: 40,
-        borderRadius: 'var(--r)', overflow: 'hidden', background: '#16161a',
+        borderRadius: 'var(--r)', overflow: 'hidden', background: tema.cores.background,
         padding: 'var(--e1)', boxShadow: '0 10px 40px rgba(0,0,0,.18)',
         transition: 'opacity 200ms var(--ease)',
       }}
     >
       <div ref={caixa} style={{ width: '100%', height: 'calc(100% - 26px)' }} />
       {/* rodapé do terminal: diz onde está o teclado e como sair dele */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', height: 22, color: focado ? '#7dd3a0' : '#6b6b76', fontSize: 11, fontFamily: 'var(--sans)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', height: 22, color: focado ? tema.cores.green : tema.cores.brightBlack, fontSize: 11, fontFamily: 'var(--sans)' }}>
         {focado ? 'o teclado está no terminal' : 'clique aqui para digitar'}
         <button
           onClick={() => { termRef.current?.blurir(); }}

@@ -109,11 +109,63 @@ Ferramentas de ritmo, para você consertar a energia da sala sem parar a aula:
 
 ---
 
+## 4b. Jogos de equipe (equipe contra equipe)
+
+Quiz sozinho cansa. Quatro jogos curtos, todos decididos **no servidor** e todos
+premiando por **posição**, não por acerto: com dez equipes, dar o mesmo XP para
+quem termina tira o sentido da disputa, e dar só para a primeira desanima as
+outras nove no primeiro minuto.
+
+| Jogo | Como funciona | O que treina | Tempo |
+|---|---|---|---|
+| **Corrida de comandos** | a mesma tarefa curta no terminal para todas as equipes; vale a ordem de chegada, e qualquer pessoa da equipe pode fechar | `mkdir`, `cd`, `>` sob pressão | 2–3 min |
+| **Montagem relâmpago** | peças de comando chegam embaralhadas do servidor; a equipe monta a linha na ordem certa | anatomia do comando e o pipe | 1–2 min |
+| **Caça ao erro** | oito linhas na tela, três não funcionam; a equipe marca as três | o hábito de ler antes de apertar Enter | 1–2 min |
+| **Quem aperta primeiro** | uma pergunta, a primeira equipe que aperta responde em voz alta; errou, a vez passa para a próxima da fila | recuperação sob pressão, e o apresentador ouve o raciocínio | 1–2 min |
+
+Por que corrida e não duelo: a literatura de sala recomenda **2 a 4 equipes**
+em disputa direta, porque com mais que isso ninguém acumula ponto e o jogo
+frustra. Corrida com classificação resolve: dez equipes competem ao mesmo tempo
+e todas pontuam, em escala.
+
+**Prêmios padrão:** 300 / 200 / 140 / 90 XP (1º, 2º, 3º, demais). O XP vai para
+a equipe **e** para cada pessoa que estava nela na hora.
+
+**Errar não custa nada** nos jogos de montagem e caça ao erro: a equipe tenta de
+novo. Punir erro faria todas esperarem a vizinha arriscar primeiro, que é o
+oposto do que a sala precisa.
+
+---
+
+## 4c. Anti-trapaça
+
+Workshop com placar e gente curiosa tem trapaça. Cada uma destas foi fechada:
+
+| Trapaça | Como era possível | O bloqueio |
+|---|---|---|
+| **Ler o gabarito no navegador** | a resposta certa do quiz vinha no pacote JavaScript; bastava abrir as ferramentas de desenvolvedor | os gabaritos vivem só no servidor (`src/server/gabaritos.mjs`), e o apresentador recebe por um canal que só ele escuta. O cliente descobre quando o servidor revela |
+| **Ler a ordem certa dos jogos de equipe** | idem, nas peças do pipeline | as respostas ficam em `src/server/desafios-arena.mjs`; o cliente recebe as peças embaralhadas e manda a tentativa |
+| **Pular para a equipe que está ganhando** | o placar de equipes era a média do XP pessoal, então trocar de time subia a sua posição sem fazer nada | o placar de equipes conta o **XP que a equipe conquistou** (corridas, jogos e o chamado). A média pessoal continua visível, mas não ordena nada |
+| **Trocar de equipe no meio do chamado** | nada impedia | as equipes **trancam sozinhas** na primeira verificação de um laboratório de equipe, e o apresentador pode trancar à mão |
+| **Entrar e sair de equipe caçando a melhor** | ilimitado | limite de 3 trocas por pessoa |
+| **Assumir a conta de um colega** | bastava digitar o nome dele, e o servidor devolvia a conta (dava para renomear depois e ficar com o XP) | identidade só por id guardado no navegador ou pelo **código de retorno**, que aparece só na tela da própria pessoa |
+| **Nome repetido para confundir o placar** | dois "ana" | nome é único no evento inteiro, com sugestões livres |
+| **Copiar a resposta do colega no lab** | — | flag e pacote sorteados por pessoa: copiar a resposta não funciona, copiar o comando funciona (e isso é aprender) |
+| **Pontuar duas vezes no mesmo critério** | reenviar o Verificar | chave única por pessoa e critério no banco |
+| **Manipular o bônus de velocidade** | relógio do cliente | tempo contado no servidor |
+| **Travar a máquina de quem apresenta** | terminal sem limites | `ulimit` por processo e um vigia que encerra a sessão que passa do teto (ver `plano-app.md` §1.3) |
+
+Nenhum destes bloqueios tira XP de ninguém: eles impedem o ganho indevido, e não
+punem. Punição em workshop gera o incentivo errado.
+
+---
+
 ## 5. Mecânica de grupo (o lado "Discord")
 
 Os grupos são **plantões de plantão de TI**, criados por você na hora; as pessoas entram livremente nos canais, com capacidade visível (`4/5`).
 
-- **Placar de grupo pela média**, nunca pela soma: time grande não ganha por tamanho, e ninguém culpa o colega mais lento.
+- **Dez equipes, até dez pessoas em cada**, e o tamanho é escolha da turma.
+- **O placar de equipes conta o XP que a equipe conquistou** (corridas, jogos de equipe e o chamado), não a média do XP pessoal: assim trocar de equipe não melhora a posição de ninguém. A média pessoal aparece como informação.
 - **Cartas de papel (role cards)** no boss, uma por pessoa: `Investigador` (acha o log e o erro com `find`/`grep`), `Operador` (acha e mata o processo travado com `ps`/`kill`), `Mecânico` (conserta a permissão do script com `chmod +x` e roda), `Relator` (escreve o laudo em `~/laudo.txt` e aperta Verificar). **Cada critério só pode ser submetido pela carta correspondente** — é o que impede o aluno mais rápido de fazer tudo sozinho enquanto 4 pessoas assistem. Rotacione as cartas se houver tempo.
 - **XP de mentoria:** quem recebeu ajuda marca quem ajudou (+2 tokens e +40 XP para o mentor). Ajudar passa a ser estratégia dominante, e é exatamente o comportamento que você quer na sala.
 - **Chat por grupo** com um botão de "colar comando" que manda o comando formatado em bloco de código — e **nunca** cola a resposta automaticamente no terminal do colega (tem que digitar; digitar é o aprendizado).

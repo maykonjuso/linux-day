@@ -3,6 +3,7 @@
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
+import { useTema } from '@/deck/useTema';
 
 /**
  * A tela do projetor: só conteúdo.
@@ -19,12 +20,25 @@ import { Encaixe } from '@/components/Encaixe';
 export default function Screen() {
   const arena = useArena('screen');
   const { estado, cena, aviso } = arena;
+  const { tema, trocar } = useTema('claro');
 
   return (
     <div className="palco palco-limpo" data-papel="screen">
       <Encaixe chave={`${cena.id}:${estado.passo}:${estado.fase}`}>
         <SceneRouter arena={arena} papel="screen" />
       </Encaixe>
+
+      {/* o único controle do projetor: claro ou escuro. Fica discreto no canto,
+          porque a tela é para a turma, não para operar. */}
+      <button onClick={() => trocar()} title="alternar claro e escuro"
+        style={{
+          position: 'fixed', bottom: 'var(--e2)', right: 'var(--e2)', zIndex: 50,
+          width: 34, height: 34, borderRadius: 999, cursor: 'pointer',
+          border: '1px solid var(--borda)', background: 'var(--papel-2)', color: 'var(--tinta-2)',
+          opacity: 0.35,
+        }}>
+        {tema === 'claro' ? '◐' : '◑'}
+      </button>
 
       {aviso && <div className="toast">📣 {aviso}</div>}
 

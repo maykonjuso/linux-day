@@ -21,6 +21,8 @@ import * as amb from './src/server/ambiente.mjs';
 import * as pty from './src/server/pty.mjs';
 import { vistoriar, TETOS } from './src/server/vigia.mjs';
 import { usuarioDoNick } from './src/server/nomes.mjs';
+import { GABARITOS, gabaritoDe } from './src/server/gabaritos.mjs';
+import { criarArena } from './src/server/arena.mjs';
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = Number(process.env.PORT ?? 3000);
@@ -51,6 +53,14 @@ const jogo = criarJogo({
 jogo.recarregarDoBanco();
 
 const emitirPlacar = () => io.emit('placar', jogo.placar());
+
+/** os jogos de equipe (corrida e buzzer) */
+const arena = criarArena({
+  emitir: (ev, dados) => io.emit(ev, dados),
+  premiarEquipe: (equipe, xp) => jogo.premiarEquipe(equipe, xp),
+  premiarPessoa: (id, xp, tipo, ref) => jogo.premiar(id, xp, tipo, ref),
+  membrosDaEquipe: (equipe) => [...(jogo.grupos.get(equipe)?.membros ?? [])],
+});
 const emitirPresenca = () => io.emit('presenca', [...jogo.participantes.values()].map(jogo.publico));
 const salvarEstado = () => dao.setEstado('evento', { ...estado, restante: null });
 
@@ -61,6 +71,20 @@ let timer = null;
  * acaba. Sem isso só o apresentador poderia revelar, e a sala fica esperando.
  */
 let quizAtual = null;   // { cenaId, correta, xpBase, segundos }
+
+/**
+ * Equipes trancadas.
+ *
+ * Sem tranca, dava para esperar o chamado começar e pular para a equipe que
+ * está ganhando. Quando um laboratório de grupo abre, as equipes trancam
+ * sozinhas: quem está dentro fica, quem está fora não entra. O apresentador
+ * pode destrancar se precisar remanejar alguém.
+ */
+let equipesTrancadas = false;
+
+/** quantas vezes cada pessoa já trocou de equipe (limite baixo de propósito) */
+const trocasDeEquipe = new Map();
+const LIMITE_DE_TROCAS = Number(process.env.ARENA_MAX_TROCAS ?? 3);
 
 function pararTimer() { if (timer) clearInterval(timer); timer = null; }
 function iniciarTimer(segundos) {
@@ -127,11 +151,21 @@ async function avaliar(dono, conta, taskSlug, extra = {}) {
 io.on('connection', (socket) => {
   let eu = null;
   let host = false;
+
+  /**
+   * Envolve um handler que só o apresentador pode disparar.
+   *
+   * Fica declarado AQUI, antes de qualquer `socket.on`, porque `const` não é
+   * elevado: um handler registrado acima desta linha quebrava o servidor na
+   * primeira conexão com "Cannot access 'soHost' before initialization".
+   */
+  const soHost = (fn) => (...a) => { if (host) return fn(...a); };
   let ouvinteTerm = null;
 
   socket.emit('estado', estado);
   socket.emit('placar', jogo.placar());
   socket.emit('labs', Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, { dicas: l.dicas?.length ?? 0 }])));
+  socket.emit('arena', arena.estadoPublico());
 
   /**
    * Dois "Ana" na sala viram dois `ana@linuxday` e dois nomes iguais no placar:
@@ -253,6 +287,13 @@ io.on('connection', (socket) => {
     const lab = labDe(taskSlug);
     if (!lab) return ack?.({ erro: 'lab desconhecido' });
 
+    // primeira verificação de um lab de equipe tranca as equipes: daqui para
+    // frente ninguém troca de time para pegar carona no resultado
+    if (lab.escopo === 'grupo' && !equipesTrancadas) {
+      equipesTrancadas = true;
+      io.emit('equipes', { trancadas: true });
+    }
+
     const extra = { NICK: eu.nick, RESPOSTA: String(resposta).trim() };
     if (lab.escopo === 'grupo') {
       if (!eu.grupo) return ack?.({ erro: 'entre num grupo primeiro' });
@@ -277,10 +318,22 @@ io.on('connection', (socket) => {
       if (!dao.premiarCriterio(dono, r.id)) continue;
       ganho += jogo.premiar(eu.id, criterio.xp, 'criterio', r.id, { usarCombo: true });
       if (lab.escopo === 'grupo') {
+        // o XP conta para a EQUIPE (é o que ordena o placar de equipes) e
+        // também para cada pessoa que estava nela na hora
+        jogo.premiarEquipe(eu.grupo, criterio.xp);
         for (const outroId of jogo.grupos.get(eu.grupo)?.membros ?? []) {
           if (outroId !== eu.id) jogo.premiar(outroId, criterio.xp, 'criterio-grupo', r.id);
         }
         if (r.id === 'b-c4') jogo.darBadge(eu.id, 'chamado-fechado');
+      }
+    }
+
+    // corrida de equipes: quem chega primeiro leva mais
+    if (taskSlug === 'corrida-1' && resultados.every((r) => r.passou) && eu.grupo) {
+      const chegada = arena.registrarChegada(eu.grupo, eu.nick);
+      if (chegada) {
+        io.emit('aviso', `equipe ${eu.grupo} chegou em ${chegada.posicao}º lugar`);
+        emitirPlacar();
       }
     }
 
@@ -385,8 +438,23 @@ io.on('connection', (socket) => {
   });
 
   // ──────────────────────────────── grupos ─────────────────────────────────
-  socket.on('grupo:entrar', (nome) => {
+  socket.on('grupo:entrar', (nome, ack) => {
     if (!eu) return;
+
+    // trancado: ninguém entra nem sai no meio do chamado
+    if (equipesTrancadas) {
+      socket.emit('aviso', 'as equipes estão trancadas para o chamado');
+      return ack?.({ erro: 'trancado' });
+    }
+
+    // limite de trocas: entrar e sair para caçar a equipe que está ganhando
+    // deixa de ser estratégia
+    const trocas = trocasDeEquipe.get(eu.id) ?? 0;
+    if (nome && nome !== eu.grupo && trocas >= LIMITE_DE_TROCAS) {
+      socket.emit('aviso', `você já trocou de equipe ${trocas} vezes, que é o limite`);
+      return ack?.({ erro: 'limite-de-trocas' });
+    }
+    if (nome && nome !== eu.grupo) trocasDeEquipe.set(eu.id, trocas + 1);
     for (const g of jogo.grupos.values()) { g.membros.delete(eu.id); delete g.papeis[eu.id]; }
     if (eu.grupo) socket.leave(`g:${eu.grupo}`);
     eu.papel = null;
@@ -394,7 +462,8 @@ io.on('connection', (socket) => {
       eu.grupo = null;
       dao.salvarParticipante(eu);
       socket.emit('grupo', null);
-      return (emitirPlacar(), emitirPresenca());
+      emitirPlacar(); emitirPresenca();
+      return ack?.({ ok: true, grupo: null });
     }
     const g = jogo.grupos.get(nome);
     if (g && g.membros.size < g.capacidade) {
@@ -403,6 +472,9 @@ io.on('connection', (socket) => {
     dao.salvarParticipante(eu);
     socket.emit('grupo', eu.grupo);   // sem o eco, a própria tela não atualiza
     emitirPlacar(); emitirPresenca();
+    // confirma SEMPRE: quem chama com callback (o app e os testes) ficava
+    // esperando para sempre quando a entrada dava certo
+    ack?.({ ok: !!eu.grupo, grupo: eu.grupo, cheia: !!nome && !eu.grupo });
   });
 
   /**
@@ -489,6 +561,36 @@ io.on('connection', (socket) => {
     io.to(`g:${eu.grupo}`).emit('grupo:chat', msg);
   });
 
+  /** buzzer: a primeira equipe que aperta ganha a vez de responder */
+  socket.on('arena:buzz', (_, ack) => {
+    if (!eu?.grupo) return ack?.({ erro: 'entre numa equipe primeiro' });
+    const entrou = arena.buzinar(eu.grupo, eu.nick);
+    ack?.({ ok: entrou });
+  });
+
+  /** tentativa da equipe nos jogos de montagem e caça ao erro */
+  socket.on('arena:tentar', ({ resposta } = {}, ack) => {
+    if (!eu?.grupo) return ack?.({ erro: 'entre numa equipe primeiro' });
+    const r = arena.tentar(eu.grupo, eu.nick, resposta);
+    if (r?.certo) {
+      io.emit('aviso', `equipe ${eu.grupo} acertou em ${r.posicao}º lugar`);
+      emitirPlacar();
+    }
+    ack?.(r);
+  });
+
+  /** o apresentador mostra a resposta do jogo para a sala */
+  socket.on('host:arena:revelar', soHost((_, ack) => {
+    const e = arena.revelarResposta();
+    ack?.({ ok: !!e });
+  }));
+
+  socket.on('host:arena:julgar', soHost((acertou, ack) => {
+    const r = arena.julgar(!!acertou);
+    if (r) { emitirPlacar(); io.emit('aviso', acertou ? `equipe ${r.equipe} acertou e levou ${r.xp} XP` : `equipe ${r.equipe} errou, a vez passa`); }
+    ack?.(r);
+  }));
+
   socket.on('ajuda', () => { if (eu) io.to('host').emit('ajuda', jogo.publico(eu)); });
   socket.on('pulso', (valor) => io.to('host').emit('pulso', { valor }));
   socket.on('mentoria', (mentorId) => {
@@ -503,25 +605,40 @@ io.on('connection', (socket) => {
   // ───────────────────────────────── host ──────────────────────────────────
   socket.on('host:entrar', (pin, ack) => {
     host = pin === PIN_HOST;
-    if (host) socket.join('host');
+    if (host) {
+      socket.join('host');
+      // só o apresentador recebe os gabaritos, e só depois do PIN
+      socket.emit('gabaritos', GABARITOS);
+    }
     ack?.(host);
   });
-  const soHost = (fn) => (...a) => { if (host) return fn(...a); };
 
-  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, quiz = null }) => {
+  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }) => {
     Object.assign(estado, { cenaIndex, cenaId, passo, fase });
     pararTimer(); estado.restante = null;
-    quizAtual = quiz ? { ...quiz, cenaId: quiz.cenaId ?? cenaId } : null;
+    // o gabarito vem do servidor, nunca do cliente
+    const gab = cenaId ? gabaritoDe(cenaId) : null;
+    quizAtual = gab ? { cenaId, ...gab } : null;
     if (segundos && fase === 'aberta') iniciarTimer(segundos);
+
+    // o chamado começou: tranca as equipes sozinho
+    if (cenaId && LABS[cenaId]?.escopo === 'grupo') { /* nunca cai aqui: labs são por slug */ }
+
+    // jogo de equipe nesta cena: abre a rodada; em qualquer outra, fecha
+    if (jogoDaArena && fase === 'aberta') arena.abrir(cenaId, jogoDaArena, premios ?? undefined);
+    else arena.fechar();
+
     salvarEstado();
     io.emit('estado', estado);
     if (cenaId) io.emit('respostas', contagemDeRespostas(cenaId));
   }));
   socket.on('host:passo', soHost((d) => { estado.passo = Math.max(0, estado.passo + d); salvarEstado(); io.emit('estado', estado); }));
-  socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null, quiz = null }) => {
+  socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null, arena: jogoDaArena = null, premios = null }) => {
     estado.fase = fase;
     if (cenaId) estado.cenaId = cenaId;
-    if (quiz) quizAtual = { ...quiz, cenaId: quiz.cenaId ?? estado.cenaId };
+    const gabFase = estado.cenaId ? gabaritoDe(estado.cenaId) : null;
+    if (gabFase) quizAtual = { cenaId: estado.cenaId, ...gabFase };
+    if (jogoDaArena && fase === 'aberta') arena.abrir(estado.cenaId, jogoDaArena, premios ?? undefined);
     if (fase === 'aberta' && segundos) iniciarTimer(segundos);
     else { pararTimer(); if (fase === 'idle') estado.restante = null; }
     salvarEstado();
@@ -529,7 +646,12 @@ io.on('connection', (socket) => {
     if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   }));
 
-  socket.on('host:revelar', soHost((dados) => revelarQuiz(dados)));
+  /** o apresentador pede para revelar; o gabarito sai do servidor */
+  socket.on('host:revelar', soHost(({ cenaId } = {}) => {
+    const alvo = cenaId ?? estado.cenaId;
+    const gab = gabaritoDe(alvo);
+    if (gab) revelarQuiz({ cenaId: alvo, ...gab });
+  }));
 
   socket.on('host:gabarito', soHost(async ({ taskSlug }, ack) => {
     const lab = labDe(taskSlug);
@@ -631,6 +753,13 @@ io.on('connection', (socket) => {
     }
     emitirPlacar();
   }));
+  /** trancar e destrancar as equipes à mão */
+  socket.on('host:trancar', soHost((v, ack) => {
+    equipesTrancadas = !!v;
+    io.emit('equipes', { trancadas: equipesTrancadas });
+    ack?.({ trancadas: equipesTrancadas });
+  }));
+
   socket.on('host:grupo:sortear', soHost(() => {
     const ids = [...jogo.participantes.keys()].sort(() => Math.random() - 0.5);
     const nomes = [...jogo.grupos.keys()];
@@ -689,7 +818,7 @@ setInterval(async () => {
     io.to('host').emit('vigia', { id, nick: p?.nick ?? id, motivo, processos, memoriaMb });
     console.warn(`[vigia] sessão de ${p?.nick ?? id} encerrada: ${motivo}`);
   }
-}, 5000);
+}, Number(process.env.ARENA_VIGIA_MS ?? 5000));
 
 /**
  * Quem sumiu sem o navegador avisar (rede caiu, tampa fechada) para de dar

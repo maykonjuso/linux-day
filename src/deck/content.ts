@@ -46,7 +46,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 1 · pergunta 1',
     pergunta: 'Em que ano Linus Torvalds anunciou o Linux?',
     alternativas: [{ id: 'a', texto: '1983' }, { id: 'b', texto: '1991' }, { id: 'c', texto: '1998' }, { id: 'd', texto: '2004' }],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'Em 1991, num post de grupo de discussão. O projeto GNU já existia desde 1983. Faltava só o núcleo do sistema, e foi isso que o Linux trouxe.',
   },
   {
@@ -54,7 +54,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 1 · pergunta 2',
     pergunta: 'Que nome Linus queria dar ao sistema, antes de "Linux"?',
     alternativas: [{ id: 'a', texto: 'Freax' }, { id: 'b', texto: 'Minix' }, { id: 'c', texto: 'Tux' }, { id: 'd', texto: 'GNUx' }],
-    correta: 'a', segundos: 20,
+    segundos: 20,
     explicacao: '"Freax" (free + freak + x). Quem salvou o mundo foi o amigo que administrava o servidor e renomeou a pasta para "linux" sem pedir licença.',
   },
   {
@@ -67,7 +67,7 @@ export const DECK: Cena[] = [
       { id: 'c', texto: 'Porque o Linux nasceu na Finlândia' },
       { id: 'd', texto: 'Foi sorteado entre os desenvolvedores' },
     ],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'O Linus foi mordido por um pinguim num zoológico, na Austrália. O mascote se chama Tux. Um sistema que roda metade da internet tem esse símbolo por causa de uma mordida.',
   },
   {
@@ -86,7 +86,7 @@ export const DECK: Cena[] = [
       { id: 'c', texto: 'Uma interface gráfica' },
       { id: 'd', texto: 'Uma empresa' },
     ],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'O kernel. O que você instala na máquina é uma distribuição: kernel + ferramentas + gerenciador de pacotes + ambiente gráfico.',
   },
   {
@@ -94,7 +94,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 2 · pergunta 2',
     pergunta: 'Ubuntu é baseado em qual distribuição?',
     alternativas: [{ id: 'a', texto: 'Fedora' }, { id: 'b', texto: 'Arch' }, { id: 'c', texto: 'Debian' }, { id: 'd', texto: 'Alpine' }],
-    correta: 'c', segundos: 20,
+    segundos: 20,
     explicacao: 'Debian. Por isso o Ubuntu usa o `apt` para instalar programas. Guardem essa palavra. Ela volta no módulo 5.',
   },
   {
@@ -102,7 +102,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 2 · pergunta 3',
     pergunta: 'Qual comando instala programas numa máquina Ubuntu?',
     alternativas: [{ id: 'a', texto: 'install' }, { id: 'b', texto: 'apt' }, { id: 'c', texto: 'brew' }, { id: 'd', texto: 'yum' }],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: '`apt`. O `brew` é do macOS, o `yum`/`dnf` é da família Red Hat. Vocês vão rodar um `apt install` de verdade hoje.',
   },
   {
@@ -120,7 +120,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 3 · pergunta 1',
     pergunta: 'Qual destes NÃO roda sobre o kernel Linux?',
     alternativas: [{ id: 'a', texto: 'Android' }, { id: 'b', texto: 'ChromeOS' }, { id: 'c', texto: 'iOS' }, { id: 'd', texto: 'Steam Deck' }],
-    correta: 'c', segundos: 20,
+    segundos: 20,
     explicacao: 'iOS. Android, ChromeOS e o Steam Deck são todos Linux por baixo.',
   },
   {
@@ -128,7 +128,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 3 · pergunta 2',
     pergunta: 'Quantos dos 500 supercomputadores mais rápidos do mundo rodam Linux?',
     alternativas: [{ id: 'a', texto: 'Uns 150' }, { id: 'b', texto: 'Cerca de 300' }, { id: 'c', texto: '480' }, { id: 'd', texto: 'Todos os 500' }],
-    correta: 'd', segundos: 20,
+    segundos: 20,
     explicacao: 'Todos os 500. Em máquina grande, não existe outra opção. Saber usar o terminal muda o seu currículo.',
   },
   {
@@ -136,7 +136,7 @@ export const DECK: Cena[] = [
     titulo: 'Ciclo 3 · pergunta final',
     pergunta: 'Qual outra ferramenta que vocês usam foi criada pelo Linus Torvalds?',
     alternativas: [{ id: 'a', texto: 'Docker' }, { id: 'b', texto: 'Git' }, { id: 'c', texto: 'VS Code' }, { id: 'd', texto: 'Python' }],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'O Git. Ele precisava guardar as versões do kernel e não gostou de nada que existia. Agora vamos abrir o terminal.',
   },
 
@@ -336,13 +336,23 @@ export const DECK: Cena[] = [
     resumo: ['ls -l', 'chmod +x', 'chmod 644', 'chmod 755', 'sudo', 'whoami', 'id'],
   },
 
+  // ════════════════════════ ARENA: JOGO DE EQUIPES ══════════════════════════
+  {
+    id: 'arena-permissao', ilustra: 'cadeado', tipo: 'ArenaScene', modulo: 3, passos: 1,
+    jogo: 'montagem',
+    titulo: 'Montagem relâmpago',
+    enunciado: 'Cada equipe monta o comando clicando nas peças, na ordem. A primeira equipe a acertar leva mais XP, e errar não custa nada.',
+    segundos: 90,
+    premios: [250, 170, 120, 70],
+  },
+
   // ══════════════════════ KAHOOT RELÂMPAGO (M3 → M4) ════════════════════════
   {
     id: 'kr-1', ilustra: 'lixeira', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 1 de 4',
     pergunta: 'Qual comando apaga uma pasta e tudo dentro dela?',
     alternativas: [{ id: 'a', texto: 'rm pasta' }, { id: 'b', texto: 'rm -r pasta' }, { id: 'c', texto: 'del pasta' }, { id: 'd', texto: 'mv pasta' }],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'É o `rm -r`. Sem o -r ele avisa que aquilo é uma pasta. Com -rf ele não pergunta nada, e aí mora o perigo.',
   },
   {
@@ -355,7 +365,7 @@ export const DECK: Cena[] = [
       { id: 'c', texto: 'Troca o dono' },
       { id: 'd', texto: 'Esconde o arquivo' },
     ],
-    correta: 'a', segundos: 20,
+    segundos: 20,
     explicacao: 'Liga o bit de execução. É o que falta em 90% dos "não consigo rodar meu script".',
   },
   {
@@ -368,7 +378,7 @@ export const DECK: Cena[] = [
       { id: 'c', texto: 'A minha casa' },
       { id: 'd', texto: 'A raiz do sistema' },
     ],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'Um nível acima. `.` é a atual, `~` é a sua casa, `/` é a raiz.',
   },
   {
@@ -381,7 +391,7 @@ export const DECK: Cena[] = [
       { id: 'c', texto: 'Reinicia sozinho' },
       { id: 'd', texto: 'Vira um arquivo' },
     ],
-    correta: 'b', segundos: 20,
+    segundos: 20,
     explicacao: 'Ele morre junto. Esse é o problema que o próximo módulo resolve.',
   },
 
@@ -448,6 +458,25 @@ export const DECK: Cena[] = [
     resumo: ['grep -rn', 'grep -c', 'find -name', '|', '>', 'sort', 'uniq -c', 'cut', 'wc -l', '&&'],
   },
 
+  // ═════════════════════════ ARENA: CORRIDA ═════════════════════════════════
+  {
+    id: 'arena-corrida', ilustra: 'foguete', tipo: 'ArenaScene', modulo: 4, passos: 1,
+    jogo: 'corrida',
+    titulo: 'Corrida de comandos',
+    enunciado: 'Todas as equipes têm a mesma tarefa: criar a pasta `~/corrida` e, dentro dela, um arquivo com o nome da equipe contendo a palavra **pronto**. Vale a ordem de chegada. Qualquer pessoa da equipe pode fechar.',
+    segundos: 180,
+    taskSlug: 'corrida-1',
+    premios: [300, 200, 140, 90],
+  },
+  {
+    id: 'arena-pipeline', ilustra: 'elo', tipo: 'ArenaScene', modulo: 4, passos: 1,
+    jogo: 'montagem',
+    titulo: 'Montem o encanamento',
+    enunciado: 'Sete peças, uma ordem certa. A primeira equipe a montar a linha que mostra os três erros mais frequentes leva mais XP.',
+    segundos: 150,
+    premios: [300, 200, 140, 90],
+  },
+
   // ════════════════════ M5 · PROGRAMAS E PROCESSOS ══════════════════════════
   {
     id: 'm5-capa', ilustra: 'engrenagem', tipo: 'ModuleCover', modulo: 5, passos: 1,
@@ -506,6 +535,25 @@ export const DECK: Cena[] = [
     titulo: 'Fecho do módulo 5',
     perguntaDeRecuperacao: 'Um programa travou e não responde ao Ctrl+C. O que você faz?',
     resumo: ['sudo apt install', 'ps aux', 'top', 'kill', 'kill -9', '&', 'jobs', 'which'],
+  },
+
+  // ══════════════════════ ARENA: CAÇA AO ERRO E BUZZER ══════════════════════
+  {
+    id: 'arena-caca-erro', ilustra: 'lupa', tipo: 'ArenaScene', modulo: 5, passos: 1,
+    jogo: 'caca-erro',
+    titulo: 'Caça ao erro',
+    enunciado: 'Oito linhas de comando na tela. **Três não funcionam.** Marquem as três e enviem. A equipe mais rápida leva mais XP, e errar só custa tempo.',
+    segundos: 150,
+    premios: [280, 190, 130, 80],
+  },
+  {
+    id: 'arena-buzzer', ilustra: 'alarme', tipo: 'ArenaScene', modulo: 5, passos: 1,
+    jogo: 'buzzer',
+    titulo: 'Quem aperta primeiro',
+    pergunta: 'Um programa travou e não responde ao Ctrl+C. Que comando resolve, e como vocês descobrem o número que ele precisa?',
+    enunciado: 'A primeira equipe que aperta responde em voz alta. Se errar, a vez passa para a próxima da fila.',
+    segundos: 120,
+    premios: [250],
   },
 
   // ═════════════════════════ BOSS · O CHAMADO ═══════════════════════════════

@@ -228,7 +228,7 @@ await pg.keyboard.press('Escape');
 // pedir ajuda
 let pediuAjuda = false;
 host.on('ajuda', () => { pediuAjuda = true; });
-await pg.getByRole('button', { name: /Ajuda/ }).click();
+await pg.locator('[data-acao="ajuda"]').click();
 await dormir(500);
 ok(pediuAjuda, 'o botão de pedir ajuda chega no painel do apresentador');
 
@@ -241,9 +241,9 @@ ok(pulso, 'o botão "me perdi" chega no painel, sem custar nada');
 
 // resetar ambiente
 const xpAntesReset = await xp();
-await pg.getByRole('button', { name: /Começar de novo/ }).click();
+await pg.locator('[data-acao="recomecar"]').click();
 await dormir(2500);
-ok((await pg.locator('.chip', { hasText: /ambiente novo|resetando/ }).count()) > 0, 'o botão de começar de novo confirma na tela');
+ok((await pg.locator('.chip', { hasText: /ambiente novo|recomeçando/ }).count()) > 0, 'o botão de começar de novo confirma na tela');
 ok(await xp() === xpAntesReset, 'resetar não tira XP');
 
 // terminal na gaveta, fora do lab

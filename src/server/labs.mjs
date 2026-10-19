@@ -162,6 +162,29 @@ export const LABS = {
     ],
   },
 
+  // ───────────────────────── corrida de equipes ─────────────────────────────
+  'corrida-1': {
+    titulo: 'Corrida de comandos',
+    escopo: 'grupo',
+    seed: 'm2.sh',
+    solve: 'm2.sh',
+    dicas: ['Crie a pasta com `mkdir`, entre nela com `cd` e escreva o arquivo com `echo ... > nome.txt`.'],
+    criterios: [
+      {
+        id: 'corrida-c1', xp: 0,   // o XP da corrida é por posição, não fixo
+        descricao: 'Criar ~/corrida/<sua equipe>.txt com a palavra pronto',
+        check: `
+          d="$HOME/corrida"
+          [ -d "$d" ] || cai "crie a pasta: mkdir ~/corrida"
+          [ -n "$GRUPO" ] || cai "entre numa equipe antes"
+          f="$d/$GRUPO.txt"
+          [ -f "$f" ] || cai "falta o arquivo $GRUPO.txt dentro de ~/corrida"
+          grep -qi pronto "$f" || cai "o arquivo existe, mas precisa conter a palavra pronto"
+        `,
+      },
+    ],
+  },
+
   // ───────────────────────────── boss (grupo) ───────────────────────────────
   'boss-chamado': {
     titulo: 'O Chamado',

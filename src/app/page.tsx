@@ -9,6 +9,8 @@ import { Consulta } from '@/components/Consulta';
 import { Icone } from '@/components/Icone';
 import { Tour } from '@/components/Tour';
 import { Perfil } from '@/components/Perfil';
+import { useTema, useTemaTerminal } from '@/deck/useTema';
+import { TEMAS_TERMINAL, temaTerminalPorId } from '@/deck/temas';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
 
@@ -33,6 +35,9 @@ export default function Player() {
   const [tour, setTour] = useState(false);
   const [perfil, setPerfil] = useState(false);
   const [codigo, setCodigo] = useState('');
+  const { tema, trocar } = useTema('claro');
+  const { temaTerminal, trocarTemaTerminal } = useTemaTerminal();
+  const [escolhendoTema, setEscolhendoTema] = useState(false);
   /** índice da cena que estou olhando por conta própria (null = ao vivo) */
   const [livre, setLivre] = useState<number | null>(null);
 
@@ -182,7 +187,14 @@ export default function Player() {
   const nivel = nivelDe(eu.xp);
   const posicao = arena.placar.individual.findIndex((p) => p.id === eu.id) + 1;
   const cenaVista = livre === null ? arena.cena : DECK[livre];
-  const emLab = cenaVista.tipo === 'LabScene' && livre === null;
+  /**
+   * O terminal entra na cena quando a tarefa é digitada nele: nos laboratórios
+   * e na corrida de equipes. Nos outros jogos ele fica disponível na gaveta.
+   */
+  const emLab = livre === null && (
+    cenaVista.tipo === 'LabScene' ||
+    (cenaVista.tipo === 'ArenaScene' && cenaVista.jogo === 'corrida')
+  );
 
   return (
     <div className="palco" data-papel="player">
@@ -191,7 +203,8 @@ export default function Player() {
       </Encaixe>
 
       {/* o terminal é montado UMA vez e segue vivo o workshop inteiro */}
-      <TerminalHost socket={arena.socket} ativo={emLab} gaveta={gaveta && !emLab} />
+      <TerminalHost socket={arena.socket} ativo={emLab} gaveta={gaveta && !emLab}
+        tema={temaTerminalPorId(temaTerminal)} />
 
       {/* fora do ao vivo: faixa grande, impossível de não ver */}
       {livre !== null && (
@@ -250,6 +263,17 @@ export default function Player() {
           <button className="btn-icone" onClick={() => setPerfil(true)} title="trocar seu nome, seu bicho ou sair">
             <Icone nome="ajustes" tamanho={16} />
           </button>
+        </div>
+
+        <div className="bloco-controle">
+          <span className="rotulo">tema</span>
+          <button className="btn-icone" onClick={() => trocar()} title="alternar entre slide claro e escuro">
+            <Icone nome={tema === 'claro' ? 'cadeado' : 'estrela'} tamanho={16} />
+            <span className="texto">{tema === 'claro' ? 'claro' : 'escuro'}</span>
+          </button>
+          <button className="btn-icone" onClick={() => setEscolhendoTema((v) => !v)} title="trocar as cores do terminal">
+            <Icone nome="terminal" tamanho={16} /><span className="texto">cores</span>
+          </button>
           {!emLab && (
             <button className="btn-icone" onClick={() => setGaveta((g) => !g)} title="abrir o terminal fora do laboratório">
               <Icone nome="terminal" tamanho={16} /><span className="texto">terminal</span>
@@ -269,6 +293,59 @@ export default function Player() {
       {consulta && <Consulta moduloAtual={cenaVista.modulo} onFechar={() => setConsulta(false)} />}
       {tour && <Tour onFechar={() => setTour(false)} />}
       {perfil && <Perfil arena={arena} onFechar={() => setPerfil(false)} />}
+
+      {/* cores do terminal: dois temas abertos desde o começo e os outros
+          desbloqueiam por nível. É a recompensa do jogo que aparece justamente
+          na tela onde a pessoa está trabalhando. */}
+      {escolhendoTema && (
+        <div onClick={() => setEscolhendoTema(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,12,.45)', zIndex: 58, display: 'grid', placeItems: 'center', padding: 'var(--e3)' }}>
+          <div className="cartao" onClick={(e) => e.stopPropagation()} style={{ width: 'min(620px, 100%)', display: 'grid', gap: 'var(--e2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
+              <Icone nome="terminal" />
+              <strong style={{ fontSize: 18 }}>Cores do terminal</strong>
+              <span className="chip" style={{ marginLeft: 'auto' }}>nível {nivel.nivel}</span>
+            </div>
+
+            <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 'var(--e2)' }}>
+              {TEMAS_TERMINAL.map((t) => {
+                const aberto = t.nivelMinimo <= nivel.nivel;
+                const atual = t.id === temaTerminal;
+                return (
+                  <button key={t.id} disabled={!aberto}
+                    onClick={() => { trocarTemaTerminal(t.id); setEscolhendoTema(false); }}
+                    title={aberto ? `usar o tema ${t.nome}` : `abre no nível ${t.nivelMinimo}`}
+                    style={{
+                      display: 'grid', gap: 'var(--e1)', padding: 'var(--e2)', cursor: aberto ? 'pointer' : 'default',
+                      border: `2px solid ${atual ? 'var(--acento)' : 'var(--borda)'}`, borderRadius: 'var(--r-m)',
+                      background: 'var(--papel)', opacity: aberto ? 1 : 0.45, textAlign: 'left',
+                    }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)' }}>
+                      <strong style={{ fontSize: 14 }}>{t.nome}</strong>
+                      {!aberto && <span className="xp-item">nível {t.nivelMinimo}</span>}
+                      {atual && <span className="xp-item" style={{ marginLeft: 'auto', background: 'var(--acento)', borderColor: 'var(--acento)', color: '#fff' }}>em uso</span>}
+                    </span>
+                    {/* amostra: o mesmo prompt, nas cores do tema */}
+                    <span style={{
+                      fontFamily: 'var(--mono)', fontSize: 12, borderRadius: 'var(--r-p)', padding: 'var(--e1)',
+                      background: t.cores.background, color: t.cores.foreground, display: 'grid', gap: 2,
+                    }}>
+                      <span><span style={{ color: t.cores.green }}>{usuarioDoNick(eu.nick)}@linuxday</span>:~$ ls</span>
+                      <span style={{ color: t.cores.blue }}>bagunca  app  docs</span>
+                      <span style={{ color: t.cores.red }}>erro: permission denied</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <small style={{ color: 'var(--tinta-2)' }}>
+              Temas novos abrem quando você sobe de nível. Nível vem de XP, e XP vem de responder,
+              resolver os exercícios e fechar os laboratórios.
+            </small>
+          </div>
+        </div>
+      )}
 
       {/*
         Ninguém mexeu há 4 minutos. A tela pergunta se a pessoa está aí e, até

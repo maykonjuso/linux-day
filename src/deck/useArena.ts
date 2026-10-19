@@ -10,6 +10,25 @@ export interface GrupoPublico {
   papeis: Record<string, string>; membros: Participante[];
 }
 export interface Placar { individual: Participante[]; grupos: GrupoPublico[] }
+
+/** estado de um jogo de equipe em andamento (vem do servidor) */
+export interface EstadoArena {
+  cenaId: string;
+  jogo: 'corrida' | 'buzzer' | 'montagem' | 'caca-erro';
+  premios?: number[];
+  chegadas?: { equipe: string; nick: string; xp: number; posicao: number }[];
+  tentativas?: Record<string, number>;
+  fila?: { equipe: string; nick: string }[];
+  erradas?: string[];
+  resolvido?: boolean;
+  desafio?: {
+    jogo: string; enunciado: string;
+    pecas?: { id: string; rotulo: string }[]; tamanho?: number;
+    linhas?: { id: string; texto: string }[]; quantos?: number;
+  } | null;
+  /** a resposta, quando o apresentador decide mostrar para a sala */
+  explicacao?: { texto: string; erro: string }[] | null;
+}
 export interface ResultadoCriterio {
   id: string; passou: boolean; mensagem?: string; adesivo?: boolean; xp?: number; papel?: string | null;
 }
@@ -38,6 +57,8 @@ export function useArena(papel: Papel) {
   const [revelacao, setRevelacao] = useState<{ cenaId: string; correta: string; distribuicao: Record<string, number> } | null>(null);
   /** quantas pessoas já responderam a cena da vez (estilo Kahoot) */
   const [respostas, setRespostas] = useState<{ cenaId: string; total: number; esperados: number } | null>(null);
+  /** jogo de equipe em andamento */
+  const [arenaEstado, setArenaEstado] = useState<EstadoArena | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [badge, setBadge] = useState<{ nick: string; badge: string; descricao: string } | null>(null);
   const [subiuNivel, setSubiuNivel] = useState<{ nick: string; patente: string } | null>(null);
@@ -46,6 +67,8 @@ export function useArena(papel: Papel) {
   /** o ambiente Linux da pessoa já foi semeado? (começa pronto para quem volta) */
   const [ambienteOk, setAmbienteOk] = useState(true);
   const [chat, setChat] = useState<{ nick: string; emoji: string; texto: string; em: number }[]>([]);
+  /** gabaritos do quiz: o servidor só manda para o apresentador autenticado */
+  const [gabaritos, setGabaritos] = useState<Record<string, { correta: string; segundos: number; xpBase: number }>>({});
   /** quantas dicas cada lab tem (vem do servidor) */
   const [labs, setLabs] = useState<Record<string, { dicas: number }>>({});
   /** ninguém mexeu há muito tempo: a tela pergunta se a pessoa ainda está aí */
@@ -88,6 +111,8 @@ export function useArena(papel: Papel) {
     s.on('presenca', setPresenca);
     s.on('revelacao', setRevelacao);
     s.on('respostas', setRespostas);
+    s.on('gabaritos', setGabaritos);
+    s.on('arena', setArenaEstado);
     s.on('aviso', (t: string) => efemero('aviso', setAviso, t, 10_000));
     s.on('ambiente', ({ pronto }: { pronto: boolean }) => setAmbienteOk(pronto));
     s.on('xp', ({ total, xp, mult }: { total: number; xp: number; mult: number }) => {
@@ -246,8 +271,15 @@ export function useArena(papel: Papel) {
 
   return {
     socket, conectado, estado, cena, eu, placar, presenca, revelacao, respostas,
-    aviso, badge, subiuNivel, ganho, evento, ambienteOk, chat, meuGrupo, labs, ocioso,
+    aviso, badge, subiuNivel, ganho, evento, ambienteOk, chat, meuGrupo, labs, ocioso, gabaritos,
     nomeRecusado, ultimaPessoa, codigo, expulso, avisoTerminal,
+    arena: arenaEstado,
+    tentarArena: (resposta: unknown) => new Promise<{
+      certo?: boolean; posicao?: number; xp?: number; detalhe?: string; erro?: string;
+      noLugar?: number; explicacoes?: { texto: string; erro: string }[];
+    }>((r) => {
+      socketRef.current?.emit('arena:tentar', { resposta }, r);
+    }),
     entrar, renomear, sair, verificar, pedirDica, resetarAmbiente, estouAqui,
     emit: (ev: string, ...args: unknown[]) => socketRef.current?.emit(ev, ...args),
   };

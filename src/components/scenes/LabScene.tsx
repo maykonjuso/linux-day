@@ -7,6 +7,7 @@ import { Icone } from '../Icone';
 import { Ilustra } from '../Ilustra';
 import { usuarioDoNick } from '@/deck/avatares';
 import { Texto } from '../Texto';
+import { Cabecalho } from '../Cabecalho';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -73,16 +74,17 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
   const papeis = arena.meuGrupo?.papeis ?? {};
 
   return (
-    <div className="cena" style={{ gap: 'var(--e2)', paddingTop: 'var(--e3)' }}>
-      <div className="olho">
-        {cena.escopo === 'grupo' ? `boss em grupo${arena.eu?.grupo ? ` · grupo ${arena.eu.grupo}` : ''}` : 'mão na massa'}
-        {tempo !== null && ` · ⏱ ${Math.floor(tempo / 60)}:${String(tempo % 60).padStart(2, '0')}`}
-        {` · ${feitos}/${cena.criterios.length} critérios`}
-      </div>
-      <h2 className="titulo" style={{ fontSize: 'clamp(20px, 2.2vw, 34px)' }}>{cena.titulo}</h2>
-      <p className="corpo" style={{ maxWidth: '54em', fontSize: 'clamp(15px, 1.4vw, 20px)' }}>
-        <Texto>{cena.objetivo}</Texto>
-      </p>
+    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+      <Cabecalho
+        ilustra={cena.escopo === 'grupo' ? 'ferramenta' : 'terminal'}
+        titulo={cena.titulo}
+        olho={[
+          cena.escopo === 'grupo' ? `chamado em equipe${arena.eu?.grupo ? ` · ${arena.eu.grupo}` : ''}` : 'mão na massa',
+          tempo !== null ? `${Math.floor(tempo / 60)}:${String(tempo % 60).padStart(2, '0')}` : null,
+          `${feitos} de ${cena.criterios.length} prontos`,
+        ].filter(Boolean).join(' · ')}
+      />
+      <p className="corpo-p"><Texto>{cena.objetivo}</Texto></p>
 
       <div className="duas duas-lab" style={{ alignItems: 'start', gap: 'var(--e3)' }}>
         {/* coluna da esquerda: o que fazer */}
@@ -96,7 +98,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
             </div>
           </div>
 
-          <div className="checklist" style={{ maxHeight: 'min(42vh, 380px)', overflowY: 'auto' }}>
+          <div className="checklist" style={{ maxHeight: 'min(26vh, 250px)', overflowY: 'auto' }}>
             {cena.criterios.map((c, i) => {
               const r = resultados[c.id];
               const ok = r?.passou || arena.eu?.criterios?.includes(c.id);
@@ -132,7 +134,8 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
           <div>
             <div className="olho" style={{ marginBottom: 'var(--e05)' }}>comandos deste módulo</div>
             <div style={{ display: 'flex', gap: 'var(--e05)', flexWrap: 'wrap' }}>
-              {cena.comandosDoModulo.map((c) => <code key={c} className="kbd">{c}</code>)}
+              {cena.comandosDoModulo.slice(0, 8).map((c) => <code key={c} className="kbd" style={{ fontSize: 'var(--t6)' }}>{c}</code>)}
+              {cena.comandosDoModulo.length > 8 && <span className="apoio">+{cena.comandosDoModulo.length - 8} na consulta (?)</span>}
             </div>
           </div>
 
@@ -153,19 +156,46 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
             {!souJogador && 'o terminal está na tela de cada participante'}
           </div>
 
+          {/*
+            O campo de resposta precisa gritar.
+            Nos laboratórios de achar algo (a flag escondida, a contagem do log)
+            a pessoa descobre a resposta no terminal e fica procurando onde
+            entregar. Antes era um input discreto entre dois blocos: agora é um
+            bloco com rótulo, borda de destaque e botão próprio.
+          */}
+          {/*
+            O campo de resposta precisa gritar.
+            Nos laboratórios de achar algo (a flag escondida, a contagem do log)
+            a pessoa descobre a resposta no terminal e fica procurando onde
+            entregar. Então é um bloco com rótulo, borda de destaque e botão.
+          */}
           {precisaResposta && souJogador && (
-            <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
-              <Icone nome="pergunta" tamanho={16} />
-              <input className="btn" style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--mono)' }}
-                placeholder="digite aqui a resposta que o critério pede"
-                value={resposta} onChange={(e) => setResposta(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') verificar(); }} />
+            <div className="caixa-resposta" data-preenchida={!!resposta.trim()}>
+              <div className="linha">
+                <Ilustra nome="bandeira" tamanho={20} />
+                <strong style={{ fontSize: 'var(--t5)' }}>Achou a resposta? Cole aqui</strong>
+              </div>
+              <div className="linha">
+                <input
+                  autoComplete="off" spellCheck={false} size={8}
+                  placeholder="cole ou digite aqui"
+                  value={resposta} onChange={(e) => setResposta(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') verificar(); }} />
+                <button className="btn-icone destaque" data-acao="enviar-resposta"
+                  style={{ padding: 'var(--e1) var(--e2)' }}
+                  disabled={!resposta.trim() || ocupado || cooldown > 0}
+                  onClick={() => verificar()}>
+                  <Icone nome="proximo" tamanho={18} /> enviar
+                </button>
+              </div>
+              <small className="apoio">Pode tentar quantas vezes quiser: errar não tira XP.</small>
             </div>
           )}
 
           {souJogador && (
           <div className="controles" style={{ border: '1px solid var(--borda)', borderRadius: 'var(--r)', padding: 'var(--e1)' }}>
-            <button className="btn-icone destaque" style={{ flex: 1, justifyContent: 'center', padding: 'var(--e2)' }}
+            <button className="btn-icone destaque" data-acao="verificar"
+              style={{ flex: 1, justifyContent: 'center', padding: 'var(--e2)' }}
               disabled={!souJogador || ocupado || cooldown > 0 || !arena.ambienteOk}
               onClick={() => verificar()}>
               <Icone nome="verificar" tamanho={18} />
@@ -173,7 +203,8 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
             </button>
 
             <div className="bloco-controle">
-              <button className="btn-icone" disabled={!souJogador || semDicas || (arena.eu?.tokens ?? 0) < custoDaDica}
+              <button className="btn-icone" data-acao="dica" data-sem-dicas={semDicas}
+                disabled={!souJogador || semDicas || (arena.eu?.tokens ?? 0) < custoDaDica}
                 title={semDicas ? 'as dicas deste laboratório acabaram' : `custa ${custoDaDica} token`}
                 onClick={async () => {
                   const r = await arena.pedirDica(cena.taskSlug, dicaIndice);
@@ -184,13 +215,13 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
                 <span className="texto">{semDicas ? 'sem dicas' : `dica (${custoDaDica})`}</span>
               </button>
 
-              <button className="btn-icone" disabled={!souJogador}
+              <button className="btn-icone" data-acao="recomecar" disabled={!souJogador}
                 title="devolve o ambiente limpo. É de graça e você não perde XP"
                 onClick={async () => { setMsg('recomeçando…'); const r = await arena.resetarAmbiente(); setMsg(r.ok ? 'ambiente novo, XP mantido' : 'falhou'); }}>
                 <Icone nome="recomecar" tamanho={16} /><span className="texto">recomeçar</span>
               </button>
 
-              <button className="btn-icone" disabled={!souJogador}
+              <button className="btn-icone" data-acao="ajuda" disabled={!souJogador}
                 title="chama um monitor, sem custo nenhum"
                 onClick={() => { arena.emit('ajuda'); setMsg('monitor avisado'); }}>
                 <Icone nome="ajuda" tamanho={16} /><span className="texto">ajuda</span>

@@ -139,10 +139,11 @@ export function shellDe(conta, nomeVisivel = conta) {
     // conta real do sistema; os atalhos abaixo fazem o `whoami` responder o
     // nome escolhido pela pessoa, que é o que ela lê no prompt
     prepararAtalhosLocais(nomeVisivel, home);
+    const rc = escreverBashrc(home, nomeVisivel);
     return {
       arquivo: 'su',
-      // o shell de login da pessoa, com as travas já aplicadas
-      args: ['-', conta, '-c', comandoComTravas('exec bash -i')],
+      // o shell da pessoa, com as travas já aplicadas e o rcfile nosso
+      args: ['-', conta, '-c', comandoComTravas(`exec bash --noprofile --rcfile ${JSON.stringify(rc)} -i`)],
       cwd: '/', home, caminhoExtra: resolve(home, '.arena/bin'),
     };
   }
@@ -151,9 +152,10 @@ export function shellDe(conta, nomeVisivel = conta) {
   // `whoami` e `id` respondiam o seu usuário do Mac para a sala inteira.
   // Estes atalhos deixam o ambiente de desenvolvimento igual ao do evento.
   prepararAtalhosLocais(nomeVisivel, home);
+  const rc = escreverBashrc(home, nomeVisivel);
   return {
     arquivo: 'bash',
-    args: ['--noprofile', '--norc', '-c', comandoComTravas('exec bash --noprofile --norc -i')],
+    args: ['--noprofile', '--norc', '-c', comandoComTravas(`exec bash --noprofile --rcfile ${JSON.stringify(rc)} -i`)],
     cwd: home, home,
     caminhoExtra: resolve(home, '.arena/bin'),
   };
@@ -164,6 +166,35 @@ export function shellDe(conta, nomeVisivel = conta) {
  * Sem isso, no modo local todo mundo via o usuário do Mac ("aluno1"), e no
  * modo de contas reais via "aluno07", que não diz nada para ela.
  */
+/**
+ * Arquivo de inicialização do shell da pessoa.
+ *
+ * Definir o prompt escrevendo no terminal depois de abrir tinha dois defeitos:
+ * a pessoa via por um instante o prompt padrão (`bash-3.2$`) e o aviso do
+ * macOS sobre o zsh, e o `\w` do prompt se perdia pelo caminho (o JavaScript
+ * engolia a barra invertida, e o prompt virava "nome@linuxday:w$").
+ *
+ * Com um rcfile próprio o shell já nasce certo, e ainda é o lugar natural para
+ * o PATH dos atalhos e para um aviso de boas-vindas.
+ */
+export function escreverBashrc(home, nomeVisivel) {
+  const bin = resolve(home, '.arena/bin');
+  mkdirSync(bin, { recursive: true });
+  const arquivo = resolve(home, '.arena/bashrc');
+  writeFileSync(arquivo, [
+    `export PATH="${bin}:$PATH"`,
+    `export PS1='${nomeVisivel}@linuxday:\\w$ '`,
+    "export PS2='> '",
+    'export LANG=pt_BR.UTF-8',
+    'export HISTSIZE=500',
+    // um alias de cortesia, e o módulo do alias no fim do workshop mostra como
+    // criar os próprios
+    "alias ll='ls -la'",
+    '',
+  ].join('\n'));
+  return arquivo;
+}
+
 function prepararAtalhosLocais(conta, home) {
   const bin = resolve(home, '.arena/bin');
   mkdirSync(bin, { recursive: true });
@@ -194,7 +225,9 @@ async function rodarScriptDeArquivo(pasta, nome, conta, env) {
 /** `all.sh` é expandido aqui (e não por include) para funcionar nos dois modos. */
 /** regrava os atalhos (whoami, id, groups) com o nome novo da pessoa */
 export function atualizarIdentidade(conta, nomeVisivel) {
-  prepararAtalhosLocais(nomeVisivel, casaDe(conta));
+  const home = casaDe(conta);
+  prepararAtalhosLocais(nomeVisivel, home);
+  escreverBashrc(home, nomeVisivel);   // vale para a próxima sessão também
 }
 
 export const MODULOS_SEED = ['m1.sh', 'm2.sh', 'm3.sh', 'm4.sh', 'm5.sh'];

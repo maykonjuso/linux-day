@@ -91,9 +91,14 @@ export interface CenaQuiz extends CenaBase {
   tipo: 'QuizScene';
   pergunta: string;
   alternativas: Alternativa[];
-  correta: string;
   segundos: number;
   explicacao: string;
+  /**
+   * A resposta certa NÃO vem para o cliente: ela vive em
+   * src/server/gabaritos.mjs. No navegador ela estaria dentro do pacote
+   * JavaScript, e qualquer pessoa leria o gabarito nas ferramentas de
+   * desenvolvedor. O cliente descobre a resposta quando o servidor revela.
+   */
 }
 
 export interface CenaWidget extends CenaBase {
@@ -129,6 +134,37 @@ export interface CenaGrupos extends CenaBase {
   papeis?: { id: string; nome: string; faz: string }[];
 }
 
+/**
+ * Jogos de equipe contra equipe.
+ *
+ * `corrida`: todas as equipes recebem a mesma tarefa curta no terminal, e a
+ * classificação é por ordem de chegada. Formato escolhido porque funciona com
+ * dez equipes ao mesmo tempo, ao contrário de duelo, que rende com duas a
+ * quatro.
+ *
+ * `buzzer`: uma pergunta, e a primeira equipe que aperta responde. Se errar, a
+ * vez passa para a próxima da fila (roubo). Vale para a sala inteira porque só
+ * uma equipe fala por vez.
+ */
+export interface CenaArena extends CenaBase {
+  tipo: 'ArenaScene';
+  /**
+   * `corrida`: a mesma tarefa no terminal, classificação por ordem de chegada.
+   * `montagem`: montar a linha de comando com as peças certas, na ordem.
+   * `caca-erro`: achar as linhas que não vão funcionar.
+   * `buzzer`: a primeira equipe que aperta responde; errou, passa a vez.
+   */
+  jogo: 'corrida' | 'buzzer' | 'montagem' | 'caca-erro';
+  enunciado: string;
+  segundos: number;
+  /** corrida: a tarefa verificada no terminal */
+  taskSlug?: string;
+  /** buzzer: a pergunta e o que conta como resposta certa fica no servidor */
+  pergunta?: string;
+  /** XP por posição (1º, 2º, 3º, demais) */
+  premios?: number[];
+}
+
 export interface CenaPlacar extends CenaBase {
   tipo: 'Scoreboard';
   escopo: 'individual' | 'grupo';
@@ -150,6 +186,7 @@ export type Cena =
   | CenaWidget
   | CenaLab
   | CenaGrupos
+  | CenaArena
   | CenaPlacar
   | CenaRecap;
 

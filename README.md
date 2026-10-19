@@ -83,6 +83,33 @@ está liberado, e qual é o endereço para passar para a turma. Também imprime 
 roteiro de teste: se o `ping` do outro computador falha, o problema é a rede
 (Wi-Fi de instituição costuma isolar os clientes entre si) e não o aplicativo.
 
+### Jogos de equipe
+
+Quatro jogos curtos de equipe contra equipe, todos decididos no servidor e
+premiados por posição (300/200/140/90 XP):
+
+- **Corrida de comandos**: a mesma tarefa no terminal, vale a ordem de chegada.
+- **Montagem relâmpago**: montar a linha de comando com as peças na ordem certa.
+- **Caça ao erro**: oito linhas, três não funcionam, achem as três.
+- **Quem aperta primeiro**: a primeira equipe que aperta responde; errou, passa a vez.
+
+As respostas ficam em `src/server/desafios-arena.mjs` e nunca vão para o
+navegador. Detalhes e o porquê de cada formato em
+[docs/plano-gamificacao.md](docs/plano-gamificacao.md) §4b.
+
+### Anti-trapaça
+
+Onze brechas fechadas, da mais grave (o gabarito do quiz vinha no pacote
+JavaScript) à mais sutil (o placar de equipes premiava trocar de time). A tabela
+completa está em [docs/plano-gamificacao.md](docs/plano-gamificacao.md) §4c.
+
+### Temas
+
+Slide claro e escuro nas três telas, guardado por navegador (o projetor começa
+claro de propósito: sala com luz come o preto). O terminal tem seis temas, dois
+abertos desde o começo e os outros desbloqueando por nível, o que faz a
+recompensa do jogo aparecer na tela onde a pessoa trabalha.
+
 ### Ilustrações
 
 As imagens do deck são SVG próprios em `public/ilustra`, extraídos do Noto por

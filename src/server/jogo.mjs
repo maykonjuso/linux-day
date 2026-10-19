@@ -59,6 +59,7 @@ export function criarJogo({ emitir, emitirPara }) {
   const participantes = new Map();   // id -> estado completo
   const grupos = new Map();
   const combos = new Map();          // id -> { mult, seguidos }
+  const ledgerDaEquipe = new Map();  // nome da equipe -> XP conquistado por ela
   const contagens = new Map();       // id -> { predicoes, diagnosticos, ajudas, resets, tokensGastos }
   let multiplicadorGlobal = 1;       // evento "XP dobrado"
   let abertoEm = Date.now();
@@ -103,14 +104,33 @@ export function criarJogo({ emitir, emitirPara }) {
     };
   }
 
+  /**
+   * O placar.
+   *
+   * O de equipes conta o XP que a EQUIPE conquistou (os critérios do chamado),
+   * e não a média do XP pessoal de quem está dentro. A média premiava trocar de
+   * equipe: bastava pular para a que tinha gente com mais pontos e a sua
+   * posição subia sem você fazer nada. Com o XP da equipe, só sobe quem
+   * resolveu o chamado junto.
+   *
+   * A média pessoal continua aparecendo, como informação, mas não ordena nada.
+   */
   function placar() {
     const individual = [...participantes.values()].map(publico).sort((a, b) => b.xp - a.xp);
     const porGrupo = [...grupos.values()].map((g) => {
       const membros = [...g.membros].map((id) => participantes.get(id)).filter(Boolean);
       const media = membros.length ? Math.round(membros.reduce((s, m) => s + m.xp, 0) / membros.length) : 0;
-      return { nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis, media, membros: membros.map(publico) };
-    }).sort((a, b) => b.media - a.media);
+      return {
+        nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis,
+        xp: xpDaEquipe(g.nome), media, membros: membros.map(publico),
+      };
+    }).sort((a, b) => b.xp - a.xp || b.media - a.media);
     return { individual, grupos: porGrupo };
+  }
+
+  /** XP conquistado pela equipe: só os critérios fechados por ela */
+  function xpDaEquipe(nome) {
+    return ledgerDaEquipe.get(nome) ?? 0;
   }
 
   /** O único caminho por onde XP entra. Multiplicadores aplicados aqui. */
@@ -166,8 +186,14 @@ export function criarJogo({ emitir, emitirPara }) {
     emitirPara(id, 'combo', { mult: c.mult, seguidos: c.seguidos });
   }
 
+  /** registra XP no nome da equipe (critérios do chamado) */
+  function premiarEquipe(nome, xp) {
+    if (!nome || !xp) return;
+    ledgerDaEquipe.set(nome, (ledgerDaEquipe.get(nome) ?? 0) + xp);
+  }
+
   return {
-    participantes, grupos, combos, contador, publico, placar, premiar, mexerTokens,
+    participantes, grupos, combos, contador, publico, placar, premiar, mexerTokens, premiarEquipe,
     darBadge, mexerCombo, recarregarDoBanco,
     get multiplicadorGlobal() { return multiplicadorGlobal; },
     set multiplicadorGlobal(v) { multiplicadorGlobal = v; },

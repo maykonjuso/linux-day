@@ -26,9 +26,9 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
     const conteudo = dentro.current;
     if (!caixa || !conteudo) return;
 
-    // mede sem escala para saber o tamanho natural
+    // mede sem escala e sem altura fixa para saber o tamanho natural
     conteudo.style.transform = 'none';
-    conteudo.style.width = '100%';
+    conteudo.style.height = 'auto';
     const alturaDisponivel = caixa.clientHeight;
     const alturaNatural = conteudo.scrollHeight;
     if (!alturaDisponivel || !alturaNatural) return;
@@ -38,9 +38,27 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
     setEscala(nova);
     setRolar(bruta < PISO);
 
+    /*
+     * Zoom proporcional, sem mexer na largura.
+     *
+     * A versão anterior compensava a largura (`width: 100/escala%`) para a cena
+     * continuar preenchendo a tela. Isso criava duas coisas ruins: a proporção
+     * ficava esticada (letra menor numa caixa mais larga) e, pior, o texto
+     * refluía e a altura CRESCIA, então a conta da escala nunca fechava e a
+     * cena continuava estourando.
+     *
+     * Reduzir tudo junto é o que uma pessoa faria com o zoom do navegador: o
+     * slide fica menor e sobra margem, mas nada distorce e nada é cortado.
+     */
     conteudo.style.transform = `scale(${nova})`;
-    // compensa a largura para a cena continuar ocupando a tela inteira
-    conteudo.style.width = `${100 / nova}%`;
+
+    /*
+     * `transform` não muda o layout: o navegador continua reservando a altura
+     * original, e o contêiner acha que precisa de rolagem mesmo com o conteúdo
+     * desenhado menor. Fixar a altura no tamanho PINTADO faz o layout
+     * concordar com o que a pessoa vê, e a barra de rolagem desaparece.
+     */
+    conteudo.style.height = `${Math.ceil(alturaNatural * nova)}px`;
   }, []);
 
   useEffect(() => {
@@ -66,7 +84,7 @@ export function Encaixe({ children, chave }: { children: React.ReactNode; chave:
       data-encaixe={escala < 1 ? 'reduzido' : 'inteiro'}
       style={{ position: 'relative', minHeight: 0, overflowY: rolar ? 'auto' : 'hidden', overflowX: 'hidden' }}
     >
-      <div ref={dentro} style={{ transformOrigin: 'top center', willChange: 'transform' }}>
+      <div ref={dentro} style={{ transformOrigin: 'top center', willChange: 'transform', width: '100%' }}>
         {children}
       </div>
       {rolar && (

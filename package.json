@@ -12,13 +12,15 @@
     "provision": "sudo bash infra/provision.sh",
     "teste": "node testes/e2e.mjs",
     "teste:ui": "node testes/ui.mjs",
-    "teste:tudo": "npm run teste && npm run teste:ui && npm run teste:widgets && npm run teste:deck",
+    "teste:tudo": "npm run teste && npm run teste:justica && npm run teste:terminal && npm run teste:ui && npm run teste:widgets && npm run teste:deck",
     "teste:widgets": "node testes/ui-widgets.mjs",
     "teste:deck": "node testes/ui-deck.mjs",
     "start:rapido": "NODE_ENV=production node server.mjs",
     "limpar": "rm -rf data && mkdir -p data",
     "rede": "node scripts/rede.mjs",
-    "ilustracoes": "node scripts/extrair-ilustracoes.mjs"
+    "ilustracoes": "node scripts/extrair-ilustracoes.mjs",
+    "teste:terminal": "node testes/terminal.mjs",
+    "teste:justica": "node testes/justica.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",

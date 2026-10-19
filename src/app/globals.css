@@ -48,6 +48,35 @@
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
 }
 
+/*
+ * Tema escuro do slide.
+ *
+ * Não é o padrão de propósito: no projetor, sala com luz acesa come o preto e
+ * o resultado na parede é pior que o do tema claro. No notebook de cada pessoa
+ * a escolha é dela, e o sistema dela dá o primeiro palpite.
+ */
+:root[data-tema="escuro"] {
+  --tinta: #ecedf0;
+  --tinta-2: #a1a7b3;
+  --papel: #121317;
+  --papel-2: #1b1d23;
+  --borda: #2f333c;
+  --acento: #7cb0ff;
+  --ok: #5bd48a;
+  --erro: #ff8080;
+  --atencao: #f5c451;
+  --term-fundo: #0d0e12;
+  --term-tinta: #ecedf0;
+}
+:root[data-tema="escuro"] .alt[data-escolhida="true"] { background: #1b2740; }
+:root[data-tema="escuro"] .alt[data-estado="certa"] { background: #14301f; }
+:root[data-tema="escuro"] .item-check .numero,
+:root[data-tema="escuro"] .btn.primario { color: #121317; }
+:root[data-tema="escuro"] .btn.primario { background: var(--tinta); border-color: var(--tinta); }
+:root[data-tema="escuro"] .btn-icone.destaque { background: var(--acento); color: #0d1117; }
+:root[data-tema="escuro"] .toast { background: var(--papel-2); color: var(--tinta); border: 1px solid var(--borda); }
+:root[data-tema="escuro"] .nivel-cheio { background: rgba(18,19,23,.95); }
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -94,9 +123,79 @@ button { font: inherit; color: inherit; }
   * { transition-duration: 0.01ms !important; }
 }
 
-.olho { font-size: clamp(13px, 1.1vw, 17px); color: var(--tinta-2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-.titulo { font-size: clamp(34px, 4.6vw, 76px); font-weight: 760; }
-.corpo { font-size: clamp(18px, 1.9vw, 30px); color: var(--tinta-2); max-width: 24em; }
+/*
+ * ESCALA TIPOGRÁFICA
+ *
+ * Seis tamanhos, e nenhuma cena escolhe o seu. Antes cada cena trazia o próprio
+ * `clamp(...)` no estilo em linha: o título de uma ficava maior que o da
+ * seguinte sem motivo, e a tela parecia desmontada a cada avanço de slide.
+ *
+ * t1 capa de módulo · t2 título de cena · t3 subtítulo e pergunta de quiz
+ * t4 corpo grande · t5 corpo · t6 apoio
+ */
+:root {
+  --t1: clamp(32px, 4.4vw, 72px);
+  --t2: clamp(24px, 2.9vw, 46px);
+  --t3: clamp(19px, 2.1vw, 32px);
+  --t4: clamp(16px, 1.7vw, 24px);
+  --t5: clamp(14px, 1.4vw, 19px);
+  --t6: clamp(12px, 1.1vw, 15px);
+}
+
+/* o sobre-título: sempre na cor do módulo, sempre acima do título */
+.olho {
+  font-size: var(--t6);
+  color: var(--cor-modulo, var(--acento));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+}
+
+.titulo { font-size: var(--t1); font-weight: 760; }
+.titulo-cena { font-size: var(--t2); font-weight: 720; letter-spacing: -0.015em; }
+.titulo-secao { font-size: var(--t3); font-weight: 700; }
+.corpo { font-size: var(--t4); color: var(--tinta-2); max-width: 30em; }
+.corpo-p { font-size: var(--t5); color: var(--tinta-2); max-width: 42em; }
+.apoio { font-size: var(--t6); color: var(--tinta-2); }
+
+/*
+ * CABEÇALHO DA CENA
+ *
+ * Mesma estrutura em toda cena: ilustração à esquerda, sobre-título e título à
+ * direita, e um fio na cor do módulo embaixo. Posição idêntica em todas as
+ * telas é o que faz a pessoa parar de reprocessar o layout a cada slide e usar
+ * a cabeça no conteúdo.
+ */
+.cabecalho {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--e2);
+  padding-bottom: var(--e2);
+  border-bottom: 2px solid var(--cor-modulo, var(--borda));
+}
+.cabecalho .moldura {
+  width: clamp(44px, 4.4vw, 68px);
+  aspect-ratio: 1;
+  border-radius: var(--r-m);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--cor-modulo, var(--acento)) 12%, var(--papel));
+  padding: var(--e1);
+}
+.cabecalho .textos { display: grid; gap: var(--e05); }
+
+/* cor de cada módulo: dá identidade e ajuda a saber onde a turma está */
+.cena[data-modulo="0"] { --cor-modulo: #2563eb; }
+.cena[data-modulo="1"] { --cor-modulo: #0891b2; }
+.cena[data-modulo="2"] { --cor-modulo: #16a34a; }
+.cena[data-modulo="3"] { --cor-modulo: #7c3aed; }
+.cena[data-modulo="4"] { --cor-modulo: #ea580c; }
+.cena[data-modulo="5"] { --cor-modulo: #ca8a04; }
+.cena[data-modulo="6"] { --cor-modulo: #dc2626; }
 
 /* ── barra inferior ──────────────────────────────────────────────────────── */
 .barra {
@@ -170,7 +269,16 @@ button { font: inherit; color: inherit; }
 
 /* ── utilidades ──────────────────────────────────────────────────────────── */
 .grade { display: grid; gap: var(--e3); }
+/*
+ * `min-width: 0` nos filhos de grid é o que impede o estouro lateral: por
+ * padrão um item de grid não encolhe abaixo do tamanho do conteúdo, então um
+ * terminal ou um bloco de código empurra a coluna para fora da tela.
+ */
 .duas { display: grid; gap: var(--e4); grid-template-columns: 1.1fr 1fr; align-items: center; }
+.duas > *, .grade > *, .item-check > *, .controles > * { min-width: 0; }
+.term { max-width: 100%; overflow-x: auto; }
+.checklist, .cartao { max-width: 100%; }
+.item-check .texto-item { overflow-wrap: anywhere; }
 /* no laboratório o terminal leva a fatia maior */
 .duas-lab { grid-template-columns: minmax(240px, 0.85fr) minmax(340px, 1.15fr); }
 @media (max-width: 900px) {
@@ -223,8 +331,16 @@ button { font: inherit; color: inherit; }
 .palco[data-papel="screen"] .kbd { font-size: clamp(16px, 1.5vw, 26px); }
 .palco[data-papel="screen"] .barra { font-size: clamp(15px, 1.3vw, 20px); padding: var(--e2) var(--e4); }
 
-/* quando a cena tem muito conteúdo, aperta um pouco em vez de cortar */
-.cena[data-denso="true"] { gap: clamp(var(--e1), 1.6vh, var(--e3)); }
+/*
+ * Cenas densas (laboratório e jogos): respiro menor, porque elas carregam
+ * checklist, terminal e barra de ações ao mesmo tempo. Sem isto a cena ficava
+ * maior que a tela e o encaixe automático precisava reduzir a letra até o
+ * limite do legível.
+ */
+.cena[data-denso="true"] {
+  gap: var(--e2);
+  padding: var(--e2) clamp(var(--e2), 3vw, var(--e4));
+}
 .cena[data-denso="true"] .titulo { font-size: clamp(22px, 2.6vw, 40px); }
 .cena[data-denso="true"] .corpo { font-size: clamp(15px, 1.4vw, 21px); }
 .cena[data-denso="true"] .cartao { padding: var(--e2); }
@@ -378,4 +494,46 @@ button { font: inherit; color: inherit; }
 .progresso .cheio {
   height: 100%; border-radius: 999px; background: var(--ok);
   transition: width 320ms var(--ease);
+}
+
+
+/* ── campo de resposta dos laboratórios ──────────────────────────────────── */
+/*
+ * O input tem largura intrínseca (o atributo `size` do HTML), e isso empurrava
+ * a coluna para fora da tela no celular mesmo com flex-shrink. Aqui ele é
+ * sempre 100% da linha, e o botão desce para baixo quando não cabe ao lado.
+ */
+.caixa-resposta {
+  border: 2px solid var(--acento);
+  border-radius: var(--r-m);
+  padding: var(--e2);
+  background: var(--papel-2);
+  display: grid;
+  gap: var(--e1);
+  max-width: 100%;
+  overflow: hidden;
+}
+.caixa-resposta[data-preenchida="true"] { border-color: var(--ok); }
+.caixa-resposta .linha {
+  display: flex;
+  gap: var(--e1);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.caixa-resposta input {
+  flex: 1 1 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: var(--t4);
+  padding: var(--e1) var(--e2);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-p);
+  background: var(--papel);
+  color: var(--tinta);
+}
+@media (min-width: 620px) {
+  .caixa-resposta input { flex: 1 1 200px; }
 }

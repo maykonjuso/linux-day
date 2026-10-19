@@ -4,10 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
+import { useTema } from '@/deck/useTema';
 import { DECK, INICIO_DOS_MODULOS } from '@/deck/content';
 import { Icone } from '@/components/Icone';
+import { PainelPessoas, type PessoaDaSala } from '@/components/PainelPessoas';
 
 const ROTULO_DA_CENA: Record<string, string> = {
+  ArenaScene: 'jogo de equipes',
   ModuleCover: 'capa de módulo', MentalModel: 'diagrama', CommandAnatomy: 'anatomia do comando',
   TerminalDemo: 'demonstração', WillGoWrong: 'erros comuns', QuizScene: 'pergunta',
   WidgetScene: 'exercício na tela', LabScene: 'laboratório', GroupScene: 'grupos',
@@ -44,9 +47,11 @@ export default function Host() {
   const [ajudas, setAjudas] = useState<{ nick: string; em: number }[]>([]);
   const [pulsos, setPulsos] = useState(0);
   const [grade, setGrade] = useState<Grade | null>(null);
-  const [verGrade, setVerGrade] = useState(false);
+  /** o que está na tela do apresentador: o slide, a grade ou a lista de pessoas */
+  const [vista, setVista] = useState<'slide' | 'grade' | 'pessoas'>('slide');
   const [recado, setRecado] = useState('');
   const [nota, setNota] = useState<string | null>(null);
+  const { tema, trocar } = useTema('claro');
 
   const segundos = 'segundos' in cena ? (cena as unknown as { segundos: number }).segundos : null;
   const taskSlug = cena.tipo === 'LabScene' ? cena.taskSlug : null;
@@ -68,25 +73,26 @@ export default function Host() {
    * Antes era preciso lembrar de apertar "abrir": sem isso o participante
    * clicava nas alternativas e nada acontecia, sem nenhuma explicação na tela.
    */
-  /** o gabarito vai junto para o servidor poder revelar sozinho (Kahoot) */
-  const quizDe = (c: typeof cena) =>
-    c.tipo === 'QuizScene' ? { cenaId: c.id, correta: c.correta, xpBase: 40, segundos: c.segundos } : null;
-
   const ir = useCallback((i: number) => {
     const alvo = Math.min(Math.max(0, i), DECK.length - 1);
     const c = DECK[alvo];
-    const interativa = c.tipo === 'QuizScene' || c.tipo === 'WidgetScene' || c.tipo === 'LabScene';
+    const interativa = c.tipo === 'QuizScene' || c.tipo === 'WidgetScene' || c.tipo === 'LabScene' || c.tipo === 'ArenaScene';
     const segs = 'segundos' in c ? (c as unknown as { segundos: number }).segundos : null;
     emit('host:ir', {
       cenaIndex: alvo, cenaId: c.id, passo: 0,
       fase: interativa ? 'aberta' : 'idle',
       segundos: interativa ? segs : null,
-      quiz: quizDe(c),
+      arena: c.tipo === 'ArenaScene' ? c.jogo : null,
+      premios: c.tipo === 'ArenaScene' ? c.premios ?? null : null,
     });
   }, [emit]);
 
   const abrir = useCallback(
-    () => emit('host:fase', { fase: 'aberta', segundos, cenaId: cena.id, quiz: quizDe(cena) }),
+    () => emit('host:fase', {
+      fase: 'aberta', segundos, cenaId: cena.id,
+      arena: cena.tipo === 'ArenaScene' ? cena.jogo : null,
+      premios: cena.tipo === 'ArenaScene' ? cena.premios ?? null : null,
+    }),
     [emit, segundos, cena],
   );
 
@@ -105,9 +111,9 @@ export default function Host() {
       // aberta OU com o tempo esgotado: revela.
       // (antes, "encerrada" caía no abrir() e o avançar ficava reabrindo a
       //  pergunta para sempre, que era o "não passa de pergunta")
-      return emit('host:revelar', { cenaId: cena.id, correta: cena.correta, xpBase: 40, segundos: cena.segundos });
+      return emit('host:revelar', { cenaId: cena.id });
     }
-    if (cena.tipo === 'WidgetScene' || cena.tipo === 'LabScene') {
+    if (cena.tipo === 'WidgetScene' || cena.tipo === 'LabScene' || cena.tipo === 'ArenaScene') {
       if (estado.fase === 'idle') return abrir();
       return ir(estado.cenaIndex + 1);
     }
@@ -167,10 +173,11 @@ export default function Host() {
         else ir(estado.cenaIndex - 1);
       }
       else if (k === 'a') abrir();
-      else if (k === 'r' && cena.tipo === 'QuizScene') emit('host:revelar', { cenaId: cena.id, correta: cena.correta, xpBase: 40, segundos: cena.segundos });
+      else if (k === 'r' && cena.tipo === 'QuizScene') emit('host:revelar', { cenaId: cena.id });
       else if (k === 'p') emit('host:pausar', !estado.pausado);
       else if (k === 'v') emit('host:aovivo');
-      else if (k === 'g') setVerGrade((v) => !v);
+      else if (k === 'g') setVista((v) => (v === 'grade' ? 'slide' : 'grade'));
+      else if (k === 's') setVista((v) => (v === 'pessoas' ? 'slide' : 'pessoas'));
     };
     window.addEventListener('keydown', onKey, { capture: true });
     return () => window.removeEventListener('keydown', onKey, { capture: true });
@@ -199,7 +206,15 @@ export default function Host() {
 
   return (
     <div className="palco" data-papel="host">
-      {verGrade && grade ? (
+      {vista === 'pessoas' && grade ? (
+        <PainelPessoas
+          pessoas={grade.pessoas as PessoaDaSala[]}
+          onResetar={(p) => emit('host:reset', { id: p.id }, () => avisar(`ambiente de ${p.nick} recomeçado`))}
+          onSilenciar={(p) => emit('host:silenciar', { id: p.id, silenciado: !p.silenciado },
+            (r: { nick: string; silenciado: boolean }) => avisar(`${r?.nick}: chat ${r?.silenciado ? 'silenciado' : 'liberado'}`))}
+          onExpulsar={(p) => emit('host:expulsar', { id: p.id }, (r: { nick: string }) => avisar(`${r?.nick ?? p.nick} saiu da sala`))}
+        />
+      ) : vista === 'grade' && grade ? (
         <div className="cena" style={{ paddingTop: '2vh', overflow: 'auto' }}>
           <div className="olho">grade pessoas × critérios · G volta para o slide</div>
           <div style={{ overflow: 'auto' }}>
@@ -230,43 +245,6 @@ export default function Host() {
               </tbody>
             </table>
           </div>
-          {/* ações por pessoa: o apresentador precisa resolver caso a caso sem
-              sair do painel */}
-          <div className="checklist" style={{ maxHeight: '34vh', overflowY: 'auto' }}>
-            {grade.pessoas.map((p) => (
-              <div key={p.id} className="item-check" style={{ alignItems: 'center', gridTemplateColumns: 'auto 1fr auto' }}>
-                <span className="marca">{p.emoji}</span>
-                <span className="texto-item">
-                  <span>
-                    <strong>{p.nick}</strong>
-                    <small style={{ color: 'var(--tinta-2)' }}>
-                      {' '}· {p.xp} XP · {p.grupo ?? 'sem equipe'} · código {p.codigo ?? '—'}
-                      {p.conta ? ` · ${p.conta}` : ''}
-                      {p.silenciado ? ' · silenciado' : ''}
-                    </small>
-                  </span>
-                </span>
-                <span style={{ display: 'flex', gap: 'var(--e05)' }}>
-                  <button className="btn-icone" title="devolve o ambiente limpo para esta pessoa"
-                    onClick={() => emit('host:reset', { id: p.id }, () => avisar(`ambiente de ${p.nick} recomeçado`))}>
-                    <Icone nome="recomecar" tamanho={15} />
-                  </button>
-                  <button className="btn-icone" title={p.silenciado ? 'devolver o chat' : 'silenciar o chat desta pessoa'}
-                    onClick={() => emit('host:silenciar', { id: p.id, silenciado: !p.silenciado }, (r: { nick: string; silenciado: boolean }) => avisar(`${r?.nick}: chat ${r?.silenciado ? 'silenciado' : 'liberado'}`))}>
-                    <Icone nome={p.silenciado ? 'tocar' : 'pausar'} tamanho={15} />
-                  </button>
-                  <button className="btn-icone" title="expulsar da sala"
-                    onClick={() => {
-                      if (!confirm(`Expulsar ${p.nick}? O XP fica guardado e ela pode entrar de novo.`)) return;
-                      emit('host:expulsar', { id: p.id }, (r: { nick: string }) => avisar(`${r?.nick} saiu da sala`));
-                    }}>
-                    <Icone nome="sair" tamanho={15} cor="var(--erro)" />
-                  </button>
-                </span>
-              </div>
-            ))}
-          </div>
-
           {grade.travas && (
             <small style={{ color: 'var(--tinta-2)' }}>
               travas por terminal: {grade.travas.processos} processos, {Math.round(grade.travas.memoriaKb / 1024)} MB e{' '}
@@ -319,6 +297,12 @@ export default function Host() {
               <Icone nome="ideia" tamanho={17} /><span className="texto">gabarito</span>
             </button>
           )}
+          {cena.tipo === 'ArenaScene' && (cena.jogo === 'montagem' || cena.jogo === 'caca-erro') && (
+            <button className="btn-icone" title="mostra a resposta do jogo para a sala"
+              onClick={() => emit('host:arena:revelar', null, () => avisar('resposta mostrada para a sala'))}>
+              <Icone nome="olho" tamanho={17} /><span className="texto">mostrar resposta</span>
+            </button>
+          )}
           {cena.tipo === 'LabScene' && cena.escopo === 'grupo' && (
             <button className="btn-icone" title="prepara os quatro defeitos no diretório de cada grupo"
               onClick={() => emit('host:boss:semear', null, (r: { semeados: number }) => avisar(`boss preparado em ${r.semeados} grupos`))}>
@@ -336,9 +320,21 @@ export default function Host() {
           <button className="btn-icone" onClick={() => emit('host:aovivo')} title="traz de volta quem navegou sozinho (V)">
             <Icone nome="pessoas" tamanho={17} /><span className="texto">todos ao vivo</span>
           </button>
-          <button className="btn-icone" onClick={() => setVerGrade((v) => !v)} title="grade pessoas × critérios (G)">
-            <Icone nome="checklist" tamanho={17} /><span className="texto">{verGrade ? 'ver slide' : 'grade'}</span>
+          <button className="btn-icone" onClick={() => setVista((v) => (v === 'grade' ? 'slide' : 'grade'))}
+            title="grade pessoas × critérios (G)"
+            style={{ background: vista === 'grade' ? 'var(--tinta)' : undefined, color: vista === 'grade' ? 'var(--papel)' : undefined }}>
+            <Icone nome="checklist" tamanho={17} /><span className="texto">grade</span>
           </button>
+          <button className="btn-icone" onClick={() => setVista((v) => (v === 'pessoas' ? 'slide' : 'pessoas'))}
+            title="pessoas na sala: recomeçar ambiente, silenciar e expulsar (S)"
+            style={{ background: vista === 'pessoas' ? 'var(--tinta)' : undefined, color: vista === 'pessoas' ? 'var(--papel)' : undefined }}>
+            <Icone nome="pessoas" tamanho={17} /><span className="texto">pessoas</span>
+          </button>
+          {vista !== 'slide' && (
+            <button className="btn-icone" onClick={() => setVista('slide')} title="voltar para o slide">
+              <Icone nome="olho" tamanho={17} /><span className="texto">ver slide</span>
+            </button>
+          )}
           <button className="btn-icone" onClick={() => { emit('host:grupo:sortear'); avisar('grupos sorteados'); }} title="distribui todos em grupos">
             <Icone nome="caixa" tamanho={17} /><span className="texto">sortear grupos</span>
           </button>
@@ -353,6 +349,9 @@ export default function Host() {
             <option value="sabotagem">sabotagem</option>
             <option value="resgate">resgate dos 5 últimos</option>
           </select>
+          <button className="btn-icone" onClick={() => trocar()} title="alternar claro e escuro nesta tela">
+            <Icone nome="olho" tamanho={17} /><span className="texto">{tema === 'claro' ? 'claro' : 'escuro'}</span>
+          </button>
           <input className="btn-icone" style={{ width: 150, border: '1px solid var(--borda)' }} placeholder="recado para a sala" value={recado}
             onChange={(e) => setRecado(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && recado.trim()) { emit('host:aviso', recado.trim()); setRecado(''); avisar('recado enviado'); } }} />

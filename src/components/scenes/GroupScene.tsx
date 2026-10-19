@@ -6,6 +6,7 @@ import type { Cena, Papel } from '@/deck/types';
 import { Icone } from '../Icone';
 import { Ilustra } from '../Ilustra';
 import { Texto } from '../Texto';
+import { Cabecalho } from '../Cabecalho';
 
 type CenaGrupos = Extract<Cena, { tipo: 'GroupScene' }>;
 
@@ -26,14 +27,13 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
   const meu = arena.eu?.grupo ?? null;
 
   return (
-    <div className="cena" style={{ gap: 'var(--e2)' }}>
-      <div style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
-        <Ilustra nome={cena.modo === 'papeis' ? 'aperto-de-mao' : 'pessoas'} tamanho={40} />
-        <h2 className="titulo" style={{ fontSize: 'clamp(22px, 2.6vw, 40px)' }}>{cena.titulo}</h2>
-      </div>
-      <p className="corpo" style={{ maxWidth: '52em', fontSize: 'clamp(15px, 1.4vw, 21px)' }}>
-        <Texto>{cena.enunciado}</Texto>
-      </p>
+    <div className="cena" data-modulo={cena.modulo} style={{ gap: 'var(--e2)' }}>
+      <Cabecalho
+        ilustra={cena.modo === 'papeis' ? 'aperto-de-mao' : 'pessoas'}
+        olho={cena.modo === 'papeis' ? 'cartas de função' : 'equipes'}
+        titulo={cena.titulo}
+      />
+      <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
 
       {cena.modo === 'equipes' ? <Equipes arena={arena} souJogador={souJogador} meu={meu} /> : <Papeis cena={cena} arena={arena} souJogador={souJogador} meu={meu} />}
     </div>
