@@ -22,7 +22,7 @@ export const DECK: Cena[] = [
   {
     id: 'abertura-grupos', tipo: 'GroupScene', modulo: 0, passos: 1,
     titulo: 'Escolham seu grupo',
-    enunciado: 'Entre num grupo (dá para trocar depois). O placar de grupos conta pela MÉDIA, não pela soma — ninguém ganha por ter mais gente, e ninguém culpa o colega mais lento.',
+    enunciado: 'Clique num grupo para entrar. Dá para trocar depois. O placar de grupo usa a média, e não a soma. Assim nenhum grupo ganha por ter mais gente.',
   },
 
   // ═══════════════════════ M0 · INTRODUÇÃO (KAHOOT) ═════════════════════════
@@ -36,21 +36,21 @@ export const DECK: Cena[] = [
     id: 'm0-origem', tipo: 'TerminalDemo', modulo: 0, passos: 3,
     titulo: 'Ciclo 1 · de onde veio',
     linhas: [
-      { comando: '# 1983 — Richard Stallman começa o projeto GNU', saida: 'software livre: usar, estudar, modificar, distribuir', traducao: 'Primeiro vieram as ferramentas. Faltava o núcleo.' },
-      { comando: '# 1991 — Linus Torvalds, 21 anos, Finlândia', saida: '"just a hobby, won\'t be big and professional like gnu"', destaque: "won't be big", traducao: 'Essa frase é dele, no anúncio original. Envelheceu mal — e é a melhor parte da história.' },
+      { comando: '# 1983: Richard Stallman começa o projeto GNU', saida: 'software livre: usar, estudar, modificar, distribuir', traducao: 'Primeiro vieram as ferramentas. Faltava o núcleo.' },
+      { comando: '# 1991: Linus Torvalds, 21 anos, Finlândia', saida: '"just a hobby, won\'t be big and professional like gnu"', destaque: "won't be big", traducao: 'Essa frase é dele, no anúncio original. Envelheceu muito mal.' },
       { comando: '# GNU + Linux = um sistema operacional completo', saida: 'licença GPL: o código é de todos, e continua sendo', traducao: 'É por isso que você pode baixar, abrir, mudar e revender o que quiser.' },
     ],
   },
   {
-    id: 'm0-q1', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q1', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 1',
     pergunta: 'Em que ano Linus Torvalds anunciou o Linux?',
     alternativas: [{ id: 'a', texto: '1983' }, { id: 'b', texto: '1991' }, { id: 'c', texto: '1998' }, { id: 'd', texto: '2004' }],
     correta: 'b', segundos: 20,
-    explicacao: '1991, num post num grupo de discussão. O projeto GNU, de 1983, já existia — o Linux veio completar o que faltava: o kernel.',
+    explicacao: 'Em 1991, num post de grupo de discussão. O projeto GNU já existia desde 1983. Faltava só o núcleo do sistema, e foi isso que o Linux trouxe.',
   },
   {
-    id: 'm0-q2', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q2', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 2',
     pergunta: 'Que nome Linus queria dar ao sistema, antes de "Linux"?',
     alternativas: [{ id: 'a', texto: 'Freax' }, { id: 'b', texto: 'Minix' }, { id: 'c', texto: 'Tux' }, { id: 'd', texto: 'GNUx' }],
@@ -58,7 +58,7 @@ export const DECK: Cena[] = [
     explicacao: '"Freax" (free + freak + x). Quem salvou o mundo foi o amigo que administrava o servidor e renomeou a pasta para "linux" sem pedir licença.',
   },
   {
-    id: 'm0-q3', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q3', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 3',
     pergunta: 'Por que o mascote do Linux é um pinguim?',
     alternativas: [
@@ -68,7 +68,7 @@ export const DECK: Cena[] = [
       { id: 'd', texto: 'Foi sorteado entre os desenvolvedores' },
     ],
     correta: 'b', segundos: 20,
-    explicacao: 'Mordido por um pinguim num zoológico na Austrália. O mascote se chama Tux — e sim: um sistema que roda metade da internet tem esse símbolo por causa de uma mordida.',
+    explicacao: 'O Linus foi mordido por um pinguim num zoológico, na Austrália. O mascote se chama Tux. Um sistema que roda metade da internet tem esse símbolo por causa de uma mordida.',
   },
   {
     id: 'm0-kernel', tipo: 'MentalModel', modulo: 0, passos: 1,
@@ -77,12 +77,12 @@ export const DECK: Cena[] = [
     legenda: 'O Linux é só o núcleo: ele conversa com o hardware. Uma distro é o núcleo + as ferramentas GNU + o gerenciador de pacotes + a interface. Debian → Ubuntu → Mint. Red Hat → Fedora → Rocky. Arch → Manjaro. Mesmo coração, embalagens diferentes.',
   },
   {
-    id: 'm0-q4', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q4', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 1',
     pergunta: 'O que é, exatamente, "o Linux"?',
     alternativas: [
       { id: 'a', texto: 'Um sistema operacional completo' },
-      { id: 'b', texto: 'O kernel — o núcleo que conversa com o hardware' },
+      { id: 'b', texto: 'O kernel, que é o núcleo e conversa com o hardware' },
       { id: 'c', texto: 'Uma interface gráfica' },
       { id: 'd', texto: 'Uma empresa' },
     ],
@@ -90,15 +90,15 @@ export const DECK: Cena[] = [
     explicacao: 'O kernel. O que você instala na máquina é uma distribuição: kernel + ferramentas + gerenciador de pacotes + ambiente gráfico.',
   },
   {
-    id: 'm0-q5', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q5', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 2',
     pergunta: 'Ubuntu é baseado em qual distribuição?',
     alternativas: [{ id: 'a', texto: 'Fedora' }, { id: 'b', texto: 'Arch' }, { id: 'c', texto: 'Debian' }, { id: 'd', texto: 'Alpine' }],
     correta: 'c', segundos: 20,
-    explicacao: 'Debian. E é por isso que no Ubuntu você usa `apt` — o gerenciador de pacotes da família Debian. Guardem essa palavra: ela volta no módulo 5.',
+    explicacao: 'Debian. Por isso o Ubuntu usa o `apt` para instalar programas. Guardem essa palavra. Ela volta no módulo 5.',
   },
   {
-    id: 'm0-q6', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q6', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 3',
     pergunta: 'Qual comando instala programas numa máquina Ubuntu?',
     alternativas: [{ id: 'a', texto: 'install' }, { id: 'b', texto: 'apt' }, { id: 'c', texto: 'brew' }, { id: 'd', texto: 'yum' }],
@@ -116,7 +116,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm0-q7', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q7', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta 1',
     pergunta: 'Qual destes NÃO roda sobre o kernel Linux?',
     alternativas: [{ id: 'a', texto: 'Android' }, { id: 'b', texto: 'ChromeOS' }, { id: 'c', texto: 'iOS' }, { id: 'd', texto: 'Steam Deck' }],
@@ -124,20 +124,20 @@ export const DECK: Cena[] = [
     explicacao: 'iOS. Android, ChromeOS e o Steam Deck são todos Linux por baixo.',
   },
   {
-    id: 'm0-q8', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q8', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta 2',
     pergunta: 'Quantos dos 500 supercomputadores mais rápidos do mundo rodam Linux?',
     alternativas: [{ id: 'a', texto: 'Uns 150' }, { id: 'b', texto: 'Cerca de 300' }, { id: 'c', texto: '480' }, { id: 'd', texto: 'Todos os 500' }],
     correta: 'd', segundos: 20,
-    explicacao: 'Todos. Quando o assunto é máquina séria, não existe alternativa — e é por isso que saber se virar num terminal muda a sua empregabilidade.',
+    explicacao: 'Todos os 500. Em máquina grande, não existe outra opção. Saber usar o terminal muda o seu currículo.',
   },
   {
-    id: 'm0-q9', tipo: 'QuizScene', modulo: 0, passos: 4,
+    id: 'm0-q9', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta final',
     pergunta: 'Qual outra ferramenta que vocês usam foi criada pelo Linus Torvalds?',
     alternativas: [{ id: 'a', texto: 'Docker' }, { id: 'b', texto: 'Git' }, { id: 'c', texto: 'VS Code' }, { id: 'd', texto: 'Python' }],
     correta: 'b', segundos: 20,
-    explicacao: 'Git — ele precisava versionar o kernel e não gostou de nada que existia. Agora chega de história: vamos abrir o terminal.',
+    explicacao: 'O Git. Ele precisava guardar as versões do kernel e não gostou de nada que existia. Agora vamos abrir o terminal.',
   },
 
   // ═══════════════════════════ M1 · NAVEGAÇÃO ═══════════════════════════════
@@ -191,7 +191,7 @@ export const DECK: Cena[] = [
     id: 'm1-fuga-widget', tipo: 'WidgetScene', modulo: 1, passos: 1,
     titulo: 'Qual tecla te salva?',
     widget: 'escape-room',
-    enunciado: 'Três telas em que todo iniciante trava. Para cada uma, escolha a saída. Errar aqui não custa nada — é para isso que este exercício existe.',
+    enunciado: 'Três telas em que todo iniciante trava. Escolha como sair de cada uma. Errar aqui não custa nada.',
     segundos: 60, pontePara: 'q · Esc :q! · Ctrl+C',
   },
   {
@@ -202,10 +202,10 @@ export const DECK: Cena[] = [
     segundos: 90, pontePara: 'cd ../..',
   },
   {
-    id: 'm1-lab', tipo: 'LabScene', modulo: 1, passos: 3,
+    id: 'm1-lab', tipo: 'LabScene', modulo: 1, passos: 1,
     titulo: 'Mão na massa · a flag escondida',
     taskSlug: 'm1-flag',
-    objetivo: 'Em algum lugar da sua casa existe um arquivo flag.txt escondido, quatro níveis abaixo. Ache, abra, e cole o conteúdo aqui. (sua flag é só sua: copiar a do colega não funciona — copiar o comando dele funciona, e isso é aprendizado)',
+    objetivo: 'Existe um arquivo chamado flag.txt escondido na sua pasta pessoal, quatro níveis abaixo. Ache, abra e escreva o conteúdo dele no campo aqui embaixo. Cada pessoa tem uma flag diferente, então copiar a resposta do colega não funciona. Copiar o comando dele funciona, e isso é aprender.',
     criterios: [{ id: 'm1-c1', descricao: 'Entregar o conteúdo de flag.txt', xp: 150 }],
     comandosDoModulo: ['pwd', 'ls -la', 'cd', 'cat', 'find', 'Tab', '--help'],
     segundos: 360, escopo: 'individual',
@@ -232,9 +232,9 @@ export const DECK: Cena[] = [
       { comando: 'touch projeto/src/app.js && ls projeto/src', saida: 'app.js', traducao: 'touch cria um arquivo vazio.' },
       { comando: 'mv projeto/src/app.js projeto/src/main.js', saida: '', traducao: 'Renomear É mover: mesmo comando, mesmo lugar, nome novo. É a confusão nº 1 do módulo.' },
       { comando: 'echo "primeira linha" > notas.txt && cat notas.txt', saida: 'primeira linha', traducao: '> cria/sobrescreve o arquivo com a saída do comando.' },
-      { comando: 'echo "segunda" >> notas.txt && cat notas.txt', saida: 'primeira linha\nsegunda', destaque: 'segunda', traducao: '>> acrescenta no fim. Um sobrescreve, dois acrescentam — esse par volta no módulo 4.' },
+      { comando: 'echo "segunda" >> notas.txt && cat notas.txt', saida: 'primeira linha\nsegunda', destaque: 'segunda', traducao: '>> acrescenta no fim. Um sinal apaga o que tinha, dois sinais acrescentam. Esse par volta no módulo 4.' },
       { comando: 'nano notas.txt', saida: '^O gravar    ^X sair', destaque: '^O gravar    ^X sair', traducao: 'As teclas estão escritas no rodapé da tela. Ninguém precisa decorar: Ctrl+O grava, Ctrl+X sai.' },
-      { comando: 'rm notas.txt', saida: '', traducao: 'Não existe lixeira. E `rm -rf` numa pasta errada não tem volta — nessas duas letras você relê antes do Enter.' },
+      { comando: 'rm notas.txt', saida: '', traducao: 'Não existe lixeira. O `rm -rf` na pasta errada não tem volta. Quando aparecerem essas duas letras, releia antes de apertar Enter.' },
     ],
   },
   {
@@ -251,7 +251,7 @@ export const DECK: Cena[] = [
     id: 'm2-perigo', tipo: 'WidgetScene', modulo: 2, passos: 1,
     titulo: 'Ache o comando perigoso',
     widget: 'spot-the-danger',
-    enunciado: 'Dois rounds. Em cada um, descubra qual comando faz estrago de verdade — sem correr nenhum risco.',
+    enunciado: 'Duas rodadas. Descubra qual comando faz estrago de verdade, sem correr risco nenhum.',
     segundos: 60, pontePara: 'rm -rf ~   # o que você NUNCA digita no automático',
   },
   {
@@ -262,10 +262,10 @@ export const DECK: Cena[] = [
     segundos: 90, pontePara: 'mv *.png imagens/',
   },
   {
-    id: 'm2-lab', tipo: 'LabScene', modulo: 2, passos: 3,
+    id: 'm2-lab', tipo: 'LabScene', modulo: 2, passos: 1,
     titulo: 'Mão na massa · arrumando o diretório',
     taskSlug: 'm2-bagunca',
-    objetivo: 'Organize ~/bagunca conforme a lista. Cada item acende sozinho quando fica certo — e cada um vale XP, então ninguém sai com zero.',
+    objetivo: 'Organize a pasta ~/bagunca seguindo a lista ao lado. Cada item acende sozinho quando fica certo, e cada um vale XP. Ninguém sai com zero.',
     criterios: [
       { id: 'm2-c1', descricao: 'imagens/ com todos os .png e .jpg', xp: 40 },
       { id: 'm2-c2', descricao: 'docs/ com todos os .txt e .md', xp: 40 },
@@ -317,7 +317,7 @@ export const DECK: Cena[] = [
     segundos: 120, pontePara: 'chmod 755 deploy.sh',
   },
   {
-    id: 'm3-lab', tipo: 'LabScene', modulo: 3, passos: 3,
+    id: 'm3-lab', tipo: 'LabScene', modulo: 3, passos: 1,
     titulo: 'Mão na massa · fazendo um script rodar',
     taskSlug: 'm3-permissoes',
     objetivo: 'Crie o ~/deploy.sh (com shebang e um echo), faça ele rodar, e conserte o relatorio.txt que está ilegível.',
@@ -338,15 +338,15 @@ export const DECK: Cena[] = [
 
   // ══════════════════════ KAHOOT RELÂMPAGO (M3 → M4) ════════════════════════
   {
-    id: 'kr-1', tipo: 'QuizScene', modulo: 3, passos: 4,
+    id: 'kr-1', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 1 de 4',
     pergunta: 'Qual comando apaga uma pasta e tudo dentro dela?',
     alternativas: [{ id: 'a', texto: 'rm pasta' }, { id: 'b', texto: 'rm -r pasta' }, { id: 'c', texto: 'del pasta' }, { id: 'd', texto: 'mv pasta' }],
     correta: 'b', segundos: 20,
-    explicacao: '`rm -r`. Sem o -r ele reclama que é um diretório. E com -rf ele não pergunta nada — é aí que mora o perigo.',
+    explicacao: 'É o `rm -r`. Sem o -r ele avisa que aquilo é uma pasta. Com -rf ele não pergunta nada, e aí mora o perigo.',
   },
   {
-    id: 'kr-2', tipo: 'QuizScene', modulo: 3, passos: 4,
+    id: 'kr-2', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 2 de 4',
     pergunta: 'O que `chmod +x arquivo` faz?',
     alternativas: [
@@ -359,7 +359,7 @@ export const DECK: Cena[] = [
     explicacao: 'Liga o bit de execução. É o que falta em 90% dos "não consigo rodar meu script".',
   },
   {
-    id: 'kr-3', tipo: 'QuizScene', modulo: 3, passos: 4,
+    id: 'kr-3', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 3 de 4',
     pergunta: 'O que `..` significa num caminho?',
     alternativas: [
@@ -372,7 +372,7 @@ export const DECK: Cena[] = [
     explicacao: 'Um nível acima. `.` é a atual, `~` é a sua casa, `/` é a raiz.',
   },
   {
-    id: 'kr-4', tipo: 'QuizScene', modulo: 3, passos: 4,
+    id: 'kr-4', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 4 de 4',
     pergunta: 'Você roda um programa e fecha o terminal. O que acontece com ele?',
     alternativas: [
@@ -382,7 +382,7 @@ export const DECK: Cena[] = [
       { id: 'd', texto: 'Vira um arquivo' },
     ],
     correta: 'b', segundos: 20,
-    explicacao: 'Morre — e é exatamente o problema que o próximo módulo resolve. Guardem essa dor.',
+    explicacao: 'Ele morre junto. Esse é o problema que o próximo módulo resolve.',
   },
 
   // ══════════════════════════ M4 · PIPES E BUSCA ════════════════════════════
@@ -396,7 +396,7 @@ export const DECK: Cena[] = [
     id: 'm4-encanamento', tipo: 'MentalModel', modulo: 4, passos: 1,
     titulo: 'O pipe é um encanamento',
     diagrama: 'encanamento',
-    legenda: 'Todo comando tem uma entrada e uma saída. O | liga a saída de um na entrada do outro. O > despeja o resultado num arquivo. grep sozinho é um truque; o pipe é uma IDEIA — e é a ideia que vocês levam para qualquer Linux.',
+    legenda: 'Todo comando tem uma entrada e uma saída. A barra | liga a saída de um comando na entrada do próximo. O sinal > joga o resultado dentro de um arquivo. É assim que comandos simples resolvem problemas grandes.',
   },
   {
     id: 'm4-demo', tipo: 'TerminalDemo', modulo: 4, passos: 7,
@@ -429,7 +429,7 @@ export const DECK: Cena[] = [
     segundos: 150, pontePara: 'grep ERROR app.log | cut -d" " -f3 | sort | uniq -c | sort -rn | head -3',
   },
   {
-    id: 'm4-lab', tipo: 'LabScene', modulo: 4, passos: 3,
+    id: 'm4-lab', tipo: 'LabScene', modulo: 4, passos: 1,
     titulo: 'Mão na massa · caçando no log',
     taskSlug: 'm4-pipes',
     objetivo: 'Seu ~/app.log tem 50 mil linhas. Responda as duas primeiras perguntas no campo abaixo (uma por vez) e grave as linhas FATAL em ~/fatais.txt.',
@@ -459,7 +459,7 @@ export const DECK: Cena[] = [
     id: 'm5-processo', tipo: 'MentalModel', modulo: 5, passos: 1,
     titulo: 'Um processo é uma caixa com número',
     diagrama: 'processo',
-    legenda: 'Em primeiro plano a caixa fica presa ao seu terminal: fechou, morreu (foi a resposta do último Kahoot). Com & ela solta e o prompt volta. O número é o PID — é por ele que você mata.',
+    legenda: 'Sem o & o programa fica preso ao seu terminal. Se você fechar o terminal, ele morre. Com o & ele solta e o seu prompt volta. O número que aparece é o PID, e é por ele que você encerra o programa depois.',
   },
   {
     id: 'm5-demo', tipo: 'TerminalDemo', modulo: 5, passos: 7,
@@ -467,10 +467,10 @@ export const DECK: Cena[] = [
     linhas: [
       { comando: 'sudo apt install -y htop', saida: 'Setting up htop ...', traducao: 'Vem de um repositório: é uma loja de aplicativos, não um .exe baixado de um site qualquer.' },
       { comando: 'htop', saida: 'PID USER  CPU%  COMMAND\n4821 aluno  0.3  node app.js', destaque: '4821', traducao: 'Olhem só três coisas: PID, CPU% e o nome. E sair é com q.' },
-      { comando: 'node app/app.js', saida: 'app no ar na porta 3000 — PID 4821\n█', traducao: 'O prompt não volta: ele não travou, está ocupado. Ctrl+C interrompe.' },
+      { comando: 'node app/app.js', saida: 'app no ar na porta 3000. PID 4821\n█', traducao: 'O prompt não volta: ele não travou, está ocupado. Ctrl+C interrompe.' },
       { comando: 'node app/app.js &', saida: '[1] 4822', destaque: '[1] 4822', traducao: 'O & solta o processo. O número é o PID, e o prompt voltou.' },
       { comando: 'ps aux | grep app.js', saida: 'aluno  4822  0.1  node app/app.js', traducao: 'O pipe do módulo 4 reaparecendo com propósito: listei os processos e filtrei o meu.' },
-      { comando: 'kill 4822', saida: '[1]+  Terminated', traducao: 'Pedido educado. Se o programa não ouvir, kill -9 é a ordem — mas tente o educado primeiro.' },
+      { comando: 'kill 4822', saida: '[1]+  Terminated', traducao: 'Esse é o pedido educado. Se o programa não obedecer, use kill -9. Tente o educado primeiro.' },
       { comando: 'which htop', saida: '/usr/bin/htop', traducao: 'Deu "command not found" depois de instalar? O sistema só encontra o programa se ele estiver numa das pastas da lista do PATH.' },
     ],
   },
@@ -478,21 +478,21 @@ export const DECK: Cena[] = [
     id: 'm5-prever', tipo: 'WidgetScene', modulo: 5, passos: 1,
     titulo: 'O que vai acontecer?',
     widget: 'predict-output',
-    enunciado: 'Três comandos. Antes de rodar, aposte no resultado — prever vale XP e muda a forma como você olha a saída.',
+    enunciado: 'Três comandos. Antes de rodar, aposte no que vai acontecer. Acertar vale XP.',
     segundos: 60, pontePara: 'node app.js &',
   },
   {
     id: 'm5-builder', tipo: 'WidgetScene', modulo: 5, passos: 1,
     titulo: 'Monte o comando',
     widget: 'command-builder',
-    enunciado: 'Encaixe as peças na ordem certa. Depois da terceira vez, você começa a decompor comandos novos sozinho — e esse é o objetivo real do workshop.',
+    enunciado: 'Encaixe as peças na ordem certa. Depois de montar alguns, você começa a entender comandos novos sozinho.',
     segundos: 90, pontePara: 'sudo apt install -y htop',
   },
   {
-    id: 'm5-lab', tipo: 'LabScene', modulo: 5, passos: 3,
+    id: 'm5-lab', tipo: 'LabScene', modulo: 5, passos: 1,
     titulo: 'Mão na massa · instalar, soltar, matar',
     taskSlug: 'm5-processos',
-    objetivo: 'Instale o SEU pacote (está em ~/.pacote — cada um recebeu um diferente), rode a app em background e depois ache o PID e mate.',
+    objetivo: 'Cada pessoa recebeu um programa diferente para instalar. Veja qual é o seu com `cat ~/.pacote`, instale, depois rode a app em segundo plano e por último encerre ela pelo PID.',
     criterios: [
       { id: 'm5-c1', descricao: 'Seu pacote sorteado está instalado', xp: 80 },
       { id: 'm5-c2', descricao: 'app.js rodando em background (com &)', xp: 80 },
@@ -534,7 +534,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm6-boss', tipo: 'LabScene', modulo: 6, passos: 3,
+    id: 'm6-boss', tipo: 'LabScene', modulo: 6, passos: 1,
     titulo: 'Boss · o relatório da madrugada não rodou',
     taskSlug: 'boss-chamado',
     objetivo: 'Quatro defeitos no diretório do grupo (/srv/chamado/grupo-<cor>). Nada aqui é novo: tudo está nos últimos 50 minutos. O Investigador responde a mensagem de erro no campo abaixo.',
@@ -585,7 +585,7 @@ export const CENAS_POR_MODULO = DECK.reduce<Record<number, number>>((acc, c) => 
   return acc;
 }, {});
 
-/** Primeira cena de cada módulo — para o "ir para" do painel do apresentador. */
+/** Primeira cena de cada módulo, para o "ir para" do painel do apresentador. */
 export const INICIO_DOS_MODULOS = DECK.reduce<Record<number, number>>((acc, c, i) => {
   if (!(c.modulo in acc)) acc[c.modulo] = i;
   return acc;

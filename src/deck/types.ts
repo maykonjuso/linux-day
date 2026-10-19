@@ -39,7 +39,14 @@ interface CenaBase {
   id: string;
   modulo: number;
   titulo: string;
-  /** quantos avanços esta cena consome antes de passar para a próxima */
+  /**
+   * Quantos avanços esta cena consome antes de passar para a próxima.
+   *
+   * Vale só para cenas de CONTEÚDO (as linhas do terminal demonstrado, o
+   * resumo do fecho). Cenas em que a turma AGE (quiz, widget, lab) são
+   * guiadas por FASE: abrir, revelar, encerrar. Nelas `passos` é sempre 1,
+   * senão o painel pede cliques que não mudam nada na tela.
+   */
   passos: number;
 }
 
@@ -136,6 +143,8 @@ export type Cena =
 /** Estado sincronizado do evento — a única fonte de verdade, no servidor. */
 export interface EstadoEvento {
   cenaIndex: number;
+  /** id da cena da vez: usado para validar resposta de quiz no servidor */
+  cenaId?: string | null;
   passo: number;
   fase: FaseCena;
   pausado: boolean;

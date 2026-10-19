@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Arena } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
+import { Icone } from '../Icone';
 
 type CenaGrupos = Extract<Cena, { tipo: 'GroupScene' }>;
 
@@ -59,7 +60,10 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
                 <button key={p.id} className="cartao" disabled={!souJogador || (!!dono && !meuPapel)}
                   onClick={() => arena.emit('grupo:papel', p.id)}
                   style={{ textAlign: 'left', borderColor: meuPapel ? 'var(--acento)' : 'var(--borda)' }}>
-                  <strong>{p.nome}</strong>
+                  <strong style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Icone nome={p.id === 'investigador' ? 'lupa' : p.id === 'operador' ? 'matar' : p.id === 'mecanico' ? 'ferramenta' : 'arquivo'} tamanho={18} />
+                    {p.nome}
+                  </strong>
                   <p style={{ color: 'var(--tinta-2)', marginTop: 6, fontSize: 15 }}>{p.faz}</p>
                   <small style={{ color: membro ? 'var(--acento)' : 'var(--tinta-2)' }}>
                     {membro ? `${membro.emoji} ${membro.nick}` : 'livre'}
@@ -73,7 +77,9 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
 
       {souJogador && meu && (
         <div className="cartao" style={{ display: 'grid', gap: 8 }}>
-          <div className="olho">chat do grupo {meu}</div>
+          <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Icone nome="pessoas" tamanho={15} /> chat do grupo {meu}
+          </div>
           <div style={{ maxHeight: 120, overflow: 'auto', display: 'grid', gap: 4 }}>
             {arena.chat.map((m, i) => (
               <div key={i} style={{ fontSize: 15 }}>
@@ -81,7 +87,7 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
                 <span style={{ fontFamily: m.texto.trim().startsWith('$') ? 'var(--mono)' : 'var(--sans)' }}>{m.texto}</span>
               </div>
             ))}
-            {arena.chat.length === 0 && <small style={{ color: 'var(--tinta-2)' }}>combine o plano aqui. Cole comandos começando com $ — mas o colega digita, não copia.</small>}
+            {arena.chat.length === 0 && <small style={{ color: 'var(--tinta-2)' }}>Combine o plano aqui. Pode colar comandos começando com $. O colega digita no teclado dele, e é assim que ele aprende.</small>}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input className="btn" style={{ flex: 1, textAlign: 'left' }} value={texto}

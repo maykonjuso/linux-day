@@ -18,7 +18,7 @@ export default function Regras() {
             desconexão não tiram XP de ninguém.<br />
             <strong>Tokens 🪙</strong> são recurso: começam em 3, você ganha em acertos e gasta em dicas.
             Por que separado? Porque se a dica custasse pontuação, quem mais precisa de ajuda seria quem
-            mais afunda no ranking — o contrário do que um workshop quer.
+            mais afunda no ranking, que é o contrário do que um workshop quer.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default function Regras() {
           <h2 style={{ fontSize: 22 }}>Justiça</h2>
           <ul style={{ color: 'var(--tinta-2)', lineHeight: 1.7 }}>
             <li>Nenhum último lugar é exibido: o placar mostra o top 10 e a sua posição.</li>
-            <li>Pontos parciais em todo lab com mais de um critério — ninguém sai com zero.</li>
+            <li>Pontos parciais em todo lab com mais de um critério, então ninguém sai com zero.</li>
             <li>Flags e respostas são sorteadas por pessoa: copiar resposta não funciona, copiar o comando funciona (e é aprendizado).</li>
             <li>Verificar é ilimitado (10s de intervalo). Tentar de novo é o método, não trapaça.</li>
             <li>Desconexão é neutra: o tempo de bônus conta de quando a tarefa abriu <em>para você</em>.</li>

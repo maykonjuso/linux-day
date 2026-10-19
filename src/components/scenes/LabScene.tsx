@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Arena, ResultadoCriterio } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
+import { Icone } from '../Icone';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -61,6 +62,9 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  const totalDicas = arena.labs[cena.taskSlug]?.dicas ?? 0;
+  const semDicas = dicaIndice >= totalDicas;
+  const custoDaDica = dicaIndice === 0 ? 1 : 2;
   const feitos = cena.criterios.filter((c) => resultados[c.id]?.passou || arena.eu?.criterios?.includes(c.id)).length;
   const tempo = arena.estado.restante;
   const papeis = arena.meuGrupo?.papeis ?? {};
@@ -107,28 +111,38 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
           )}
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button className="btn primario" disabled={!souJogador || ocupado || cooldown > 0} onClick={() => verificar()}>
-              {ocupado ? 'verificando…' : cooldown > 0 ? `Verificar (${cooldown}s)` : 'Verificar'}
+            <button className="btn primario" disabled={!souJogador || ocupado || cooldown > 0 || !arena.ambienteOk} onClick={() => verificar()}>
+              <Icone nome="verificar" tamanho={16} />
+              {ocupado ? ' verificando…' : cooldown > 0 ? ` Verificar (${cooldown}s)` : ' Verificar'}
             </button>
-            <button className="btn" disabled={!souJogador || (arena.eu?.tokens ?? 0) < 1}
+            <button className="btn" disabled={!souJogador || semDicas || (arena.eu?.tokens ?? 0) < custoDaDica}
+              title={semDicas ? 'as dicas deste lab acabaram' : `custa ${custoDaDica} token`}
               onClick={async () => {
                 const r = await arena.pedirDica(cena.taskSlug, dicaIndice);
-                if (r.dica) { setDica(r.dica); setDicaIndice((i) => i + 1); }
+                if (r.dica) { setDica(r.dica); setDicaIndice((i) => i + 1); setMsg(null); }
                 else setMsg(r.erro ?? 'sem dica');
               }}>
-              Dica ({dicaIndice === 0 ? 1 : 2} 🪙)
+              <Icone nome="ideia" tamanho={16} />
+              {semDicas ? ' sem mais dicas' : ` Dica (${custoDaDica} 🪙)`}
             </button>
             <button className="btn" disabled={!souJogador}
               onClick={async () => { setMsg('resetando…'); const r = await arena.resetarAmbiente(); setMsg(r.ok ? 'ambiente novo. XP mantido.' : 'falhou'); }}>
-              Resetar (grátis)
+              <Icone nome="recomecar" tamanho={16} /> Começar de novo (grátis)
             </button>
             <button className="btn" disabled={!souJogador} onClick={() => { arena.emit('ajuda'); setMsg('monitor avisado 🙋'); }}>
-              🙋 Ajuda
+              <Icone nome="ajuda" tamanho={16} /> Ajuda
             </button>
           </div>
 
-          {dica && <div className="cartao" style={{ borderColor: 'var(--acento)' }}>💡 {dica}</div>}
+          {dica && (
+            <div className="cartao" style={{ borderColor: 'var(--acento)', display: 'flex', gap: 10 }}>
+              <Icone nome="ideia" cor="var(--acento)" /> <span>{dica}</span>
+            </div>
+          )}
           {msg && <div className="chip forte">{msg}</div>}
+          {souJogador && !arena.ambienteOk && (
+            <div className="chip">⏳ preparando o seu ambiente Linux… (alguns segundos)</div>
+          )}
 
           <div className="olho">comandos do módulo</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -143,9 +157,10 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
             {!souJogador && 'o terminal está na tela de cada participante'}
           </div>
           {souJogador && (
-            <small style={{ color: 'var(--tinta-2)' }}>
-              clique no terminal para digitar · <code className="kbd">Esc</code> <code className="kbd">Esc</code> devolve o teclado ao slide
-              {arena.eu?.conta && <> · sua conta: <code className="kbd">{arena.eu.conta}</code></>}
+            <small style={{ color: 'var(--tinta-2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Icone nome="teclado" tamanho={15} />
+              Clique no terminal para digitar. Para voltar o teclado ao slide, aperte <code className="kbd">Esc</code> duas vezes.
+              {arena.eu?.conta && <>Sua conta: <code className="kbd">{arena.eu.conta}</code></>}
             </small>
           )}
         </div>

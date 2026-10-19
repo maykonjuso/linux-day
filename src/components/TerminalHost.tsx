@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 
 /**
@@ -18,8 +18,13 @@ import type { Socket } from 'socket.io-client';
  * comando no meio de um slide de teoria, e deixar isso acontecer é ótimo.
  */
 export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null; ativo: boolean; gaveta: boolean }) {
+  const [focado, setFocado] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
-  const termRef = useRef<{ term: unknown; fit: { fit: () => void }; write: (d: string) => void } | null>(null);
+  const termRef = useRef<{
+    term: unknown; fit: { fit: () => void }; write: (d: string) => void;
+    cols: () => number; rows: () => number; blurir: () => void;
+  } | null>(null);
+  const abriu = useRef(false);
 
   // monta o xterm.js uma única vez
   useEffect(() => {
@@ -47,11 +52,36 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
       term.open(caixa.current);
       fit.fit();
 
+      /**
+       * Esc Esc devolve o teclado ao slide. Precisa ser aqui dentro: o xterm
+       * captura as teclas antes da janela, então um listener global nunca veria
+       * o Escape (era o "Esc Esc não funciona").
+       */
+      let ultimoEsc = 0;
+      term.attachCustomKeyEventHandler((ev: KeyboardEvent) => {
+        if (ev.type !== 'keydown') return true;
+        if (ev.key !== 'Escape') { ultimoEsc = 0; return true; }
+        const agora = Date.now();
+        if (agora - ultimoEsc < 600) {
+          ultimoEsc = 0;
+          term.blur();
+          (document.activeElement as HTMLElement | null)?.blur();
+          return false;          // não manda o segundo Esc para o shell
+        }
+        ultimoEsc = agora;
+        return true;             // o primeiro Esc é do programa (vim, por ex.)
+      });
+      term.textarea?.addEventListener('focus', () => setFocado(true));
+      term.textarea?.addEventListener('blur', () => setFocado(false));
+
       term.onData((d: string) => socket?.emit('term:entrada', d));
       term.onResize(({ cols, rows }: { cols: number; rows: number }) => socket?.emit('term:resize', { cols, rows }));
 
-      termRef.current = { term, fit, write: (d: string) => term.write(d) };
-      socket?.emit('term:abrir', { cols: term.cols, rows: term.rows });
+      termRef.current = {
+        term, fit, write: (d: string) => term.write(d),
+        cols: () => term.cols, rows: () => term.rows,
+        blurir: () => { term.blur(); (document.activeElement as HTMLElement | null)?.blur(); },
+      };
 
       const ro = new ResizeObserver(() => {
         // o fit() só depois da animação da cena: redimensionar PTY no meio de
@@ -75,11 +105,38 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
     return () => { socket.off('term:dados', aoReceber); };
   }, [socket]);
 
-  // posiciona em cima do slot da cena de lab (ou na gaveta)
+  /**
+   * Abre a sessão quando o socket E o xterm estiverem prontos — os dois ficam
+   * prontos em ordens diferentes, então tentamos até conseguir. Antes isso
+   * acontecia dentro da montagem do xterm, com o socket ainda null: o terminal
+   * aparecia na tela e nunca recebia nada.
+   */
+  useEffect(() => {
+    if (!socket) return;
+    abriu.current = false;
+    const tentar = () => {
+      if (abriu.current) return true;
+      const t = termRef.current;
+      if (!t) return false;
+      socket.emit('term:abrir', { cols: t.cols(), rows: t.rows() });
+      abriu.current = true;
+      return true;
+    };
+    if (tentar()) return;
+    const i = setInterval(() => { if (tentar()) clearInterval(i); }, 200);
+    const aoReconectar = () => { abriu.current = false; tentar(); };
+    socket.on('connect', aoReconectar);
+    return () => { clearInterval(i); socket.off('connect', aoReconectar); };
+  }, [socket]);
+
+  /**
+   * Posiciona a caixa em cima do slot da cena. Antes isto rodava num
+   * requestAnimationFrame infinito (gastando bateria do notebook de 30 pessoas
+   * por duas horas); agora reage a mudança de tamanho, rolagem e troca de cena.
+   */
   useEffect(() => {
     const el = caixa.current?.parentElement;
     if (!el) return;
-    let raf = 0;
 
     const posicionar = () => {
       const slot = document.getElementById('slot-terminal');
@@ -100,10 +157,24 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
         el.style.opacity = '0';
         el.style.pointerEvents = 'none';
       }
-      raf = requestAnimationFrame(posicionar);
     };
-    raf = requestAnimationFrame(posicionar);
-    return () => cancelAnimationFrame(raf);
+
+    posicionar();
+    const ro = new ResizeObserver(posicionar);
+    const slot = document.getElementById('slot-terminal');
+    if (slot) ro.observe(slot);
+    ro.observe(document.body);
+    window.addEventListener('resize', posicionar);
+    window.addEventListener('scroll', posicionar, true);
+    // a cena entra com uma animação de 200ms: reposiciona quando ela terminar
+    const t = setTimeout(posicionar, 240);
+    const i = setInterval(posicionar, 1000);   // rede de segurança, barata
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', posicionar);
+      window.removeEventListener('scroll', posicionar, true);
+      clearTimeout(t); clearInterval(i);
+    };
   }, [ativo, gaveta]);
 
   return (
@@ -115,7 +186,17 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
         transition: 'opacity 200ms var(--ease)',
       }}
     >
-      <div ref={caixa} style={{ width: '100%', height: '100%' }} />
+      <div ref={caixa} style={{ width: '100%', height: 'calc(100% - 26px)' }} />
+      {/* rodapé do terminal: diz onde está o teclado e como sair dele */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 22, color: focado ? '#7dd3a0' : '#6b6b76', fontSize: 11, fontFamily: 'var(--sans)' }}>
+        {focado ? 'o teclado está no terminal' : 'clique aqui para digitar'}
+        <button
+          onClick={() => { termRef.current?.blurir(); }}
+          style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 6, padding: '1px 8px', fontSize: 11, cursor: 'pointer' }}
+        >
+          devolver teclado ao slide (Esc Esc)
+        </button>
+      </div>
     </div>
   );
 }

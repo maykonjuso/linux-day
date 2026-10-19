@@ -44,14 +44,19 @@ button { font: inherit; color: inherit; }
 .palco {
   height: 100vh;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
+/*
+ * A cena rola quando o conteúdo é maior que a tela, em vez de cortar.
+ * `justify-content: center` só vale quando sobra espaço: com conteúdo grande,
+ * centralizar é o que empurrava o começo para fora da tela.
+ */
 .cena {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 28px;
-  padding: 6vh 7vw;
+  justify-content: safe center;
+  gap: clamp(14px, 2.2vh, 28px);
+  padding: clamp(18px, 4vh, 48px) clamp(18px, 6vw, 90px);
   min-height: 0;
   animation: entra 200ms var(--ease);
 }
@@ -61,7 +66,7 @@ button { font: inherit; color: inherit; }
   * { transition-duration: 0.01ms !important; }
 }
 
-.olho { font-size: clamp(14px, 1.2vw, 18px); color: var(--tinta-2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.olho { font-size: clamp(13px, 1.1vw, 17px); color: var(--tinta-2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .titulo { font-size: clamp(34px, 4.6vw, 76px); font-weight: 760; }
 .corpo { font-size: clamp(18px, 1.9vw, 30px); color: var(--tinta-2); max-width: 24em; }
 
@@ -170,4 +175,83 @@ button { font: inherit; color: inherit; }
 .nivel-cheio {
   position: fixed; inset: 0; z-index: 70; display: grid; place-items: center;
   background: rgba(250,250,249,.94); animation: sobe 2.6s var(--ease) forwards;
+}
+
+
+/* ── projetor: tudo maior, porque é lido da última fileira ───────────────── */
+.palco[data-papel="screen"] .titulo { font-size: clamp(40px, 5.2vw, 92px); }
+.palco[data-papel="screen"] .corpo { font-size: clamp(22px, 2.3vw, 38px); max-width: 28em; }
+.palco[data-papel="screen"] .olho { font-size: clamp(16px, 1.5vw, 24px); }
+.palco[data-papel="screen"] .alt { font-size: clamp(22px, 2.2vw, 34px); padding: 24px 26px; }
+.palco[data-papel="screen"] .alt .letra { width: 46px; height: 46px; font-size: 22px; }
+.palco[data-papel="screen"] .term { font-size: clamp(18px, 1.7vw, 28px); }
+.palco[data-papel="screen"] .chip { font-size: clamp(15px, 1.3vw, 22px); padding: 7px 15px; }
+.palco[data-papel="screen"] .criterio { font-size: clamp(18px, 1.7vw, 28px); }
+.palco[data-papel="screen"] .cartao { padding: 22px 26px; }
+.palco[data-papel="screen"] .kbd { font-size: clamp(16px, 1.5vw, 26px); }
+.palco[data-papel="screen"] .barra { font-size: clamp(15px, 1.3vw, 20px); padding: 14px 26px; }
+
+/* quando a cena tem muito conteúdo, aperta um pouco em vez de cortar */
+.cena[data-denso="true"] { gap: clamp(10px, 1.4vh, 18px); }
+.cena[data-denso="true"] .titulo { font-size: clamp(22px, 2.6vw, 40px); }
+.cena[data-denso="true"] .corpo { font-size: clamp(15px, 1.4vw, 21px); }
+.cena[data-denso="true"] .cartao { padding: 12px 14px; }
+
+/* ── barras de controle ──────────────────────────────────────────────────── */
+/*
+ * Os controles vivem em GRUPOS separados por função, não numa fila única de
+ * botões. Com doze botões lado a lado ninguém acha o que precisa no meio de
+ * uma apresentação, e no notebook eles saíam da tela.
+ */
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--borda);
+  background: var(--papel-2);
+}
+.bloco-controle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--papel);
+}
+.bloco-controle > .rotulo {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tinta-2);
+  margin-right: 2px;
+  user-select: none;
+}
+.btn-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 9px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 140ms ease, transform 140ms var(--ease);
+  white-space: nowrap;
+}
+.btn-icone:hover:not(:disabled) { background: var(--papel-2); }
+.btn-icone:active:not(:disabled) { transform: scale(0.97); }
+.btn-icone:disabled { opacity: 0.4; cursor: default; }
+.btn-icone.destaque { background: var(--tinta); color: var(--papel); font-weight: 650; }
+.btn-icone.destaque:hover { background: #26262b; }
+.estado-faixa {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-left: auto; font-size: 13px; color: var(--tinta-2);
+}
+@media (max-width: 860px) {
+  .btn-icone .texto { display: none; }        /* no celular sobra só o ícone */
+  .bloco-controle > .rotulo { display: none; }
 }

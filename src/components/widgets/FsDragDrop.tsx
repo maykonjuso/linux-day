@@ -32,9 +32,10 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
 
   return (
     <div className="grade" style={{ gap: 14 }}>
+      <div className="olho">clique num arquivo e depois na área da pasta certa</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', minHeight: 44 }}>
         {soltos.map((a) => (
-          <button key={a.nome} className="btn" onClick={() => setSel(a.nome === sel ? null : a.nome)}
+          <button key={a.nome} className="btn" data-arquivo={a.nome} onClick={() => setSel(a.nome === sel ? null : a.nome)}
             style={{ fontFamily: 'var(--mono)', borderColor: sel === a.nome ? 'var(--acento)' : 'var(--borda)' }}>
             {a.nome}
           </button>
@@ -42,25 +43,48 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
         {soltos.length === 0 && <span style={{ color: 'var(--tinta-2)' }}>bagunça resolvida 🎉</span>}
       </div>
 
-      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
         {PASTAS.map((p) => {
           const dentro = Object.entries(onde).filter(([, v]) => v === p).map(([n]) => n);
           return (
-            <button key={p} className="cartao" onClick={() => { if (sel) { setOnde({ ...onde, [sel]: p }); setSel(null); } }}
-              style={{ textAlign: 'left', cursor: sel ? 'pointer' : 'default', borderColor: sel ? 'var(--acento)' : 'var(--borda)', borderStyle: sel ? 'dashed' : 'solid' }}>
+            <div key={p} className="cartao" style={{ display: 'grid', gap: 10 }}>
               <strong style={{ fontFamily: 'var(--mono)' }}>{p === 'lixeira' ? '🗑 lixeira' : `${p}/`}</strong>
-              <div style={{ display: 'grid', gap: 4, marginTop: 8 }}>
+
+              {/* a área de soltar é um alvo próprio: antes, com os arquivos
+                  empilhados, o centro do card caía sobre um nome de arquivo e o
+                  clique REMOVIA em vez de soltar */}
+              <button
+                data-pasta={p}
+                onClick={() => { if (sel) { setOnde({ ...onde, [sel]: p }); setSel(null); } }}
+                disabled={!sel}
+                style={{
+                  minHeight: 54, borderRadius: 10, cursor: sel ? 'pointer' : 'default',
+                  border: `1.5px ${sel ? 'dashed var(--acento)' : 'solid var(--borda)'}`,
+                  background: sel ? '#eff4ff' : 'var(--papel-2)',
+                  color: 'var(--tinta-2)', fontSize: 14,
+                }}
+              >
+                {sel ? `soltar ${sel} aqui` : 'solte aqui'}
+              </button>
+
+              <div style={{ display: 'grid', gap: 4 }}>
                 {dentro.map((n) => {
-                  const ok = ARQUIVOS.find((a) => a.nome === n)?.pasta === p;
+                  const certo = ARQUIVOS.find((a) => a.nome === n)?.pasta === p;
                   return (
-                    <span key={n} onClick={(e) => { e.stopPropagation(); const o = { ...onde }; delete o[n]; setOnde(o); }}
-                      style={{ fontFamily: 'var(--mono)', fontSize: 14, color: ok ? 'var(--ok)' : 'var(--erro)' }}>
-                      {ok ? '✓' : '✗'} {n}
+                    <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 14, color: certo ? 'var(--ok)' : 'var(--erro)' }}>
+                      {certo ? '✓' : '✗'} {n}
+                      <button
+                        aria-label={`tirar ${n} de ${p}`}
+                        onClick={() => { const o = { ...onde }; delete o[n]; setOnde(o); }}
+                        style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--tinta-2)', padding: '0 4px' }}
+                      >
+                        ×
+                      </button>
                     </span>
                   );
                 })}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

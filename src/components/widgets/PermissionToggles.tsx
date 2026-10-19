@@ -56,8 +56,8 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
     <div className="duas">
       <div className="grade">
         {QUEM.map((quem, q) => (
-          <div key={quem} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <strong style={{ width: 86 }}>{quem}</strong>
+          <div key={quem} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <strong style={{ width: 74, fontSize: 15 }}>{quem}</strong>
             {BITS.map((bit, b) => (
               <button
                 key={bit.k}
@@ -65,7 +65,8 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
                 aria-pressed={grade[q][b]}
                 className="btn"
                 style={{
-                  width: 76, fontFamily: 'var(--mono)', fontWeight: 700,
+                  flex: '1 1 52px', minWidth: 48, maxWidth: 90, padding: '10px 0',
+                  fontFamily: 'var(--mono)', fontWeight: 700,
                   background: grade[q][b] ? 'var(--acento)' : 'var(--papel)',
                   color: grade[q][b] ? '#fff' : 'var(--tinta-2)',
                   borderColor: grade[q][b] ? 'var(--acento)' : 'var(--borda)',

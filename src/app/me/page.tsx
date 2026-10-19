@@ -53,7 +53,7 @@ export default function Eu() {
         <div style={{ fontSize: 30, fontWeight: 700, margin: '8px 0' }}>{eu.nick}</div>
         <p style={{ color: 'var(--tinta-2)', maxWidth: '36em', margin: '0 auto' }}>
           participou do workshop <strong>Linux Day</strong>, completou laboratórios verificados de navegação,
-          manipulação de arquivos, permissões, pipes e processos, e fechou um chamado de diagnóstico em equipe —
+          manipulação de arquivos, permissões, pipes e processos, e fechou um chamado de diagnóstico em equipe,
           somando <strong>{eu.xp} XP</strong> e a patente de <strong>{n.patente}</strong>.
         </p>
         <small style={{ color: 'var(--tinta-2)', display: 'block', marginTop: 14 }}>{comandos} comandos no pacote de sobrevivência · {agora}</small>
@@ -68,8 +68,8 @@ export default function Eu() {
 
       <h2 style={{ fontSize: 22, margin: '30px 0 10px' }}>Próximos passos</h2>
       <ul style={{ color: 'var(--tinta-2)', lineHeight: 1.8, maxWidth: '44em' }}>
-        <li>Instale uma VM (ou WSL, no Windows) e repita o boss sozinho — é o melhor exercício que existe.</li>
-        <li>Exercícios: <code className="kbd">overthewire.org/wargames/bandit</code> — jogo de terminal, do zero ao avançado.</li>
+        <li>Instale uma VM (ou WSL, no Windows) e repita o boss sozinho. É o melhor exercício que existe.</li>
+        <li>Exercícios: <code className="kbd">overthewire.org/wargames/bandit</code>, um jogo de terminal que começa do zero.</li>
         <li>Leitura: <em>The Linux Command Line</em>, de William Shotts (grátis em linuxcommand.org).</li>
         <li>O que vem depois do que vimos: <code className="kbd">ssh</code> (entrar em outra máquina) e <code className="kbd">tar</code> (empacotar arquivos).</li>
       </ul>

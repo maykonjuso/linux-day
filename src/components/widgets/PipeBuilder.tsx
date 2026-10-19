@@ -35,7 +35,7 @@ const SAIDAS: Record<string, string[]> = {
 export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void }) {
   const [tubo, setTubo] = useState<string[]>([]);
   const chave = tubo.join('|');
-  const saida = useMemo(() => SAIDAS[chave] ?? ['(ordem inesperada — a saída fica estranha, e isso também ensina)'], [chave]);
+  const saida = useMemo(() => SAIDAS[chave] ?? ['(nesta ordem a saída fica estranha, e ver isso também ensina)'], [chave]);
   const certo = chave === ORDEM.join('|');
   const errou = !SAIDAS[chave];
 
@@ -46,18 +46,21 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
         {tubo.map((id, i) => (
           <span key={`${id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <strong style={{ color: 'var(--acento)' }}>|</strong>
-            <button className="btn" onClick={() => setTubo(tubo.slice(0, i))} title="remover daqui para frente"
-              style={{ borderColor: 'var(--acento)', color: 'var(--acento)', fontFamily: 'var(--mono)' }}>
+            <button className="btn" data-tubo={id} onClick={() => setTubo(tubo.slice(0, i))}
+              title="clique para remover esta peça e as seguintes"
+              style={{ borderColor: 'var(--acento)', color: 'var(--acento)', fontFamily: 'var(--mono)', display: 'flex', gap: 6, alignItems: 'center' }}>
               {PECAS.find((p) => p.id === id)?.rotulo}
+              <span aria-hidden style={{ opacity: 0.55 }}>×</span>
             </button>
           </span>
         ))}
-        {tubo.length > 0 && <button className="btn" onClick={() => setTubo([])}>limpar</button>}
+        {tubo.length > 0 && <button className="btn" data-limpar onClick={() => setTubo([])}>limpar</button>}
       </div>
 
+      <div className="olho">peças disponíveis. Clique para encaixar no fim do encanamento</div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {PECAS.filter((p) => !tubo.includes(p.id)).map((p) => (
-          <button key={p.id} className="btn" onClick={() => setTubo([...tubo, p.id])}
+          <button key={p.id} className="btn" data-peca={p.id} onClick={() => setTubo([...tubo, p.id])}
             style={{ display: 'grid', gap: 2, textAlign: 'left', fontFamily: 'var(--mono)' }}>
             {p.rotulo}
             <small style={{ color: 'var(--tinta-2)', fontFamily: 'var(--sans)' }}>{p.explica}</small>
@@ -70,7 +73,7 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
       </div>
 
       {errou && <div className="cartao" style={{ borderColor: 'var(--atencao)' }}>
-        Essa ordem não faz sentido para o encanamento — tente outra. Tentar de novo é de graça.
+        Nesta ordem o encanamento não faz sentido. Tente outra. Tentar de novo é de graça.
       </div>}
       {certo && (
         <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>

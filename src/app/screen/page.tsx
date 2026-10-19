@@ -2,17 +2,20 @@
 
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
+import { Encaixe } from '@/components/Encaixe';
 import { DECK } from '@/deck/content';
 
 /** A tela do projetor. Sem interação: é para ser olhada por 30 pessoas. */
 export default function Screen() {
   const arena = useArena('screen');
-  const { estado, presenca, aviso } = arena;
+  const { estado, cena, presenca, aviso } = arena;
   const ativos = presenca.filter((p) => p.presenca !== 'desconectado').length;
 
   return (
-    <div className="palco">
-      <SceneRouter arena={arena} papel="screen" />
+    <div className="palco" data-papel="screen">
+      <Encaixe chave={`${cena.id}:${estado.passo}:${estado.fase}`}>
+        <SceneRouter arena={arena} papel="screen" />
+      </Encaixe>
       <div className="barra">
         <span className="chip">cena {estado.cenaIndex + 1}/{DECK.length}</span>
         <span className="chip">{ativos} na sala</span>

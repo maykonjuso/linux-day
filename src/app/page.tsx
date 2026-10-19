@@ -3,45 +3,68 @@
 import { useEffect, useState } from 'react';
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
+import { Encaixe } from '@/components/Encaixe';
 import { TerminalHost } from '@/components/TerminalHost';
+import { Consulta } from '@/components/Consulta';
+import { Icone } from '@/components/Icone';
+import { Tour } from '@/components/Tour';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
 
 const EMOJIS = ['🐧', '🦊', '🐙', '🦉', '🐢', '🦝', '🐝', '🦈', '🐼', '🦅'];
 
 /**
- * A tela do participante: é o deck, e é a única URL dele nas 2 horas.
- * O terminal e o quiz acontecem DENTRO do slide — ele nunca troca de contexto.
+ * A tela do participante. É o deck, e é a única URL dele nas 2 horas: o quiz,
+ * os exercícios e o terminal acontecem DENTRO do slide.
+ *
+ * Navegação: por padrão ele segue o apresentador ("ao vivo"). Se quiser olhar
+ * um slide anterior, ele navega livremente e um botão grande oferece voltar ao
+ * vivo. Sem essa saída, quem perdeu algo fica preso olhando uma tela onde não
+ * tem nada para fazer, e foi exatamente isso que aconteceu nos testes de sala.
  */
 export default function Player() {
   const arena = useArena('player');
-  const { eu, estado, cena, conectado, aviso, entrar } = arena;
+  const { eu, estado, conectado, aviso, entrar } = arena;
   const [nick, setNick] = useState('');
   const [emoji, setEmoji] = useState(EMOJIS[0]);
   const [gaveta, setGaveta] = useState(false);
   const [consulta, setConsulta] = useState(false);
+  const [tour, setTour] = useState(false);
+  /** índice da cena que estou olhando por conta própria (null = ao vivo) */
+  const [livre, setLivre] = useState<number | null>(null);
 
-  // Ctrl+` abre/fecha a gaveta do terminal; ? abre a consulta aos slides já vistos.
-  // O participante NÃO navega o deck por teclado: ele segue o apresentador, e
-  // isso elimina quase todo o conflito com as teclas do terminal.
+  // volta ao vivo quando o apresentador pede, ou quando a sala muda de cena
+  useEffect(() => {
+    const s = arena.socket;
+    const aoVivo = () => setLivre(null);
+    s?.on('aovivo', aoVivo);
+    return () => { s?.off('aovivo', aoVivo); };
+  }, [arena.socket]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const alvo = e.target as HTMLElement | null;
-      const digitando = alvo?.tagName === 'INPUT' || alvo?.closest('.xterm');
+      const digitando = alvo?.tagName === 'INPUT' || !!alvo?.closest('.xterm');
       if (e.ctrlKey && e.key === '`') { e.preventDefault(); setGaveta((g) => !g); }
-      if (e.key === '?' && !digitando) setConsulta((c) => !c);
-      if (e.key === 'Escape') setConsulta(false);
+      if (digitando) return;
+      if (e.key === '?') setConsulta((c) => !c);
+      if (e.key === 'Escape') { setConsulta(false); setLivre(null); }
+      // navegação livre: só com as setas, e sempre com volta ao vivo à mão
+      if (e.key === 'ArrowLeft') setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1));
+      if (e.key === 'ArrowRight') setLivre((l) => Math.min(DECK.length - 1, (l ?? estado.cenaIndex) + 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [estado.cenaIndex]);
 
   if (!eu) {
     return (
       <div className="centro">
-        <div className="cartao" style={{ width: 'min(460px, 100%)', display: 'grid', gap: 16 }}>
-          <div className="olho">Linux Day</div>
-          <h1 className="titulo" style={{ fontSize: 34 }}>Escolha seu nome de guerra</h1>
+        <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 16 }}>
+          <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Icone nome="shell" tamanho={16} /> Linux Day
+          </div>
+          <h1 className="titulo" style={{ fontSize: 34 }}>Escolha seu nome</h1>
           <input className="btn" style={{ textAlign: 'left' }} placeholder="seu nick" value={nick} maxLength={20}
             onChange={(e) => setNick(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && nick.trim()) entrar(nick.trim(), emoji); }} />
@@ -52,10 +75,10 @@ export default function Player() {
             ))}
           </div>
           <button className="btn primario" disabled={!nick.trim()} onClick={() => entrar(nick.trim(), emoji)}>
-            entrar na arena
+            entrar
           </button>
           <small style={{ color: 'var(--tinta-2)' }}>
-            Guardamos só o nick e o emoji, e tudo é apagado depois do evento.
+            Guardamos só o nick e o emoji. Tudo é apagado depois do evento.
           </small>
         </div>
       </div>
@@ -64,64 +87,121 @@ export default function Player() {
 
   const nivel = nivelDe(eu.xp);
   const posicao = arena.placar.individual.findIndex((p) => p.id === eu.id) + 1;
-  const emLab = cena.tipo === 'LabScene';
-  const jaVistos = DECK.slice(0, estado.cenaIndex).filter(
-    (c) => (c.tipo === 'CommandAnatomy' || c.tipo === 'TerminalDemo' || c.tipo === 'WillGoWrong') && c.modulo === cena.modulo,
-  );
+  const cenaVista = livre === null ? arena.cena : DECK[livre];
+  const emLab = cenaVista.tipo === 'LabScene' && livre === null;
 
   return (
-    <div className="palco">
-      <SceneRouter arena={arena} papel="player" />
+    <div className="palco" data-papel="player">
+      <Encaixe chave={`${cenaVista.id}:${estado.passo}:${estado.fase}`}>
+        <SceneRouter arena={arena} papel="player" cenaForcada={livre === null ? undefined : cenaVista} />
+      </Encaixe>
 
       {/* o terminal é montado UMA vez e segue vivo o workshop inteiro */}
       <TerminalHost socket={arena.socket} ativo={emLab} gaveta={gaveta && !emLab} />
 
-      <div className="barra">
-        <span className="chip">{eu.emoji} {eu.nick}</span>
-        <span className="chip forte">{eu.xp} XP</span>
-        <span className="chip" title="tokens sudo: gastos em dicas">{eu.tokens} 🪙</span>
-        {(eu.combo ?? 1) > 1 && <span className="chip forte">combo ×{eu.combo}</span>}
-        {posicao > 0 && <span className="chip">{posicao}º</span>}
-        <span className="chip" style={{ fontFamily: 'var(--mono)' }}>{nivel.prompt.replace('{nick}', eu.nick)}</span>
-        <span className="cresce" />
-        <button className="btn" style={{ padding: '4px 10px' }} onClick={() => setConsulta((c) => !c)}>? consultar</button>
-        {!emLab && <button className="btn" style={{ padding: '4px 10px' }} onClick={() => setGaveta((g) => !g)}>terminal</button>}
-        <button className="btn" style={{ padding: '4px 10px' }} onClick={() => arena.emit('pulso', 'perdi')}>me perdi</button>
-        {estado.pausado && <span className="chip forte">⏸ pausado</span>}
-        <span className="chip">{conectado ? '🟢 ao vivo' : '🔴 reconectando'}</span>
+      {/* fora do ao vivo: faixa grande, impossível de não ver */}
+      {livre !== null && (
+        <button className="btn primario"
+          onClick={() => setLivre(null)}
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Icone nome="tocar" tamanho={16} /> voltar ao vivo (você está olhando sozinho)
+        </button>
+      )}
+
+      {/* controles em grupos: identidade · navegação · ajuda · estado */}
+      <div className="controles">
+        <div className="bloco-controle">
+          <span style={{ fontSize: 18 }}>{eu.emoji}</span>
+          <strong style={{ fontSize: 14 }}>{eu.nick}</strong>
+        </div>
+
+        <div className="bloco-controle" title="seus pontos, tokens de dica e nível">
+          <span className="rotulo">placar</span>
+          <span className="btn-icone" style={{ color: 'var(--acento)', fontWeight: 700 }}>
+            <Icone nome="xp" tamanho={15} /> {eu.xp} XP
+          </span>
+          <span className="btn-icone"><Icone nome="token" tamanho={15} /> {eu.tokens}</span>
+          {posicao > 0 && <span className="btn-icone"><Icone nome="troféu" tamanho={15} /> {posicao}º</span>}
+          {(eu.combo ?? 1) > 1 && <span className="btn-icone" style={{ color: 'var(--ok)' }}>combo ×{eu.combo}</span>}
+        </div>
+
+        <div className="bloco-controle">
+          <span className="rotulo">slides</span>
+          <button className="btn-icone" title="olhar o slide anterior"
+            onClick={() => setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1))}>
+            <Icone nome="anterior" tamanho={16} /><span className="texto">voltar</span>
+          </button>
+          <button className="btn-icone" title="olhar o próximo slide"
+            onClick={() => setLivre((l) => Math.min(DECK.length - 1, (l ?? estado.cenaIndex) + 1))}>
+            <span className="texto">avançar</span><Icone nome="proximo" tamanho={16} />
+          </button>
+          {livre !== null && (
+            <button className="btn-icone destaque" onClick={() => setLivre(null)}>
+              <Icone nome="tocar" tamanho={16} /><span className="texto">voltar ao vivo</span>
+            </button>
+          )}
+        </div>
+
+        <div className="bloco-controle">
+          <span className="rotulo">ajuda</span>
+          <button className="btn-icone" onClick={() => setConsulta(true)} title="comandos, glossário e o que já vimos">
+            <Icone nome="consultar" tamanho={16} /><span className="texto">consultar</span>
+          </button>
+          <button className="btn-icone" onClick={() => arena.emit('pulso', 'perdi')} title="avisa o monitor, sem custo nenhum">
+            <Icone nome="duvida" tamanho={16} /><span className="texto">me perdi</span>
+          </button>
+          <button className="btn-icone" onClick={() => setTour(true)} title="o que é cada coisa desta tela">
+            <Icone nome="info" tamanho={16} />
+          </button>
+          {!emLab && (
+            <button className="btn-icone" onClick={() => setGaveta((g) => !g)} title="abrir o terminal fora do laboratório">
+              <Icone nome="terminal" tamanho={16} /><span className="texto">terminal</span>
+            </button>
+          )}
+        </div>
+
+        <div className="estado-faixa">
+          <span style={{ fontFamily: 'var(--mono)' }}>{nivel.prompt.replace('{nick}', eu.nick)}</span>
+          {estado.pausado && <span className="chip forte"><Icone nome="pausar" tamanho={14} /> pausado</span>}
+          <span className="chip">
+            {!conectado ? '🔴 reconectando' : livre === null ? '🟢 ao vivo' : '🟡 olhando sozinho'}
+          </span>
+        </div>
       </div>
 
-      {/* consulta: traz os slides de comando já vistos sem sair da cena */}
-      {consulta && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,12,.45)', zIndex: 55, display: 'grid', placeItems: 'center', padding: 24 }}
-          onClick={() => setConsulta(false)}>
-          <div className="cartao" style={{ maxWidth: 820, width: '100%', maxHeight: '80vh', overflow: 'auto' }}
-            onClick={(e) => e.stopPropagation()}>
-            <div className="olho">consulta · módulo {cena.modulo} · Esc fecha</div>
-            {jaVistos.length === 0 && <p className="corpo">nada visto neste módulo ainda.</p>}
-            {jaVistos.map((c) => (
-              <div key={c.id} style={{ marginTop: 16 }}>
-                <strong>{c.titulo}</strong>
-                <div className="term" style={{ marginTop: 8, fontSize: 14 }}>
-                  {c.tipo === 'TerminalDemo' && c.linhas.map((l, i) => <div key={i}><span className="cmd">{l.comando}</span></div>)}
-                  {c.tipo === 'CommandAnatomy' && <span className="cmd">{c.comando}</span>}
-                  {c.tipo === 'WillGoWrong' && c.erros.map((e) => <div key={e.mensagem}><span className="saida">{e.mensagem} → {e.causa}</span></div>)}
-                </div>
-              </div>
-            ))}
+      {consulta && <Consulta moduloAtual={cenaVista.modulo} onFechar={() => setConsulta(false)} />}
+      {tour && <Tour onFechar={() => setTour(false)} />}
+
+      {/*
+        Ninguém mexeu há 4 minutos. A tela pergunta se a pessoa está aí e, até
+        ela responder, sai da contagem da sala: assim um notebook esquecido
+        aberto não impede o quiz de revelar nem o grupo de avançar.
+      */}
+      {arena.ocioso && (
+        <div className="nivel-cheio" style={{ animation: 'none', background: 'rgba(250,250,249,.97)' }}>
+          <div className="cartao" style={{ textAlign: 'center', display: 'grid', gap: 14, maxWidth: 420 }}>
+            <div style={{ display: 'grid', placeItems: 'center' }}>
+              <Icone nome="duvida" tamanho={44} cor="var(--atencao)" />
+            </div>
+            <h2 style={{ fontSize: 26 }}>Você ainda está aí?</h2>
+            <p style={{ color: 'var(--tinta-2)' }}>
+              Faz um tempo que você não mexe. Enquanto isso você fica fora da contagem da sala,
+              para não travar o grupo. Seu XP está guardado.
+            </p>
+            <button className="btn primario" onClick={arena.estouAqui}>estou aqui, voltar</button>
           </div>
         </div>
       )}
 
-      {/* avisos: XP ganho, badge, nível, evento, broadcast */}
+      {/* avisos */}
       {arena.ganho && (
         <div className="flutuante" style={{ right: 28, bottom: 90, fontSize: 30, fontWeight: 800, color: 'var(--ok)' }}>
           +{arena.ganho.xp} XP{arena.ganho.mult > 1 ? ` ×${arena.ganho.mult}` : ''}
         </div>
       )}
-      {arena.badge && <div className="toast">🏅 {arena.badge.nick}: {arena.badge.badge} — {arena.badge.descricao}</div>}
+      {arena.badge && <div className="toast">🏅 {arena.badge.nick}: {arena.badge.badge.replace(/-/g, ' ')}</div>}
       {aviso && <div className="toast">📣 {aviso}</div>}
-      {arena.evento && <div className="toast">⚡ {arena.evento.replace('-', ' ')}</div>}
+      {arena.evento && <div className="toast">⚡ {arena.evento.replace(/-/g, ' ')}</div>}
       {arena.subiuNivel && (
         <div className="nivel-cheio">
           <div style={{ textAlign: 'center' }}>

@@ -77,7 +77,7 @@ export const ESCAPE: Rodada[] = [
       { texto: 'q', certo: true, porque: 'q sai do man e do less. É a tecla que mais gente não conhece.' },
       { texto: 'Ctrl+C', porque: 'não faz nada aqui: o man não está "rodando", está exibindo.' },
       { texto: 'Esc', porque: 'não sai do man.' },
-      { texto: 'fechar o terminal', porque: 'funciona, mas você perde a sessão — e não precisa.' },
+      { texto: 'fechar o terminal', porque: 'funciona, mas você perde a sessão sem precisar.' },
     ],
   },
   {
@@ -94,7 +94,7 @@ export const ESCAPE: Rodada[] = [
     mono: true, contexto: '$ node app.js\napp no ar na porta 3000\n█',
     pergunta: 'O prompt não volta. O que aconteceu?',
     opcoes: [
-      { texto: 'Está ocupado: Ctrl+C interrompe', certo: true, porque: 'não travou — está rodando. Ctrl+C interrompe e devolve o prompt.' },
+      { texto: 'Está ocupado: Ctrl+C interrompe', certo: true, porque: 'não travou, está rodando. O Ctrl+C interrompe e devolve o prompt.' },
       { texto: 'O terminal travou, preciso fechar', porque: 'ele está ocupado, não travado. Essa confusão trava muita gente.' },
       { texto: 'O comando falhou', porque: 'ele imprimiu que está no ar: funcionou.' },
       { texto: 'Preciso reiniciar a máquina', porque: 'nunca precisa.' },
@@ -104,7 +104,7 @@ export const ESCAPE: Rodada[] = [
 
 export const PERIGO: Rodada[] = [
   {
-    contexto: 'Quatro comandos parecidos. Um deles apaga coisa que você nunca mais recupera — não existe lixeira no terminal.',
+    contexto: 'Quatro comandos parecidos. Um deles apaga coisas que você nunca mais recupera. No terminal não existe lixeira.',
     pergunta: 'Qual é o perigoso?',
     opcoes: [
       { texto: 'rm -rf ~', certo: true, porque: 'apaga a SUA CASA inteira, sem confirmar e sem volta. É o par de letras que você relê antes do Enter.' },
@@ -119,7 +119,7 @@ export const PERIGO: Rodada[] = [
     opcoes: [
       { texto: 'rm -r build', certo: true, porque: 'caminho relativo, dentro de onde você está. Confira com pwd antes.' },
       { texto: 'rm -rf /build', porque: 'a barra inicial aponta para a raiz do sistema, não para a sua pasta.' },
-      { texto: 'sudo rm -rf build', porque: 'funciona, mas sudo aqui é força desnecessária — e sudo + rm -rf é como se acaba com uma máquina.' },
+      { texto: 'sudo rm -rf build', porque: 'funciona, mas o sudo aqui é força desnecessária. É juntando sudo com rm -rf que as máquinas morrem.' },
       { texto: 'rm build', porque: 'dá erro: é uma pasta, falta o -r.' },
     ],
   },
@@ -139,7 +139,7 @@ export const PREVER: Rodada[] = [
     mono: true, contexto: '$ node app.js &',
     pergunta: 'E agora?',
     opcoes: [
-      { texto: 'O prompt volta e aparece um número', certo: true, porque: 'o & solta o processo; o número é o PID — é por ele que você mata depois.' },
+      { texto: 'O prompt volta e aparece um número', certo: true, porque: 'o & solta o processo. O número é o PID, e é por ele que você encerra depois.' },
       { texto: 'Nada muda', porque: 'o & muda tudo: é o que libera o seu terminal.' },
       { texto: 'A app não sobe', porque: 'sobe, só não prende o terminal.' },
     ],
@@ -171,7 +171,7 @@ export const ERROS: Rodada[] = [
     opcoes: [
       { texto: 'Falta permissão de execução: chmod +x', certo: true, porque: 'o arquivo existe e você pode lê-lo, mas ninguém marcou que ele é executável.' },
       { texto: 'O arquivo não existe', porque: 'se não existisse, a mensagem seria No such file.' },
-      { texto: 'Falta instalar o bash', porque: 'o bash está rodando — foi ele que reclamou.' },
+      { texto: 'Falta instalar o bash', porque: 'o bash está rodando. Foi ele que reclamou.' },
     ],
   },
   {

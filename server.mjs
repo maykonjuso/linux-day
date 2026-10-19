@@ -46,6 +46,13 @@ const emitirPresenca = () => io.emit('presenca', [...jogo.participantes.values()
 const salvarEstado = () => dao.setEstado('evento', { ...estado, restante: null });
 
 let timer = null;
+/**
+ * O quiz da vez. Guardado no servidor para que a revelação possa acontecer
+ * sozinha, igual ao Kahoot: quando todo mundo responde, ou quando o tempo
+ * acaba. Sem isso só o apresentador poderia revelar, e a sala fica esperando.
+ */
+let quizAtual = null;   // { cenaId, correta, xpBase, segundos }
+
 function pararTimer() { if (timer) clearInterval(timer); timer = null; }
 function iniciarTimer(segundos) {
   pararTimer();
@@ -54,8 +61,44 @@ function iniciarTimer(segundos) {
     if (estado.pausado) return;
     estado.restante = Math.max(0, (estado.restante ?? 0) - 1);
     io.emit('tempo', estado.restante);
-    if (estado.restante === 0) { pararTimer(); estado.fase = 'encerrada'; io.emit('estado', estado); }
+    if (estado.restante === 0) {
+      pararTimer();
+      estado.fase = 'encerrada';
+      io.emit('estado', estado);
+      // tempo esgotado em pergunta de quiz: revela na hora, como no Kahoot
+      if (quizAtual && quizAtual.cenaId === estado.cenaId) revelarQuiz(quizAtual);
+    }
   }, 1000);
+}
+
+/** quantas pessoas estão na sala e quantas já responderam a cena da vez */
+function contagemDeRespostas(cenaId) {
+  // Só conta quem está REALMENTE acompanhando. Quem fechou o navegador ou
+  // parou de interagir não pode travar a revelação da sala inteira.
+  const esperados = [...jogo.participantes.values()].filter((p) => p.presenca === 'ativo').length;
+  const total = dao.respostasDaCena(cenaId).length;
+  return { cenaId, total, esperados };
+}
+
+/** Revelação: pontua quem acertou (com bônus por velocidade) e mostra o gráfico. */
+function revelarQuiz({ cenaId, correta, xpBase = 40, segundos = 20 }) {
+  if (estado.fase === 'revelada' && estado.cenaId === cenaId) return;
+  const distribuicao = {};
+  for (const r of dao.respostasDaCena(cenaId)) {
+    distribuicao[r.alternativa] = (distribuicao[r.alternativa] ?? 0) + 1;
+    if (r.alternativa !== correta) { jogo.mexerCombo(r.participante_id, false); continue; }
+    // quem responde mais rápido ganha mais, igual ao Kahoot
+    const bonus = Math.round(30 * ((r.restante ?? 0) / segundos));
+    jogo.premiar(r.participante_id, xpBase + bonus, 'quiz', cenaId, { usarCombo: true });
+    jogo.mexerTokens(r.participante_id, 1, 'quiz');
+    jogo.mexerCombo(r.participante_id, true);
+  }
+  pararTimer();
+  estado.fase = 'revelada';
+  salvarEstado();
+  io.emit('estado', estado);
+  io.emit('revelacao', { cenaId, correta, distribuicao });
+  emitirPlacar();
 }
 
 /** Resultado de um critério = passou agora OU já foi premiado antes (adesivo). */
@@ -83,6 +126,7 @@ io.on('connection', (socket) => {
 
   async function registrar({ id, nick, emoji }, ack) {
     const existente = id && jogo.participantes.get(id);
+    let ambientePronto = true;   // quem volta já tem ambiente semeado
     if (existente) {
       eu = existente;
       eu.presenca = 'ativo';
@@ -99,6 +143,7 @@ io.on('connection', (socket) => {
       dao.salvarParticipante(eu);
       jogo.premiar(eu.id, 20, 'check-in', 'entrada');
       if (Date.now() - jogo.abertoEm < 3 * 60_000) jogo.darBadge(eu.id, 'chegou-cedo');
+      ambientePronto = false;
       // semeia o ambiente em segundo plano: a pessoa já pode ver o slide
       amb.semear(conta, 'all.sh', { NICK: eu.nick }).then((r) => {
         if (!r.ok) console.warn('[seed]', conta, r.saida);
@@ -108,12 +153,35 @@ io.on('connection', (socket) => {
     socket.join(`p:${eu.id}`);
     if (eu.grupo) socket.join(`g:${eu.grupo}`);
     dao.salvarParticipante(eu);
-    ack?.({ eu: jogo.publico(eu), estado, placar: jogo.placar() });
+    ack?.({ eu: jogo.publico(eu), estado, placar: jogo.placar(), ambientePronto });
     emitirPresenca();
   }
 
   socket.on('entrar', registrar);
-  socket.on('batida', () => { if (eu) { eu.presenca = 'ativo'; eu.visto = Date.now(); } });
+  /**
+   * A batida agora carrega há quanto tempo a pessoa não interage. Antes ela
+   * era automática a cada 20s, então ninguém ficava "ocioso" nunca, e um
+   * notebook aberto numa aba esquecida travava a contagem do quiz.
+   */
+  socket.on('batida', ({ inativoMs = 0 } = {}) => {
+    if (!eu) return;
+    const antes = eu.presenca;
+    eu.visto = Date.now();
+    eu.presenca = inativoMs > 4 * 60_000 ? 'ocioso' : 'ativo';
+    if (antes !== eu.presenca) {
+      emitirPresenca();
+      if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
+    }
+  });
+
+  /** a própria pessoa diz que voltou (clicou no "ainda estou aqui") */
+  socket.on('voltei', () => {
+    if (!eu) return;
+    eu.presenca = 'ativo';
+    eu.visto = Date.now();
+    emitirPresenca();
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
+  });
   socket.on('livre', (v) => { if (eu) { eu.livre = !!v; emitirPresenca(); } });
 
   // ─────────────────────────────── terminal ─────────────────────────────────
@@ -177,6 +245,8 @@ io.on('connection', (socket) => {
     // sempre a lista PESSOAL: num lab de grupo o `dono` é "grupo:<cor>", e
     // sobrescrever com ela apagava os critérios individuais de quem reconecta
     eu.criterios = dao.criteriosDe(eu.id);
+    socket.emit('criterios', eu.criterios);
+    socket.emit('badges', dao.badgesDe(eu.id));
     ack?.({ resultados, ganho, todos });
     io.to('host').emit('submissao', { id: eu.id, nick: eu.nick, taskSlug, resultados });
     emitirPlacar();
@@ -184,12 +254,15 @@ io.on('connection', (socket) => {
 
   socket.on('lab:dica', ({ taskSlug, indice }, ack) => {
     const lab = labDe(taskSlug);
+    const total = lab?.dicas?.length ?? 0;
     const dica = lab?.dicas?.[indice];
-    if (!eu || !dica) return ack?.({ erro: 'sem dica' });
+    if (!eu) return ack?.({ erro: 'entre primeiro' });
+    if (!dica) return ack?.({ erro: total ? 'as dicas deste lab acabaram' : 'este lab não tem dica' });
     const custo = indice === 0 ? 1 : 2;
+    if (eu.tokens < custo) return ack?.({ erro: `essa dica custa ${custo} 🪙 e você tem ${eu.tokens}` });
     if (!jogo.mexerTokens(eu.id, -custo, `dica:${taskSlug}`)) return ack?.({ erro: 'sem tokens' });
     emitirPlacar();   // o saldo de tokens aparece no placar e no painel
-    ack?.({ dica, custo });
+    ack?.({ dica, custo, restantes: total - indice - 1 });
   });
 
   socket.on('lab:reset', async (_, ack) => {
@@ -202,13 +275,24 @@ io.on('connection', (socket) => {
 
   // ───────────────────────── quiz, widgets, predições ──────────────────────
   socket.on('responder', ({ cenaId, alternativa }, ack) => {
-    if (!eu || estado.fase !== 'aberta') return ack?.({ ok: false, motivo: 'fechado' });
+    // Aceita enquanto a pergunta não foi revelada, inclusive depois de o
+    // cronômetro fechar: quem respondeu tarde perde o bônus de velocidade, e
+    // não o direito de responder. Travar aqui era o "não consigo responder".
+    if (!eu) return ack?.({ ok: false, motivo: 'entre primeiro' });
+    if (estado.cenaId && cenaId !== estado.cenaId) return ack?.({ ok: false, motivo: 'essa não é a pergunta da vez' });
+    if (estado.fase === 'revelada') return ack?.({ ok: false, motivo: 'a resposta já foi revelada' });
+    if (estado.fase === 'idle') return ack?.({ ok: false, motivo: 'a pergunta ainda não abriu' });
     const chave = `${cenaId}:${eu.id}`;
     if (!dao.registrarResposta(chave, cenaId, eu.id, alternativa, estado.restante ?? 0)) {
       return ack?.({ ok: false, motivo: 'já respondeu' });
     }
     ack?.({ ok: true });
-    io.to('host').emit('respostas', { cenaId, total: dao.respostasDaCena(cenaId).length });
+    const contagem = contagemDeRespostas(cenaId);
+    io.emit('respostas', contagem);           // todos veem quantos faltam
+    // todo mundo respondeu: revela na hora, sem esperar o cronômetro
+    if (quizAtual && quizAtual.cenaId === cenaId && contagem.total >= contagem.esperados) {
+      setTimeout(() => revelarQuiz(quizAtual), 400);
+    }
   });
 
   socket.on('widget:concluido', ({ cenaId, xp = 60 }) => {
@@ -257,6 +341,7 @@ io.on('connection', (socket) => {
       g.membros.add(eu.id); eu.grupo = nome; eu.papel = null; socket.join(`g:${nome}`);
     } else eu.grupo = null;
     dao.salvarParticipante(eu);
+    socket.emit('grupo', eu.grupo);   // sem o eco, a própria tela não atualiza
     emitirPlacar(); emitirPresenca();
   });
 
@@ -264,10 +349,11 @@ io.on('connection', (socket) => {
     if (!eu?.grupo) return;
     const g = jogo.grupos.get(eu.grupo);
     const tomado = Object.entries(g.papeis).find(([pid, p]) => p === papel && pid !== eu.id);
-    if (tomado) return;
+    if (tomado) return socket.emit('papel', eu.papel ?? null);
     g.papeis[eu.id] = papel;
     eu.papel = papel;
     dao.salvarParticipante(eu);
+    socket.emit('papel', papel);
     emitirPlacar();
   });
 
@@ -297,35 +383,28 @@ io.on('connection', (socket) => {
   });
   const soHost = (fn) => (...a) => { if (host) return fn(...a); };
 
-  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null }) => {
+  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, quiz = null }) => {
     Object.assign(estado, { cenaIndex, cenaId, passo, fase });
     pararTimer(); estado.restante = null;
+    quizAtual = quiz ? { ...quiz, cenaId: quiz.cenaId ?? cenaId } : null;
     if (segundos && fase === 'aberta') iniciarTimer(segundos);
-    salvarEstado(); io.emit('estado', estado);
+    salvarEstado();
+    io.emit('estado', estado);
+    if (cenaId) io.emit('respostas', contagemDeRespostas(cenaId));
   }));
   socket.on('host:passo', soHost((d) => { estado.passo = Math.max(0, estado.passo + d); salvarEstado(); io.emit('estado', estado); }));
-  socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null }) => {
-    estado.fase = fase; if (cenaId) estado.cenaId = cenaId;
+  socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null, quiz = null }) => {
+    estado.fase = fase;
+    if (cenaId) estado.cenaId = cenaId;
+    if (quiz) quizAtual = { ...quiz, cenaId: quiz.cenaId ?? estado.cenaId };
     if (fase === 'aberta' && segundos) iniciarTimer(segundos);
     else { pararTimer(); if (fase === 'idle') estado.restante = null; }
-    salvarEstado(); io.emit('estado', estado);
+    salvarEstado();
+    io.emit('estado', estado);
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   }));
 
-  socket.on('host:revelar', soHost(({ cenaId, correta, xpBase = 40, segundos = 20 }) => {
-    const distribuicao = {};
-    for (const r of dao.respostasDaCena(cenaId)) {
-      distribuicao[r.alternativa] = (distribuicao[r.alternativa] ?? 0) + 1;
-      if (r.alternativa !== correta) { jogo.mexerCombo(r.participante_id, false); continue; }
-      const bonus = Math.round(30 * ((r.restante ?? 0) / segundos));
-      jogo.premiar(r.participante_id, xpBase + bonus, 'quiz', cenaId, { usarCombo: true });
-      jogo.mexerTokens(r.participante_id, 1, 'quiz');
-      jogo.mexerCombo(r.participante_id, true);
-    }
-    estado.fase = 'revelada'; salvarEstado();
-    io.emit('estado', estado);
-    io.emit('revelacao', { cenaId, correta, distribuicao });
-    emitirPlacar();
-  }));
+  socket.on('host:revelar', soHost((dados) => revelarQuiz(dados)));
 
   socket.on('host:gabarito', soHost(async ({ taskSlug }, ack) => {
     const lab = labDe(taskSlug);
@@ -422,20 +501,39 @@ io.on('connection', (socket) => {
     ack?.({ semeados: n });
   }));
 
+  /**
+   * Fechou o navegador: a sessão de apresentação dela encerra na hora (sai da
+   * contagem, não trava mais a sala). O XP, os critérios e o grupo ficam
+   * guardados no banco, então ao voltar ela cai exatamente onde estava.
+   * A sessão de terminal continua viva de propósito: é o estado do Linux dela.
+   */
   socket.on('disconnect', () => {
-    if (ouvinteTerm && eu) pty.desligarOuvinte(eu.id, ouvinteTerm);
-    if (eu) { eu.presenca = 'desconectado'; emitirPresenca(); }
+    if (!eu) return;
+    if (ouvinteTerm) pty.desligarOuvinte(eu.id, ouvinteTerm);
+    eu.presenca = 'desconectado';
+    dao.salvarParticipante(eu);
+    emitirPresenca();
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   });
 });
 
-// marca ocioso quem não dá sinal há 90s (e nunca tira XP por isso)
+/**
+ * Quem sumiu sem o navegador avisar (rede caiu, tampa fechada) para de dar
+ * sinal: depois de 70s sem batida, sai da contagem. Nunca custa XP.
+ */
 setInterval(() => {
   const agora = Date.now();
   let mudou = false;
   for (const p of jogo.participantes.values()) {
-    if (p.presenca === 'ativo' && p.visto && agora - p.visto > 90_000) { p.presenca = 'ocioso'; mudou = true; }
+    if (p.presenca !== 'desconectado' && p.visto && agora - p.visto > 70_000) {
+      p.presenca = 'desconectado';
+      mudou = true;
+    }
   }
-  if (mudou) emitirPresenca();
+  if (mudou) {
+    emitirPresenca();
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
+  }
 }, 15_000);
 
 function ipLocal() {

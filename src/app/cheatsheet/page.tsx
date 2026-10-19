@@ -44,12 +44,12 @@ export default function Cheatsheet() {
 
         <div className="bloco">
           <h3>Três armadilhas que parecem defeito do computador</h3>
-          {ARMADILHAS.map((a) => <code key={a.o}>{a.o} — {a.nem}</code>)}
+          {ARMADILHAS.map((a) => <code key={a.o}>{a.o}: {a.nem}</code>)}
         </div>
 
         <div className="bloco">
           <h3>Seis hábitos (valem mais que os comandos)</h3>
-          {HABITOS.map((h, i) => <code key={h.titulo}>{i + 1}. {h.titulo} — {h.porque}</code>)}
+          {HABITOS.map((h, i) => <code key={h.titulo}>{i + 1}. {h.titulo}: {h.porque}</code>)}
         </div>
 
         <div className="bloco">

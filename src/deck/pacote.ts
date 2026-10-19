@@ -26,7 +26,7 @@ export const PACOTE: { situacao: string; itens: string[] }[] = [
 export const HABITOS = [
   { titulo: 'Leia a mensagem de erro', porque: 'ela quase sempre diz exatamente o que está errado. São seis mensagens que se repetem para sempre.' },
   { titulo: 'Perdido? pwd e ls -la', porque: 'nessa ordem, sempre. Resolve metade dos problemas de iniciante.' },
-  { titulo: 'Use Tab', porque: 'é mais rápido — e se o Tab não completa, o caminho não existe. É um teste de erro de graça.' },
+  { titulo: 'Use Tab', porque: 'é mais rápido, e se o Tab não completa é porque o caminho não existe. Um teste de erro de graça.' },
   { titulo: '--help antes de perguntar', porque: 'responde mais rápido que qualquer colega.' },
   { titulo: 'Pare antes de rm -r e de sudo', porque: 'são os dois comandos que fazem estrago de verdade. Reler antes do Enter é hábito, não medo.' },
   { titulo: 'Comando colado que você não entende é dívida', porque: 'decomponha (programa → subcomando → flag → argumento) ou não cole.' },

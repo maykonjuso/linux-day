@@ -50,7 +50,7 @@ export default function PathQuiz({ onConcluir }: { onConcluir?: () => void }) {
         })}
         {escolha && (
           <div className="cartao" style={{ borderColor: certo ? 'var(--ok)' : 'var(--atencao)' }}>
-            {certo ? '✅ isso. ' : '↩︎ quase — '}
+            {certo ? '✅ isso. ' : '↩︎ quase. '}
             <code className="kbd">{r.comando}</code> leva para <code className="kbd">{r.alvo}</code>.
             <button
               className="btn primario"

@@ -19,43 +19,57 @@ O alvo é o **pacote de sobrevivência**: ~40 comandos e hábitos, organizados p
 
 ```bash
 npm install
-npm run dev            # desenvolvimento (modo de lab "local", no seu Mac)
-npm run build && npm start
-npm run teste          # 38 verificações de ponta a ponta, num servidor de verdade
+npm start
 ```
+
+O `npm start` **sempre refaz o build antes de subir**. Isso é de propósito: o
+`next start` serve o build de quando o processo subiu, então um servidor
+deixado aberto continua entregando a versão antiga do deck mesmo depois de o
+código mudar. Se você já sabe que o build está atual, `npm run start:rapido`
+pula essa etapa.
 
 O servidor imprime as URLs no boot:
 
 | Papel | URL |
 |---|---|
-| participante | `http://<seu-ip>:3000` — é o QR code |
+| participante | `http://<seu-ip>:3000` (é o QR code) |
 | projetor | `http://localhost:3000/screen` |
-| apresentador | `http://localhost:3000/host` — PIN `1991` (`PIN_HOST=…` troca) |
-| extras | `/cheatsheet` (imprimível em A4) · `/regras` · `/me` (resumo + certificado) |
+| apresentador | `http://localhost:3000/host` com PIN `1991` (troque com `PIN_HOST=...`) |
+| extras | `/cheatsheet` (imprime em A4) · `/regras` · `/me` (resumo e certificado) |
 
-**Atalhos do apresentador:** `→`/`espaço` avança passo ou cena · `←` volta · `A` abre a cena (liga o timer) · `R` revela o quiz e pontua · `P` pausa global · `V` traz todos ao vivo · `G` abre a grade pessoas × critérios.
-**Atalhos do participante:** `Ctrl+\`` gaveta do terminal · `?` consulta os slides de comando já vistos · `Esc Esc` devolve o teclado ao slide.
+Para zerar XP, grupos e ambientes entre ensaios: `npm run limpar`.
 
-### Modos de ambiente
+### Controles do apresentador
 
-| Variável | Para quê |
-|---|---|
-| `ARENA_MODO=local` (padrão) | cada participante recebe uma "casa" em `data/casas/<conta>`; o shell roda como você. Desenvolvimento e ensaio. |
-| `ARENA_MODO=usuarios` | conta = `alunoNN` de verdade: o shell abre com `su - alunoNN` e os checks rodam como root. É o modo do dia do evento, dentro da Lima VM. |
-| `ARENA_CHECKERS=6` | quantos checkers rodam em paralelo (a fila existe para 30 cliques simultâneos no Verificar não derreterem o Mac) |
-| `ARENA_DB`, `ARENA_CASAS` | caminhos do banco e das casas |
+Os controles estão agrupados por função na faixa de baixo: **slides** (voltar,
+avançar, ir para um módulo), **cena** (abrir, gabarito, preparar boss),
+**sala** (pausar, todos ao vivo, grade, sortear grupos) e **jogo** (eventos e
+recado). A faixa da direita mostra o estado: cena, fase, cronômetro, quantos já
+responderam, quantos estão ativos e quem travou.
 
-### No dia (dentro da Lima VM)
+Atalhos: `→` ou espaço avança · `←` volta · `A` abre a cena · `P` pausa ·
+`V` traz todos ao vivo · `G` abre a grade.
+
+Numa cena de pergunta, o avançar faz a coisa certa sozinho: abre, depois
+revela, depois passa para a próxima. A pergunta também **revela sozinha quando
+todos responderam**, como no Kahoot, e quem responde mais rápido ganha mais XP.
+
+### Controles do participante
+
+Ele segue o apresentador, mas pode olhar os slides sozinho com as setas (um
+botão grande oferece voltar ao vivo). Tem também **consultar** (comandos que já
+vimos, lista por situação e glossário), **me perdi** (avisa o monitor, sem
+custo), o ícone de informação (explica cada item da tela) e o terminal.
+
+### Testes
 
 ```bash
-limactl create --name=linuxday --vm-type=vz infra/lima.yaml && limactl start linuxday
-limactl shell linuxday
-bash infra/setup-vm.sh          # pacotes, locale, hidepid=2, limites, sudo em lista branca
-sudo bash infra/provision.sh 30 # 30 contas, cada uma com o lab semeado e um pacote sorteado
-ARENA_MODO=usuarios npm start
+npm run teste           # 38 verificações no servidor (socket, XP, checkers)
+npm run teste:ui        # navegador clicando na interface inteira
+npm run teste:widgets   # os 9 exercícios jogados até o fim, um por um
+npm run teste:deck      # as 63 cenas medidas em 3 telas: nada cortado
+npm run teste:tudo      # tudo acima, em sequência
 ```
-
-Guia completo, com o checklist de T-2h: [docs/infra-mac.md](docs/infra-mac.md).
 
 ## Arquitetura em uma frase
 

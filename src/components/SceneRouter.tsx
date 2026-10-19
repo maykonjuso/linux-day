@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Arena } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
 import { Diagrama } from './Diagramas';
+import { Icone, IconeGrande } from './Icone';
 import PermissionToggles from './widgets/PermissionToggles';
 import PathQuiz from './widgets/PathQuiz';
 import PipeBuilder from './widgets/PipeBuilder';
@@ -20,8 +21,9 @@ import { GroupScene } from './scenes/GroupScene';
  *  - host    → sua tela (resposta certa, progresso, controles)
  * Nunca duplique conteúdo entre papéis: é assim que deck e lab saem de sincronia.
  */
-export function SceneRouter({ arena, papel }: { arena: Arena; papel: Papel }) {
-  const { cena } = arena;
+export function SceneRouter({ arena, papel, cenaForcada }: { arena: Arena; papel: Papel; cenaForcada?: Cena }) {
+  // no modo livre o participante olha outra cena sem tirar a sala do lugar
+  const cena = cenaForcada ?? arena.cena;
   switch (cena.tipo) {
     case 'ModuleCover': return <Capa cena={cena} />;
     case 'MentalModel': return <Modelo cena={cena} />;
@@ -39,23 +41,40 @@ export function SceneRouter({ arena, papel }: { arena: Arena; papel: Papel }) {
 
 type C<T extends Cena['tipo']> = Extract<Cena, { tipo: T }>;
 
+const ICONE_DO_MODULO = ['foguete', 'onde', 'arquivos', 'cadeado', 'juntar', 'processo', 'ferramenta'];
+
 function Capa({ cena }: { cena: C<'ModuleCover'> }) {
   return (
     <div className="cena">
-      <div className="olho">módulo {cena.modulo}</div>
-      <h1 className="titulo">{cena.titulo}</h1>
+      <div style={{ display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap' }}>
+        <IconeGrande nome={ICONE_DO_MODULO[cena.modulo] ?? 'caixa'} />
+        <div className="grade" style={{ gap: 12 }}>
+          <div className="olho">módulo {cena.modulo}</div>
+          <h1 className="titulo">{cena.titulo}</h1>
+        </div>
+      </div>
       <p className="corpo">{cena.pergunta}</p>
-      <div className="chip forte" style={{ justifySelf: 'start' }}>{cena.xpDoModulo} XP em jogo</div>
+      <div className="chip forte" style={{ justifySelf: 'start' }}>
+        <Icone nome="xp" tamanho={15} /> {cena.xpDoModulo} XP em jogo
+      </div>
     </div>
   );
 }
 
+const ICONE_DO_DIAGRAMA = { arvore: 'arvore', processo: 'processo', cadeados: 'cadeado', encanamento: 'juntar' } as const;
+
 function Modelo({ cena }: { cena: C<'MentalModel'> }) {
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)' }}>{cena.titulo}</h2>
+      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)', display: 'flex', gap: 14, alignItems: 'center' }}>
+        <Icone nome={ICONE_DO_DIAGRAMA[cena.diagrama]} tamanho={34} cor="var(--acento)" />
+        {cena.titulo}
+      </h2>
       <Diagrama nome={cena.diagrama} />
-      <p className="corpo">{cena.legenda}</p>
+      <div className="cartao" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: '54em' }}>
+        <Icone nome="ideia" cor="var(--atencao)" />
+        <p style={{ fontSize: 'clamp(16px, 1.6vw, 24px)', color: 'var(--tinta-2)' }}>{cena.legenda}</p>
+      </div>
     </div>
   );
 }
@@ -69,7 +88,9 @@ function Anatomia({ cena }: { cena: C<'CommandAnatomy'> }) {
         {cena.partes.map((p) => (
           <div key={p.trecho} className="cartao">
             <code className="kbd" style={{ fontSize: '1.1em' }}>{p.trecho}</code>
-            <p style={{ marginTop: 8, color: 'var(--tinta-2)' }}>{p.rotulo}</p>
+            <p style={{ marginTop: 8, color: 'var(--tinta-2)', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Icone nome="proximo" tamanho={15} /> {p.rotulo}
+            </p>
           </div>
         ))}
       </div>
@@ -78,42 +99,80 @@ function Anatomia({ cena }: { cena: C<'CommandAnatomy'> }) {
 }
 
 function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
-  const visiveis = cena.linhas.slice(0, Math.max(1, passo + 1));
+  const atual = Math.min(passo, cena.linhas.length - 1);
+
+  /**
+   * As linhas anteriores encolhem para uma linha só (o comando), e apenas a
+   * linha da vez mostra saída e explicação. Com seis ou sete linhas completas
+   * empilhadas, o começo saía da tela, e reduzir a letra de tudo deixava o
+   * slide ilegível no projetor. Assim o foco fica onde você está falando e o
+   * histórico continua visível.
+   */
   return (
     <div className="cena">
-      <div className="olho">{cena.titulo}</div>
-      <div className="term">
-        {visiveis.map((l, i) => (
-          <div key={i}>
-            <span className="cmd">{l.comando}</span>
-            {l.saida && (
-              <div className="saida">
-                {l.destaque
-                  ? l.saida.split(l.destaque).flatMap((parte, j, arr) =>
-                      j < arr.length - 1 ? [parte, <b key={j}>{l.destaque}</b>] : [parte],
-                    )
-                  : l.saida}
-              </div>
-            )}
-            {l.traducao && <span className="traducao">{l.traducao}</span>}
-          </div>
-        ))}
+      <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <Icone nome="terminal" tamanho={16} /> {cena.titulo}
       </div>
-      <div className="olho">{visiveis.length} de {cena.linhas.length}</div>
+
+      <div className="term">
+        {cena.linhas.slice(0, atual + 1).map((l, i) => {
+          const eAtual = i === atual;
+          return (
+            <div key={i} style={{ opacity: eAtual ? 1 : 0.42, marginBottom: eAtual ? 0 : 2 }}>
+              <span style={{ color: '#4b4b55', userSelect: 'none' }}>{i + 1}. </span>
+              <span className="cmd">{l.comando}</span>
+              {eAtual && l.saida && (
+                <div className="saida">
+                  {l.destaque
+                    ? l.saida.split(l.destaque).flatMap((parte, j, arr) =>
+                        j < arr.length - 1 ? [parte, <b key={j}>{l.destaque}</b>] : [parte],
+                      )
+                    : l.saida}
+                </div>
+              )}
+              {eAtual && l.traducao && <span className="traducao">{l.traducao}</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="olho" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <span>passo {atual + 1} de {cena.linhas.length}</span>
+        <span style={{ display: 'flex', gap: 4 }}>
+          {cena.linhas.map((_, i) => (
+            <span key={i} style={{
+              width: 22, height: 4, borderRadius: 99,
+              background: i <= atual ? 'var(--acento)' : 'var(--borda)',
+            }} />
+          ))}
+        </span>
+      </div>
     </div>
   );
 }
 
 function Erros({ cena }: { cena: C<'WillGoWrong'> }) {
+  /**
+   * Duas colunas e linhas compactas. Em cartões de três linhas cada, cinco
+   * erros não cabiam na tela do notebook, e encolher tudo deixava a mensagem
+   * de erro (que é o conteúdo principal) pequena demais para ler.
+   */
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)' }}>{cena.titulo}</h2>
-      <div className="grade">
+      <h2 className="titulo" style={{ fontSize: 'clamp(22px, 2.6vw, 42px)', display: 'flex', gap: 12, alignItems: 'center' }}>
+        <Icone nome="atencao" tamanho={30} cor="var(--atencao)" />
+        {cena.titulo}
+      </h2>
+      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 12 }}>
         {cena.erros.map((e) => (
-          <div key={e.mensagem} className="cartao" style={{ display: 'grid', gap: 6 }}>
-            <code style={{ fontFamily: 'var(--mono)', color: 'var(--erro)' }}>{e.mensagem}</code>
-            <strong>{e.significa}</strong>
-            <span style={{ color: 'var(--tinta-2)' }}>→ {e.causa}</span>
+          <div key={e.mensagem} className="cartao" style={{ padding: '12px 14px', display: 'grid', gap: 4 }}>
+            <code style={{ fontFamily: 'var(--mono)', color: 'var(--erro)', fontSize: 'clamp(13px, 1.25vw, 18px)' }}>
+              {e.mensagem}
+            </code>
+            <span style={{ fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{e.significa}</span>
+            <span style={{ color: 'var(--ok)', fontSize: 'clamp(13px, 1.2vw, 17px)', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <Icone nome="ideia" tamanho={14} cor="var(--ok)" /> {e.causa}
+            </span>
           </div>
         ))}
       </div>
@@ -123,15 +182,36 @@ function Erros({ cena }: { cena: C<'WillGoWrong'> }) {
 
 function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; papel: Papel }) {
   const [escolha, setEscolha] = useState<string | null>(null);
+  const [recusa, setRecusa] = useState<string | null>(null);
   const { estado, revelacao, emit } = arena;
-  useEffect(() => setEscolha(null), [cena.id]);
+  useEffect(() => { setEscolha(null); setRecusa(null); }, [cena.id]);
 
   const revelado = revelacao?.cenaId === cena.id;
   const total = Object.values(revelacao?.distribuicao ?? {}).reduce((s, n) => s + n, 0) || 1;
+  const aberta = estado.fase === 'aberta' || estado.fase === 'encerrada';
+  const daVez = !estado.cenaId || estado.cenaId === cena.id;
+  const podeResponder = papel === 'player' && !escolha && aberta && daVez && !revelado;
+  const tempoEsgotado = estado.fase === 'encerrada' && !revelado;
+
+  const contagem = arena.respostas?.cenaId === cena.id ? arena.respostas : null;
+  const faltam = contagem ? Math.max(0, contagem.esperados - contagem.total) : null;
 
   return (
     <div className="cena">
-      <div className="olho">{cena.titulo}{estado.restante !== null && ` · ${estado.restante}s`}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div className="olho">{cena.titulo}</div>
+        {estado.restante !== null && !revelado && (
+          <span className="chip forte" style={{ fontSize: 'clamp(16px, 1.8vw, 26px)', padding: '6px 16px' }}>
+            <Icone nome="relogio" tamanho={18} /> {estado.restante}s
+          </span>
+        )}
+        {contagem && !revelado && (
+          <span className="chip" style={{ fontSize: 'clamp(14px, 1.5vw, 22px)', padding: '6px 16px' }}>
+            <Icone nome="pessoas" tamanho={18} /> {contagem.total} de {contagem.esperados} responderam
+            {faltam ? ` · faltam ${faltam}` : ' · todos!'}
+          </span>
+        )}
+      </div>
       <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.4vw, 56px)' }}>{cena.pergunta}</h2>
 
       <div className="alternativas">
@@ -143,10 +223,13 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
               className="alt"
               data-escolhida={escolha === a.id}
               data-estado={revelado ? (a.id === cena.correta ? 'certa' : 'errada') : undefined}
-              disabled={papel !== 'player' || !!escolha || estado.fase !== 'aberta'}
+              disabled={!podeResponder}
               onClick={() => {
                 setEscolha(a.id);
-                emit('responder', { cenaId: cena.id, alternativa: a.id, xpBase: 40, segundos: cena.segundos });
+                arena.socket?.emit('responder', { cenaId: cena.id, alternativa: a.id },
+                  (r: { ok: boolean; motivo?: string }) => {
+                    if (!r?.ok) { setEscolha(null); setRecusa(r?.motivo === 'já respondeu' ? 'você já respondeu esta pergunta' : 'a pergunta não está aberta'); }
+                  });
               }}
             >
               <span className="letra">{String.fromCharCode(65 + i)}</span>
@@ -165,6 +248,16 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
 
       {revelado && <p className="corpo" style={{ maxWidth: '40em' }}>{cena.explicacao}</p>}
       {papel === 'player' && escolha && !revelado && <div className="chip forte">resposta enviada · segure a ansiedade</div>}
+      {papel === 'player' && !escolha && !revelado && !aberta && (
+        <div className="chip"><Icone nome="relogio" tamanho={15} /> aguardando o apresentador abrir a pergunta</div>
+      )}
+      {papel === 'player' && !escolha && tempoEsgotado && (
+        <div className="chip"><Icone nome="tempo" tamanho={15} /> o tempo acabou, mas você ainda pode responder (sem o bônus de velocidade)</div>
+      )}
+      {papel === 'player' && !daVez && (
+        <div className="chip"><Icone nome="olho" tamanho={15} /> você está olhando outra cena. Volte ao vivo para responder.</div>
+      )}
+      {recusa && <div className="chip forte">{recusa}</div>}
     </div>
   );
 }
@@ -230,7 +323,9 @@ function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
         {linhas.length === 0 && <p className="corpo">ninguém pontuou ainda.</p>}
         {linhas.map((l, i) => (
           <div key={l.chave} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 'clamp(16px, 1.8vw, 26px)' }}>
-            <strong style={{ width: 44, color: 'var(--tinta-2)' }}>{i + 1}º</strong>
+            <strong style={{ width: 54, color: 'var(--tinta-2)', display: 'flex', gap: 6, alignItems: 'center' }}>
+              {i === 0 ? <Icone nome="troféu" tamanho={18} cor="var(--atencao)" /> : null}{i + 1}º
+            </strong>
             <span style={{ flex: 1 }}>{l.nome}</span>
             <span style={{ color: 'var(--tinta-2)', fontSize: '0.8em' }}>{l.extra}</span>
             <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{l.xp} XP</strong>
@@ -244,14 +339,16 @@ function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
 function Recap({ cena, passo }: { cena: C<'Recap'>; passo: number }) {
   return (
     <div className="cena">
-      <div className="olho">{cena.titulo}</div>
+      <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <Icone nome="checklist" tamanho={16} /> {cena.titulo}
+      </div>
       <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.2vw, 52px)' }}>{cena.perguntaDeRecuperacao}</h2>
       {passo > 0 ? (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {cena.resumo.map((c) => <code key={c} className="kbd" style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}>{c}</code>)}
         </div>
       ) : (
-        <p className="corpo">pense antes. (o resumo aparece no próximo passo — tentar lembrar é o que fixa)</p>
+        <p className="corpo">Tente lembrar antes de ver a resposta. O resumo aparece no próximo passo. Lembrar sozinho é o que faz o conteúdo ficar.</p>
       )}
     </div>
   );

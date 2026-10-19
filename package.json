@@ -6,15 +6,22 @@
   "scripts": {
     "dev": "node server.mjs",
     "build": "next build",
-    "start": "NODE_ENV=production node server.mjs",
+    "start": "next build && NODE_ENV=production node server.mjs",
     "typecheck": "tsc --noEmit",
     "postinstall": "node -e \"const{chmodSync,existsSync}=require('fs');for(const p of ['node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper','node_modules/node-pty/prebuilds/darwin-x64/spawn-helper','node_modules/node-pty/prebuilds/linux-arm64/spawn-helper','node_modules/node-pty/prebuilds/linux-x64/spawn-helper','node_modules/node-pty/build/Release/spawn-helper'])if(existsSync(p))chmodSync(p,0o755)\"",
     "provision": "sudo bash infra/provision.sh",
-    "teste": "node testes/e2e.mjs"
+    "teste": "node testes/e2e.mjs",
+    "teste:ui": "node testes/ui.mjs",
+    "teste:tudo": "npm run teste && npm run teste:ui && npm run teste:widgets && npm run teste:deck",
+    "teste:widgets": "node testes/ui-widgets.mjs",
+    "teste:deck": "node testes/ui-deck.mjs",
+    "start:rapido": "NODE_ENV=production node server.mjs",
+    "limpar": "rm -rf data && mkdir -p data"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "lucide-react": "^1.59.0",
     "next": "^15.1.0",
     "node-pty": "^1.1.0",
     "react": "^19.0.0",
@@ -26,6 +33,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright": "^1.64.1",
     "typescript": "^5.7.0"
   },
   "allowScripts": {
