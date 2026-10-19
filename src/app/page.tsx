@@ -62,7 +62,7 @@ export default function Player() {
     return (
       <div className="centro">
         <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 16 }}>
-          <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
             <Icone nome="shell" tamanho={16} /> Linux Day
           </div>
           <h1 className="titulo" style={{ fontSize: 34 }}>Escolha seu nome</h1>
@@ -78,9 +78,9 @@ export default function Player() {
                 ninguém confundir o seu XP com o dele.
               </span>
               {arena.nomeRecusado.sugestoes.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
                   {arena.nomeRecusado.sugestoes.map((su) => (
-                    <button key={su} className="btn" style={{ padding: '6px 12px' }}
+                    <button key={su} className="btn" style={{ padding: 'var(--e1) var(--e2)' }}
                       onClick={() => { setNick(su); entrar(su, emoji); }}>
                       {su}
                     </button>
@@ -90,12 +90,12 @@ export default function Player() {
             </div>
           )}
           <div>
-            <div className="olho" style={{ marginBottom: 6 }}>
+            <div className="olho" style={{ marginBottom: 'var(--e1)' }}>
               escolha seu bicho ({AVATARES.length} opções{usados.size ? `, ${usados.size} já escolhidos` : ''})
             </div>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(46px, 1fr))',
-              gap: 6, maxHeight: 210, overflowY: 'auto', padding: 4,
+              gap: 'var(--e05)', maxHeight: 210, overflowY: 'auto', padding: 'var(--e05)',
               border: '1px solid var(--borda)', borderRadius: 12, background: 'var(--papel-2)',
             }}>
               {AVATARES.map((e) => {
@@ -106,7 +106,7 @@ export default function Player() {
                   <button key={e} onClick={() => setEmoji(e)} aria-label={`avatar ${e}`}
                     title={emUso ? 'já escolhido por alguém' : undefined}
                     style={{
-                      fontSize: 24, lineHeight: 1, padding: '7px 0', cursor: 'pointer',
+                      fontSize: 24, lineHeight: 1, padding: 'var(--e1) 0', cursor: 'pointer',
                       borderRadius: 9, background: emoji === e ? '#eff4ff' : 'var(--papel)',
                       border: `1.5px solid ${emoji === e ? 'var(--acento)' : 'transparent'}`,
                       opacity: emUso && emoji !== e ? 0.32 : 1,
@@ -118,7 +118,7 @@ export default function Player() {
             </div>
           </div>
           {nick.trim() && (
-            <div className="cartao" style={{ background: 'var(--papel-2)', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="cartao" style={{ background: 'var(--papel-2)', display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
               <Icone nome="terminal" tamanho={16} />
               <span style={{ fontSize: 13, color: 'var(--tinta-2)' }}>no terminal você vai aparecer como</span>
               <code className="kbd">{usuarioDoNick(nick)}@linuxday:~$</code>
@@ -153,7 +153,7 @@ export default function Player() {
       {livre !== null && (
         <button className="btn primario"
           onClick={() => setLivre(null)}
-          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 8, alignItems: 'center' }}>
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
           <Icone nome="tocar" tamanho={16} /> voltar ao vivo (você está olhando sozinho)
         </button>
       )}
@@ -229,7 +229,7 @@ export default function Player() {
       */}
       {arena.ocioso && (
         <div className="nivel-cheio" style={{ animation: 'none', background: 'rgba(250,250,249,.97)' }}>
-          <div className="cartao" style={{ textAlign: 'center', display: 'grid', gap: 14, maxWidth: 420 }}>
+          <div className="cartao" style={{ textAlign: 'center', display: 'grid', gap: 'var(--e2)', maxWidth: 420 }}>
             <div style={{ display: 'grid', placeItems: 'center' }}>
               <Icone nome="duvida" tamanho={44} cor="var(--atencao)" />
             </div>
@@ -259,7 +259,7 @@ export default function Player() {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(26px, 4vw, 56px)', fontWeight: 700 }}>
               {nivelDe(eu.xp).prompt.replace('{nick}', usuarioDoNick(eu.nick))}
             </div>
-            <div className="chip forte" style={{ marginTop: 12 }}>{arena.subiuNivel.patente}</div>
+            <div className="chip forte" style={{ marginTop: 'var(--e2)' }}>{arena.subiuNivel.patente}</div>
           </div>
         </div>
       )}

@@ -16,7 +16,9 @@
     "teste:widgets": "node testes/ui-widgets.mjs",
     "teste:deck": "node testes/ui-deck.mjs",
     "start:rapido": "NODE_ENV=production node server.mjs",
-    "limpar": "rm -rf data && mkdir -p data"
+    "limpar": "rm -rf data && mkdir -p data",
+    "rede": "node scripts/rede.mjs",
+    "ilustracoes": "node scripts/extrair-ilustracoes.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -26,10 +28,12 @@
     "node-pty": "^1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-kawaii": "^1.6.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "@svgmoji/noto": "^3.2.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

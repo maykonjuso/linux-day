@@ -237,6 +237,23 @@ ok(await host.locator('table').isVisible(), 'o botão "grade" abre a grade pesso
 await host.locator('button[title*="grade pessoas"]').click();
 await dormir(400);
 
+// pedido de ajuda: um clique = uma entrada na fila do apresentador.
+// Sem remover o ouvinte do socket na limpeza, cada re-render registrava outro
+// e o mesmo clique aparecia três vezes.
+const filaDeAjuda = () => host.locator('.estado-faixa', { hasText: /ana/ }).locator('button', { hasText: 'ana' });
+await aluno.getByRole('button', { name: /Ajuda/ }).click();
+await dormir(900);
+const textoFila = (await host.locator('.estado-faixa').textContent()) ?? '';
+const vezes = (textoFila.match(/ana/g) ?? []).length;
+ok(vezes === 1, 'um clique em Ajuda aparece UMA vez no painel', `(apareceu ${vezes}x)`);
+await aluno.getByRole('button', { name: /Ajuda/ }).click();
+await dormir(700);
+const textoFila2 = (await host.locator('.estado-faixa').textContent()) ?? '';
+ok((textoFila2.match(/ana/g) ?? []).length === 1, 'clicar de novo também não duplica');
+await host.locator('.estado-faixa button', { hasText: 'ana' }).first().click();
+await dormir(400);
+ok(!((await host.locator('.estado-faixa').textContent()) ?? '').includes('ana'), 'e o apresentador limpa a fila com um clique');
+
 await host.fill('input[placeholder="recado para a sala"]', 'teste de recado');
 await host.keyboard.press('Enter');
 await dormir(600);

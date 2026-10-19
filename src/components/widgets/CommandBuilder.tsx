@@ -34,10 +34,10 @@ export default function CommandBuilder({ onConcluir }: { onConcluir?: () => void
         <span className="cmd">{linha.join(' ') || '…'}</span>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
         {DESAFIO.pecas.filter((p) => !linha.includes(p.t)).map((p) => (
           <button key={p.t} className="btn" onClick={() => setLinha([...linha, p.t])}
-            style={{ display: 'grid', gap: 2, textAlign: 'left' }}>
+            style={{ display: 'grid', gap: '2px', textAlign: 'left' }}>
             <code style={{ fontFamily: 'var(--mono)', fontWeight: 700 }}>{p.t}</code>
             <small style={{ color: 'var(--tinta-2)' }}>{p.papel}</small>
           </button>
@@ -51,7 +51,7 @@ export default function CommandBuilder({ onConcluir }: { onConcluir?: () => void
         </div>
       )}
       {certo && (
-        <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
           <strong style={{ color: 'var(--ok)' }}>✅ é exatamente isso</strong>
           <span style={{ color: 'var(--tinta-2)' }}>e todo comando do Linux tem essa mesma anatomia.</span>
           <button className="btn primario" style={{ marginLeft: 'auto' }} onClick={() => onConcluir?.()}>concluir</button>

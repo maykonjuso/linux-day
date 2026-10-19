@@ -202,17 +202,17 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
       style={{
         position: 'fixed', top: 0, left: 0, zIndex: 40,
         borderRadius: 'var(--r)', overflow: 'hidden', background: '#16161a',
-        padding: 10, boxShadow: '0 10px 40px rgba(0,0,0,.18)',
+        padding: 'var(--e1)', boxShadow: '0 10px 40px rgba(0,0,0,.18)',
         transition: 'opacity 200ms var(--ease)',
       }}
     >
       <div ref={caixa} style={{ width: '100%', height: 'calc(100% - 26px)' }} />
       {/* rodapé do terminal: diz onde está o teclado e como sair dele */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 22, color: focado ? '#7dd3a0' : '#6b6b76', fontSize: 11, fontFamily: 'var(--sans)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', height: 22, color: focado ? '#7dd3a0' : '#6b6b76', fontSize: 11, fontFamily: 'var(--sans)' }}>
         {focado ? 'o teclado está no terminal' : 'clique aqui para digitar'}
         <button
           onClick={() => { termRef.current?.blurir(); }}
-          style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 6, padding: '1px 8px', fontSize: 11, cursor: 'pointer' }}
+          style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 6, padding: '2px var(--e1)', fontSize: 11, cursor: 'pointer' }}
         >
           devolver teclado ao slide (Esc Esc)
         </button>

@@ -56,7 +56,7 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
     <div className="duas">
       <div className="grade">
         {QUEM.map((quem, q) => (
-          <div key={quem} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div key={quem} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             <strong style={{ width: 74, fontSize: 15 }}>{quem}</strong>
             {BITS.map((bit, b) => (
               <button
@@ -85,15 +85,15 @@ export default function PermissionToggles({ onConcluir }: { onConcluir?: () => v
       <div className="grade">
         <div className="term" style={{ fontSize: 'clamp(20px, 2.6vw, 40px)', textAlign: 'center' }}>
           {simbolico}
-          <div style={{ color: '#ffd479', marginTop: 8 }}>{numero}</div>
+          <div style={{ color: '#ffd479', marginTop: 'var(--e1)' }}>{numero}</div>
         </div>
 
         {desafio && (
           <div className="cartao" style={{ borderColor: acertou ? 'var(--ok)' : 'var(--borda)' }}>
             <div className="olho">desafio {i + 1} de {DESAFIOS.length}</div>
-            <p style={{ marginTop: 6 }}>{desafio.texto}</p>
+            <p style={{ marginTop: 'var(--e1)' }}>{desafio.texto}</p>
             {acertou && (
-              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ marginTop: 'var(--e2)', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <strong style={{ color: 'var(--ok)' }}>✅ é isso</strong>
                 <code className="kbd">chmod {numero} arquivo</code>
                 <button className="btn primario" onClick={proximo} style={{ marginLeft: 'auto' }}>

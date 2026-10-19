@@ -42,14 +42,14 @@ export default function Eu() {
       {(eu.badges?.length ?? 0) > 0 && (
         <>
           <h2 style={{ fontSize: 22, margin: '26px 0 10px' }}>Badges</h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             {eu.badges!.map((b) => <span key={b} className="chip forte">🏅 {b.replace(/-/g, ' ')}</span>)}
           </div>
         </>
       )}
 
       <h2 style={{ fontSize: 22, margin: '26px 0 10px' }}>Certificado</h2>
-      <div className="cartao" style={{ maxWidth: 820, textAlign: 'center', padding: 34 }}>
+      <div className="cartao" style={{ maxWidth: 820, textAlign: 'center', padding: 'var(--e5)' }}>
         <div className="olho">certifico que</div>
         <div style={{ fontSize: 30, fontWeight: 700, margin: '8px 0' }}>{eu.nick}</div>
         <p style={{ color: 'var(--tinta-2)', maxWidth: '36em', margin: '0 auto' }}>
@@ -57,8 +57,8 @@ export default function Eu() {
           manipulação de arquivos, permissões, pipes e processos, e fechou um chamado de diagnóstico em equipe,
           somando <strong>{eu.xp} XP</strong> e a patente de <strong>{n.patente}</strong>.
         </p>
-        <small style={{ color: 'var(--tinta-2)', display: 'block', marginTop: 14 }}>{comandos} comandos no pacote de sobrevivência · {agora}</small>
-        <button className="btn primario naoimprime" style={{ marginTop: 18 }} onClick={() => window.print()}>salvar em PDF</button>
+        <small style={{ color: 'var(--tinta-2)', display: 'block', marginTop: 'var(--e2)' }}>{comandos} comandos no pacote de sobrevivência · {agora}</small>
+        <button className="btn primario naoimprime" style={{ marginTop: 'var(--e3)' }} onClick={() => window.print()}>salvar em PDF</button>
       </div>
 
       <p className="naoimprime" style={{ marginTop: 26 }}>

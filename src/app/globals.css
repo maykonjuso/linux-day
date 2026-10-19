@@ -22,7 +22,26 @@
   --atencao: #a16207;
   --term-fundo: #16161a;
   --term-tinta: #e8e8ea;
-  --r: 14px;
+  /*
+   * Escala de espaçamento: tudo é múltiplo de 8, com 4 como meio-passo.
+   * Uma escala fechada é o que faz telas diferentes parecerem o mesmo produto:
+   * sem ela cada caixa recebe um número inventado na hora (12, 13, 22, 26) e o
+   * olho percebe desalinho mesmo sem saber dizer onde.
+   */
+  --e05: 4px;
+  --e1: 8px;
+  --e2: 16px;
+  --e3: 24px;
+  --e4: 32px;
+  --e5: 40px;
+  --e6: 48px;
+  --e8: 64px;
+
+  /* raios na mesma lógica: 8, 12, 16, 24 */
+  --r-p: 8px;
+  --r: 12px;
+  --r-m: 16px;
+  --r-g: 24px;
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
   /* só fontes que existem na máquina: nada é baixado (a rede é local, sem internet) */
   --mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "DejaVu Sans Mono", monospace;
@@ -53,6 +72,8 @@ button { font: inherit; color: inherit; }
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
 }
+/* projetor: a cena ocupa a tela inteira, sem barra de operação embaixo */
+.palco-limpo { grid-template-rows: minmax(0, 1fr); }
 /*
  * A cena rola quando o conteúdo é maior que a tela, em vez de cortar.
  * `justify-content: center` só vale quando sobra espaço: com conteúdo grande,
@@ -62,8 +83,8 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: safe center;
-  gap: clamp(14px, 2.2vh, 28px);
-  padding: clamp(18px, 4vh, 48px) clamp(18px, 6vw, 90px);
+  gap: clamp(var(--e2), 2.4vh, var(--e4));
+  padding: clamp(var(--e3), 4.5vh, var(--e6)) clamp(var(--e3), 6vw, var(--e8));
   min-height: 0;
   animation: entra 200ms var(--ease);
 }
@@ -79,16 +100,16 @@ button { font: inherit; color: inherit; }
 
 /* ── barra inferior ──────────────────────────────────────────────────────── */
 .barra {
-  display: flex; align-items: center; gap: 18px;
-  padding: 12px 22px;
+  display: flex; align-items: center; gap: var(--e2);
+  padding: var(--e2) var(--e3);
   border-top: 1px solid var(--borda);
   background: var(--papel-2);
   font-size: 15px;
 }
 .barra .cresce { margin-left: auto; }
 .chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 5px 11px; border: 1px solid var(--borda); border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--e1);
+  padding: var(--e05) var(--e1); border: 1px solid var(--borda); border-radius: 999px;
   background: var(--papel); font-variant-numeric: tabular-nums;
 }
 .chip.forte { border-color: var(--acento); color: var(--acento); font-weight: 650; }
@@ -96,7 +117,7 @@ button { font: inherit; color: inherit; }
 /* ── botões ──────────────────────────────────────────────────────────────── */
 .btn {
   border: 1px solid var(--borda); background: var(--papel);
-  border-radius: 10px; padding: 10px 16px; cursor: pointer;
+  border-radius: var(--r-p); padding: var(--e1) var(--e2); cursor: pointer;
   transition: transform 160ms var(--ease), background 160ms ease;
 }
 .btn:hover { background: var(--papel-2); }
@@ -107,7 +128,7 @@ button { font: inherit; color: inherit; }
 /* ── terminal ────────────────────────────────────────────────────────────── */
 .term {
   background: var(--term-fundo); color: var(--term-tinta);
-  border-radius: var(--r); padding: 22px 24px;
+  border-radius: var(--r-m); padding: var(--e3);
   font-family: var(--mono); font-size: clamp(14px, 1.35vw, 22px);
   line-height: 1.6; overflow: auto; white-space: pre-wrap;
 }
@@ -116,17 +137,17 @@ button { font: inherit; color: inherit; }
 .term .saida { color: #a7a7b0; }
 .term .saida b { color: #ffd479; font-weight: 600; }
 .term .traducao {
-  display: block; margin: 6px 0 18px;
-  font-family: var(--sans); font-size: 0.72em; color: #8e8e99;
-  border-left: 2px solid #3a3a42; padding-left: 10px;
+  display: block; margin: var(--e1) 0 var(--e2);
+  font-family: var(--sans); font-size: 0.74em; color: #8e8e99;
+  border-left: 2px solid #3a3a42; padding-left: var(--e1);
 }
 
 /* ── quiz ────────────────────────────────────────────────────────────────── */
-.alternativas { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+.alternativas { display: grid; gap: var(--e2); grid-template-columns: 1fr 1fr; }
 @media (max-width: 760px) { .alternativas { grid-template-columns: 1fr; } }
 .alt {
-  display: flex; align-items: center; gap: 14px; text-align: left;
-  padding: 20px 22px; border: 2px solid var(--borda); border-radius: var(--r);
+  display: flex; align-items: center; gap: var(--e2); text-align: left;
+  padding: var(--e3); border: 2px solid var(--borda); border-radius: var(--r-m);
   background: var(--papel); cursor: pointer; font-size: clamp(17px, 1.7vw, 24px);
   transition: transform 160ms var(--ease), border-color 160ms ease, background 160ms ease;
 }
@@ -135,32 +156,32 @@ button { font: inherit; color: inherit; }
 .alt[data-estado="certa"] { border-color: var(--ok); background: #effaf1; }
 .alt[data-estado="errada"] { opacity: 0.45; }
 .alt .letra {
-  width: 34px; height: 34px; flex: none; border-radius: 9px;
+  width: var(--e4); height: var(--e4); flex: none; border-radius: var(--r-p);
   display: grid; place-items: center; background: var(--papel-2);
   font-family: var(--mono); font-weight: 700;
 }
 .barra-votos { height: 8px; border-radius: 999px; background: var(--acento); transition: width 500ms linear; }
 
 /* ── critérios do lab ────────────────────────────────────────────────────── */
-.criterios { display: grid; gap: 10px; }
-.criterio { display: flex; gap: 12px; align-items: flex-start; font-size: clamp(15px, 1.4vw, 20px); }
+.criterios { display: grid; gap: var(--e1); }
+.criterio { display: flex; gap: var(--e2); align-items: flex-start; font-size: clamp(15px, 1.4vw, 20px); }
 .criterio[data-ok="true"] { color: var(--ok); animation: acende 180ms var(--ease); }
 @keyframes acende { from { transform: scale(0.95); } }
 
 /* ── utilidades ──────────────────────────────────────────────────────────── */
-.grade { display: grid; gap: 22px; }
-.duas { display: grid; gap: 34px; grid-template-columns: 1.1fr 1fr; align-items: center; }
+.grade { display: grid; gap: var(--e3); }
+.duas { display: grid; gap: var(--e4); grid-template-columns: 1.1fr 1fr; align-items: center; }
 /* no laboratório o terminal leva a fatia maior */
 .duas-lab { grid-template-columns: minmax(240px, 0.85fr) minmax(340px, 1.15fr); }
 @media (max-width: 900px) {
   .duas, .duas-lab { grid-template-columns: 1fr; }
 }
 .kbd {
-  font-family: var(--mono); font-size: 0.85em; padding: 2px 7px;
-  border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 6px; background: var(--papel);
+  font-family: var(--mono); font-size: 0.88em; padding: 2px var(--e1);
+  border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: var(--r-p); background: var(--papel);
 }
-.cartao { border: 1px solid var(--borda); border-radius: var(--r); padding: 18px 20px; background: var(--papel); }
-.centro { display: grid; place-items: center; height: 100vh; padding: 24px; }
+.cartao { border: 1px solid var(--borda); border-radius: var(--r-m); padding: var(--e3); background: var(--papel); }
+.centro { display: grid; place-items: center; height: 100vh; padding: var(--e3); }
 
 /* ── xterm.js ────────────────────────────────────────────────────────────── */
 .xterm { height: 100%; }
@@ -179,7 +200,7 @@ button { font: inherit; color: inherit; }
 }
 .toast {
   position: fixed; bottom: 86px; left: 50%; transform: translateX(-50%);
-  z-index: 60; padding: 14px 22px; border-radius: 999px;
+  z-index: 60; padding: var(--e2) var(--e3); border-radius: 999px;
   background: var(--tinta); color: var(--papel); font-weight: 600;
   box-shadow: 0 10px 30px rgba(0,0,0,.2);
 }
@@ -193,20 +214,20 @@ button { font: inherit; color: inherit; }
 .palco[data-papel="screen"] .titulo { font-size: clamp(40px, 5.2vw, 92px); }
 .palco[data-papel="screen"] .corpo { font-size: clamp(22px, 2.3vw, 38px); max-width: 28em; }
 .palco[data-papel="screen"] .olho { font-size: clamp(16px, 1.5vw, 24px); }
-.palco[data-papel="screen"] .alt { font-size: clamp(22px, 2.2vw, 34px); padding: 24px 26px; }
-.palco[data-papel="screen"] .alt .letra { width: 46px; height: 46px; font-size: 22px; }
+.palco[data-papel="screen"] .alt { font-size: clamp(22px, 2.2vw, 34px); padding: var(--e3) var(--e4); }
+.palco[data-papel="screen"] .alt .letra { width: var(--e6); height: var(--e6); font-size: 22px; }
 .palco[data-papel="screen"] .term { font-size: clamp(18px, 1.7vw, 28px); }
-.palco[data-papel="screen"] .chip { font-size: clamp(15px, 1.3vw, 22px); padding: 7px 15px; }
+.palco[data-papel="screen"] .chip { font-size: clamp(15px, 1.3vw, 22px); padding: var(--e1) var(--e2); }
 .palco[data-papel="screen"] .criterio { font-size: clamp(18px, 1.7vw, 28px); }
-.palco[data-papel="screen"] .cartao { padding: 22px 26px; }
+.palco[data-papel="screen"] .cartao { padding: var(--e4); }
 .palco[data-papel="screen"] .kbd { font-size: clamp(16px, 1.5vw, 26px); }
-.palco[data-papel="screen"] .barra { font-size: clamp(15px, 1.3vw, 20px); padding: 14px 26px; }
+.palco[data-papel="screen"] .barra { font-size: clamp(15px, 1.3vw, 20px); padding: var(--e2) var(--e4); }
 
 /* quando a cena tem muito conteúdo, aperta um pouco em vez de cortar */
-.cena[data-denso="true"] { gap: clamp(10px, 1.4vh, 18px); }
+.cena[data-denso="true"] { gap: clamp(var(--e1), 1.6vh, var(--e3)); }
 .cena[data-denso="true"] .titulo { font-size: clamp(22px, 2.6vw, 40px); }
 .cena[data-denso="true"] .corpo { font-size: clamp(15px, 1.4vw, 21px); }
-.cena[data-denso="true"] .cartao { padding: 12px 14px; }
+.cena[data-denso="true"] .cartao { padding: var(--e2); }
 
 /* ── barras de controle ──────────────────────────────────────────────────── */
 /*
@@ -218,18 +239,18 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  padding: 10px 18px;
+  gap: var(--e1) var(--e2);
+  padding: var(--e1) var(--e2);
   border-top: 1px solid var(--borda);
   background: var(--papel-2);
 }
 .bloco-controle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: var(--e05);
+  padding: var(--e05) var(--e1);
   border: 1px solid var(--borda);
-  border-radius: 12px;
+  border-radius: var(--r);
   background: var(--papel);
 }
 .bloco-controle > .rotulo {
@@ -243,11 +264,11 @@ button { font: inherit; color: inherit; }
 .btn-icone {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--e1);
   border: 1px solid transparent;
   background: transparent;
-  border-radius: 9px;
-  padding: 6px 10px;
+  border-radius: var(--r-p);
+  padding: var(--e1);
   cursor: pointer;
   font-size: 14px;
   transition: background 140ms ease, transform 140ms var(--ease);
@@ -259,10 +280,30 @@ button { font: inherit; color: inherit; }
 .btn-icone.destaque { background: var(--tinta); color: var(--papel); font-weight: 650; }
 .btn-icone.destaque:hover { background: #26262b; }
 .estado-faixa {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--e1);
   margin-left: auto; font-size: 13px; color: var(--tinta-2);
 }
 @media (max-width: 860px) {
   .btn-icone .texto { display: none; }        /* no celular sobra só o ícone */
   .bloco-controle > .rotulo { display: none; }
+}
+
+/*
+ * Em tela pequena a escala inteira comprime um passo. A proporção entre os
+ * espaços continua a mesma (é a proporção que dá harmonia), mas o respiro
+ * absoluto diminui, porque num celular de 390px de largura 48px de respiro
+ * viram quase um sexto da tela.
+ */
+@media (max-width: 560px) {
+  :root {
+    --e2: 12px;
+    --e3: 16px;
+    --e4: 24px;
+    --e5: 32px;
+    --e6: 32px;
+    --e8: 40px;
+  }
+  .alternativas { gap: var(--e1); }
+  .alt { padding: var(--e2); }
+  .cartao { padding: var(--e2); }
 }

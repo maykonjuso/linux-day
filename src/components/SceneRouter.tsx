@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import type { Arena } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
 import { Diagrama } from './Diagramas';
-import { Icone, IconeGrande } from './Icone';
+import { Icone } from './Icone';
+import { Ilustra, IlustraDestaque, type NomeIlustra } from './Ilustra';
+import { Texto } from './Texto';
 import PermissionToggles from './widgets/PermissionToggles';
 import PathQuiz from './widgets/PathQuiz';
 import PipeBuilder from './widgets/PipeBuilder';
@@ -41,19 +43,23 @@ export function SceneRouter({ arena, papel, cenaForcada }: { arena: Arena; papel
 
 type C<T extends Cena['tipo']> = Extract<Cena, { tipo: T }>;
 
-const ICONE_DO_MODULO = ['foguete', 'onde', 'arquivos', 'cadeado', 'juntar', 'processo', 'ferramenta'];
+/** ilustração padrão de cada módulo, quando a cena não escolhe a sua */
+const ILUSTRA_DO_MODULO: NomeIlustra[] = ['pinguim', 'bussola', 'pasta', 'cadeado', 'elo', 'engrenagem', 'ferramenta'];
+
+const ilustraDa = (cena: { ilustra?: string; modulo: number }): NomeIlustra =>
+  (cena.ilustra as NomeIlustra) ?? ILUSTRA_DO_MODULO[cena.modulo] ?? 'pinguim';
 
 function Capa({ cena }: { cena: C<'ModuleCover'> }) {
   return (
     <div className="cena">
-      <div style={{ display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap' }}>
-        <IconeGrande nome={ICONE_DO_MODULO[cena.modulo] ?? 'caixa'} />
-        <div className="grade" style={{ gap: 12 }}>
+      <div style={{ display: 'flex', gap: 'var(--e4)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <IlustraDestaque nome={ilustraDa(cena)} />
+        <div className="grade" style={{ gap: 'var(--e2)' }}>
           <div className="olho">módulo {cena.modulo}</div>
           <h1 className="titulo">{cena.titulo}</h1>
+          <p className="corpo"><Texto>{cena.pergunta}</Texto></p>
         </div>
       </div>
-      <p className="corpo">{cena.pergunta}</p>
       <div className="chip forte" style={{ justifySelf: 'start' }}>
         <Icone nome="xp" tamanho={15} /> {cena.xpDoModulo} XP em jogo
       </div>
@@ -66,14 +72,16 @@ const ICONE_DO_DIAGRAMA = { arvore: 'arvore', processo: 'processo', cadeados: 'c
 function Modelo({ cena }: { cena: C<'MentalModel'> }) {
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)', display: 'flex', gap: 14, alignItems: 'center' }}>
-        <Icone nome={ICONE_DO_DIAGRAMA[cena.diagrama]} tamanho={34} cor="var(--acento)" />
+      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)', display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+        <Ilustra nome={ilustraDa(cena)} tamanho={44} />
         {cena.titulo}
       </h2>
       <Diagrama nome={cena.diagrama} />
-      <div className="cartao" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: '54em' }}>
-        <Icone nome="ideia" cor="var(--atencao)" />
-        <p style={{ fontSize: 'clamp(16px, 1.6vw, 24px)', color: 'var(--tinta-2)' }}>{cena.legenda}</p>
+      <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start', maxWidth: '54em' }}>
+        <Ilustra nome="ideia" tamanho={28} />
+        <p style={{ fontSize: 'clamp(16px, 1.6vw, 24px)', color: 'var(--tinta-2)' }}>
+          <Texto>{cena.legenda}</Texto>
+        </p>
       </div>
     </div>
   );
@@ -82,13 +90,16 @@ function Modelo({ cena }: { cena: C<'MentalModel'> }) {
 function Anatomia({ cena }: { cena: C<'CommandAnatomy'> }) {
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)' }}>{cena.titulo}</h2>
+      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)', display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+        <Ilustra nome={ilustraDa(cena)} tamanho={40} />
+        {cena.titulo}
+      </h2>
       <div className="term" style={{ fontSize: 'clamp(22px, 3vw, 46px)' }}>{cena.comando}</div>
       <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
         {cena.partes.map((p) => (
           <div key={p.trecho} className="cartao">
             <code className="kbd" style={{ fontSize: '1.1em' }}>{p.trecho}</code>
-            <p style={{ marginTop: 8, color: 'var(--tinta-2)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <p style={{ marginTop: 'var(--e1)', color: 'var(--tinta-2)', display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
               <Icone nome="proximo" tamanho={15} /> {p.rotulo}
             </p>
           </div>
@@ -110,8 +121,8 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
    */
   return (
     <div className="cena">
-      <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Icone nome="terminal" tamanho={16} /> {cena.titulo}
+      <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
+        <Ilustra nome={ilustraDa(cena)} tamanho={22} /> {cena.titulo}
       </div>
 
       <div className="term">
@@ -136,7 +147,7 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
         })}
       </div>
 
-      <div className="olho" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
         <span>passo {atual + 1} de {cena.linhas.length}</span>
         <span style={{ display: 'flex', gap: 4 }}>
           {cena.linhas.map((_, i) => (
@@ -159,18 +170,18 @@ function Erros({ cena }: { cena: C<'WillGoWrong'> }) {
    */
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(22px, 2.6vw, 42px)', display: 'flex', gap: 12, alignItems: 'center' }}>
-        <Icone nome="atencao" tamanho={30} cor="var(--atencao)" />
+      <h2 className="titulo" style={{ fontSize: 'clamp(22px, 2.6vw, 42px)', display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+        <Ilustra nome="extintor" tamanho={40} />
         {cena.titulo}
       </h2>
       <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 12 }}>
         {cena.erros.map((e) => (
-          <div key={e.mensagem} className="cartao" style={{ padding: '12px 14px', display: 'grid', gap: 4 }}>
+          <div key={e.mensagem} className="cartao" style={{ padding: 'var(--e2)', display: 'grid', gap: 4 }}>
             <code style={{ fontFamily: 'var(--mono)', color: 'var(--erro)', fontSize: 'clamp(13px, 1.25vw, 18px)' }}>
               {e.mensagem}
             </code>
-            <span style={{ fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{e.significa}</span>
-            <span style={{ color: 'var(--ok)', fontSize: 'clamp(13px, 1.2vw, 17px)', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 'clamp(13px, 1.2vw, 17px)' }}><Texto>{e.significa}</Texto></span>
+            <span style={{ color: 'var(--ok)', fontSize: 'clamp(13px, 1.2vw, 17px)', display: 'flex', gap: 'var(--e05)', alignItems: 'center' }}>
               <Icone nome="ideia" tamanho={14} cor="var(--ok)" /> {e.causa}
             </span>
           </div>
@@ -198,21 +209,24 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
 
   return (
     <div className="cena">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)', flexWrap: 'wrap' }}>
         <div className="olho">{cena.titulo}</div>
         {estado.restante !== null && !revelado && (
-          <span className="chip forte" style={{ fontSize: 'clamp(16px, 1.8vw, 26px)', padding: '6px 16px' }}>
+          <span className="chip forte" style={{ fontSize: 'clamp(16px, 1.8vw, 26px)', padding: 'var(--e1) var(--e2)' }}>
             <Icone nome="relogio" tamanho={18} /> {estado.restante}s
           </span>
         )}
         {contagem && !revelado && (
-          <span className="chip" style={{ fontSize: 'clamp(14px, 1.5vw, 22px)', padding: '6px 16px' }}>
+          <span className="chip" style={{ fontSize: 'clamp(14px, 1.5vw, 22px)', padding: 'var(--e1) var(--e2)' }}>
             <Icone nome="pessoas" tamanho={18} /> {contagem.total} de {contagem.esperados} responderam
             {faltam ? ` · faltam ${faltam}` : ' · todos!'}
           </span>
         )}
       </div>
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.4vw, 56px)' }}>{cena.pergunta}</h2>
+      <div style={{ display: 'flex', gap: 'var(--e3)', alignItems: 'center' }}>
+        <Ilustra nome={ilustraDa(cena)} tamanho="clamp(44px, 5vw, 86px)" />
+        <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.4vw, 56px)' }}>{cena.pergunta}</h2>
+      </div>
 
       <div className="alternativas">
         {cena.alternativas.map((a, i) => {
@@ -235,7 +249,7 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
               <span className="letra">{String.fromCharCode(65 + i)}</span>
               <span style={{ flex: 1 }}>{a.texto}</span>
               {revelado && (
-                <span style={{ display: 'grid', gap: 4, minWidth: 90 }}>
+                <span style={{ display: 'grid', gap: 'var(--e05)', minWidth: 90 }}>
                   <span className="barra-votos" style={{ width: `${(votos / total) * 90}px` }} />
                   <small style={{ color: 'var(--tinta-2)' }}>{votos}</small>
                 </span>
@@ -246,7 +260,12 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
         })}
       </div>
 
-      {revelado && <p className="corpo" style={{ maxWidth: '40em' }}>{cena.explicacao}</p>}
+      {revelado && (
+        <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start', maxWidth: '46em' }}>
+          <Ilustra nome="ideia" tamanho={30} />
+          <p className="corpo" style={{ maxWidth: 'none' }}><Texto>{cena.explicacao}</Texto></p>
+        </div>
+      )}
       {papel === 'player' && escolha && !revelado && <div className="chip forte">resposta enviada · segure a ansiedade</div>}
       {papel === 'player' && !escolha && !revelado && !aberta && (
         <div className="chip"><Icone nome="relogio" tamanho={15} /> aguardando o apresentador abrir a pergunta</div>
@@ -291,8 +310,11 @@ function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; 
 
   return (
     <div className="cena">
-      <div className="olho">{cena.titulo}{arena.estado.restante !== null && ` · ${arena.estado.restante}s`}</div>
-      <p className="corpo" style={{ maxWidth: '44em' }}>{cena.enunciado}</p>
+      <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
+        <Ilustra nome={ilustraDa(cena)} tamanho={22} /> {cena.titulo}
+        {arena.estado.restante !== null && ` · ${arena.estado.restante}s`}
+      </div>
+      <p className="corpo" style={{ maxWidth: '44em' }}><Texto>{cena.enunciado}</Texto></p>
 
       {interativo ? qual() : (
         <div className="cartao" style={{ fontSize: 'clamp(18px, 2vw, 30px)' }}>
@@ -318,13 +340,16 @@ function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
 
   return (
     <div className="cena">
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)' }}>{cena.titulo}</h2>
+      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3vw, 48px)', display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
+        <Ilustra nome="trofeu" tamanho={44} />
+        {cena.titulo}
+      </h2>
       <div className="grade">
         {linhas.length === 0 && <p className="corpo">ninguém pontuou ainda.</p>}
         {linhas.map((l, i) => (
-          <div key={l.chave} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 'clamp(16px, 1.8vw, 26px)' }}>
-            <strong style={{ width: 54, color: 'var(--tinta-2)', display: 'flex', gap: 6, alignItems: 'center' }}>
-              {i === 0 ? <Icone nome="troféu" tamanho={18} cor="var(--atencao)" /> : null}{i + 1}º
+          <div key={l.chave} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)', fontSize: 'clamp(16px, 1.8vw, 26px)' }}>
+            <strong style={{ width: 56, color: 'var(--tinta-2)', display: 'flex', gap: 'var(--e05)', alignItems: 'center' }}>
+              {i === 0 ? <Ilustra nome="medalha" tamanho={20} /> : null}{i + 1}º
             </strong>
             <span style={{ flex: 1 }}>{l.nome}</span>
             <span style={{ color: 'var(--tinta-2)', fontSize: '0.8em' }}>{l.extra}</span>
@@ -339,12 +364,12 @@ function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
 function Recap({ cena, passo }: { cena: C<'Recap'>; passo: number }) {
   return (
     <div className="cena">
-      <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Icone nome="checklist" tamanho={16} /> {cena.titulo}
+      <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
+        <Ilustra nome="bandeira" tamanho={22} /> {cena.titulo}
       </div>
       <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.2vw, 52px)' }}>{cena.perguntaDeRecuperacao}</h2>
       {passo > 0 ? (
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
           {cena.resumo.map((c) => <code key={c} className="kbd" style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}>{c}</code>)}
         </div>
       ) : (

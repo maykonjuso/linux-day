@@ -71,7 +71,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
   const papeis = arena.meuGrupo?.papeis ?? {};
 
   return (
-    <div className="cena" style={{ gap: 18, paddingTop: '3vh' }}>
+    <div className="cena" style={{ gap: 'var(--e2)', paddingTop: 'var(--e3)' }}>
       <div className="olho">
         {cena.escopo === 'grupo' ? `boss em grupo${arena.eu?.grupo ? ` · grupo ${arena.eu.grupo}` : ''}` : 'mão na massa'}
         {tempo !== null && ` · ⏱ ${Math.floor(tempo / 60)}:${String(tempo % 60).padStart(2, '0')}`}
@@ -80,7 +80,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
       <h2 className="titulo" style={{ fontSize: 'clamp(20px, 2.2vw, 34px)' }}>{cena.titulo}</h2>
       <p className="corpo" style={{ maxWidth: '50em', fontSize: 'clamp(16px, 1.5vw, 22px)' }}>{cena.objetivo}</p>
 
-      <div className="duas duas-lab" style={{ alignItems: 'start', gap: 26 }}>
+      <div className="duas duas-lab" style={{ alignItems: 'start', gap: 'var(--e4)' }}>
         <div className="grade" style={{ gap: 14 }}>
           <div className="criterios">
             {cena.criterios.map((c) => {
@@ -111,7 +111,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
               onKeyDown={(e) => { if (e.key === 'Enter') verificar(); }} />
           )}
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             <button className="btn primario" disabled={!souJogador || ocupado || cooldown > 0 || !arena.ambienteOk} onClick={() => verificar()}>
               <Icone nome="verificar" tamanho={16} />
               {ocupado ? ' verificando…' : cooldown > 0 ? ` Verificar (${cooldown}s)` : ' Verificar'}
@@ -146,7 +146,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
           )}
 
           <div className="olho">comandos do módulo</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             {cena.comandosDoModulo.map((c) => <code key={c} className="kbd">{c}</code>)}
           </div>
         </div>
@@ -159,7 +159,7 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
             {!souJogador && 'o terminal está na tela de cada participante'}
           </div>
           {souJogador && (
-            <small style={{ color: 'var(--tinta-2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <small style={{ color: 'var(--tinta-2)', display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
               <Icone nome="teclado" tamanho={15} />
               Clique no terminal para digitar. Para voltar o teclado ao slide, aperte <code className="kbd">Esc</code> duas vezes.
               {arena.eu?.nick && <>Você é <code className="kbd">{usuarioDoNick(arena.eu.nick)}</code> no terminal.</>}

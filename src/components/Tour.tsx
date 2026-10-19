@@ -28,11 +28,11 @@ export function Tour({ onFechar }: { onFechar: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Icone nome="info" />
           <strong style={{ fontSize: 20 }}>O que é cada coisa desta tela</strong>
-          <button className="btn" style={{ marginLeft: 'auto', padding: '6px 12px' }} onClick={onFechar}>fechar</button>
+          <button className="btn" style={{ marginLeft: 'auto', padding: 'var(--e1) var(--e2)' }} onClick={onFechar}>fechar</button>
         </div>
         <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
           {ITENS.map((i) => (
-            <div key={i.titulo} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div key={i.titulo} style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--papel-2)', flex: 'none' }}>
                 <Icone nome={i.icone} tamanho={19} cor="var(--acento)" />
               </div>

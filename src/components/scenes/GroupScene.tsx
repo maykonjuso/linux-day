@@ -37,7 +37,7 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
                 <strong style={{ textTransform: 'capitalize' }}>{g.nome}</strong>
                 <span className="chip" style={{ marginLeft: 'auto' }}>{g.membros.length}/{g.capacidade}</span>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10, minHeight: 28 }}>
+              <div style={{ display: 'flex', gap: 'var(--e05)', flexWrap: 'wrap', marginTop: 'var(--e1)', minHeight: 28 }}>
                 {g.membros.map((m) => (
                   <span key={m.id} title={m.nick} style={{ fontSize: 20 }}>{m.emoji}</span>
                 ))}
@@ -60,11 +60,11 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
                 <button key={p.id} className="cartao" disabled={!souJogador || (!!dono && !meuPapel)}
                   onClick={() => arena.emit('grupo:papel', p.id)}
                   style={{ textAlign: 'left', borderColor: meuPapel ? 'var(--acento)' : 'var(--borda)' }}>
-                  <strong style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <strong style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
                     <Icone nome={p.id === 'investigador' ? 'lupa' : p.id === 'operador' ? 'matar' : p.id === 'mecanico' ? 'ferramenta' : 'arquivo'} tamanho={18} />
                     {p.nome}
                   </strong>
-                  <p style={{ color: 'var(--tinta-2)', marginTop: 6, fontSize: 15 }}>{p.faz}</p>
+                  <p style={{ color: 'var(--tinta-2)', marginTop: 'var(--e1)', fontSize: 15 }}>{p.faz}</p>
                   <small style={{ color: membro ? 'var(--acento)' : 'var(--tinta-2)' }}>
                     {membro ? `${membro.emoji} ${membro.nick}` : 'livre'}
                   </small>
@@ -77,7 +77,7 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
 
       {souJogador && meu && (
         <div className="cartao" style={{ display: 'grid', gap: 8 }}>
-          <div className="olho" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
             <Icone nome="pessoas" tamanho={15} /> chat do grupo {meu}
           </div>
           <div style={{ maxHeight: 120, overflow: 'auto', display: 'grid', gap: 4 }}>

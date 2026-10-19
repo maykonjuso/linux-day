@@ -29,18 +29,18 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
       style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,12,.45)', zIndex: 55, display: 'grid', placeItems: 'center', padding: 20 }}
     >
       <div className="cartao" onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(960px, 100%)', maxHeight: '84vh', display: 'grid', gridTemplateRows: 'auto 1fr', gap: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <strong style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        style={{ width: 'min(960px, 100%)', maxHeight: '84vh', display: 'grid', gridTemplateRows: 'auto 1fr', gap: 'var(--e2)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', flexWrap: 'wrap' }}>
+          <strong style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
             <Icone nome="consultar" /> Consulta
           </strong>
           {([['visto', 'o que já vimos', 'historico'], ['pacote', 'comandos por situação', 'checklist'], ['palavras', 'palavras difíceis', 'duvida']] as const).map(([k, rotulo, icone]) => (
             <button key={k} className="btn" onClick={() => setAba(k)}
-              style={{ padding: '6px 12px', borderColor: aba === k ? 'var(--acento)' : 'var(--borda)', color: aba === k ? 'var(--acento)' : undefined, display: 'flex', gap: 7, alignItems: 'center' }}>
+              style={{ padding: 'var(--e1) var(--e2)', borderColor: aba === k ? 'var(--acento)' : 'var(--borda)', color: aba === k ? 'var(--acento)' : undefined, display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
               <Icone nome={icone} tamanho={15} /> {rotulo}
             </button>
           ))}
-          <button className="btn" style={{ marginLeft: 'auto', padding: '6px 12px' }} onClick={onFechar}>fechar (Esc)</button>
+          <button className="btn" style={{ marginLeft: 'auto', padding: 'var(--e1) var(--e2)' }} onClick={onFechar}>fechar (Esc)</button>
         </div>
 
         <div style={{ overflow: 'auto', paddingRight: 6 }}>
@@ -50,7 +50,7 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
               {jaVistos.map((c) => (
                 <div key={c.id}>
                   <div className="olho">módulo {c.modulo} · {c.titulo}</div>
-                  <div className="term" style={{ marginTop: 6, fontSize: 14 }}>
+                  <div className="term" style={{ marginTop: 'var(--e1)', fontSize: 14 }}>
                     {c.tipo === 'TerminalDemo' && c.linhas.map((l, i) => (
                       <div key={i}>
                         <span className="cmd">{l.comando}</span>
@@ -77,20 +77,20 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
               {PACOTE.map((p) => (
                 <div key={p.situacao} className="cartao" style={{ background: 'var(--papel-2)' }}>
                   <strong style={{ fontSize: 14 }}>{p.situacao}</strong>
-                  <div style={{ display: 'grid', gap: 2, marginTop: 8 }}>
+                  <div style={{ display: 'grid', gap: '2px', marginTop: 'var(--e1)' }}>
                     {p.itens.map((i) => <code key={i} style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{i}</code>)}
                   </div>
                 </div>
               ))}
               <div className="cartao" style={{ background: 'var(--papel-2)' }}>
                 <strong style={{ fontSize: 14 }}>Cuidados</strong>
-                <div style={{ display: 'grid', gap: 6, marginTop: 8, fontSize: 13, color: 'var(--tinta-2)' }}>
+                <div style={{ display: 'grid', gap: 'var(--e05)', marginTop: 'var(--e1)', fontSize: 13, color: 'var(--tinta-2)' }}>
                   {ARMADILHAS.map((a) => <span key={a.o}>{a.o}: {a.nem}</span>)}
                 </div>
               </div>
               <div className="cartao" style={{ background: 'var(--papel-2)' }}>
                 <strong style={{ fontSize: 14 }}>Hábitos</strong>
-                <div style={{ display: 'grid', gap: 6, marginTop: 8, fontSize: 13, color: 'var(--tinta-2)' }}>
+                <div style={{ display: 'grid', gap: 'var(--e05)', marginTop: 'var(--e1)', fontSize: 13, color: 'var(--tinta-2)' }}>
                   {HABITOS.map((h) => <span key={h.titulo}>{h.titulo}</span>)}
                 </div>
               </div>
@@ -102,8 +102,8 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
               {GLOSSARIO.map((g) => (
                 <div key={g.palavra} className="cartao" style={{ background: 'var(--papel-2)' }}>
                   <strong style={{ fontFamily: 'var(--mono)' }}>{g.palavra}</strong>
-                  <p style={{ marginTop: 6, fontSize: 14 }}>{g.oque}</p>
-                  <p style={{ marginTop: 6, fontSize: 13, color: 'var(--tinta-2)' }}>
+                  <p style={{ marginTop: 'var(--e1)', fontSize: 14 }}>{g.oque}</p>
+                  <p style={{ marginTop: 'var(--e1)', fontSize: 13, color: 'var(--tinta-2)' }}>
                     <Icone nome="ideia" tamanho={13} /> {g.exemplo}
                   </p>
                 </div>

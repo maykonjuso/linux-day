@@ -37,7 +37,7 @@ export default function Host() {
   const { estado, cena, presenca, emit, placar } = arena;
   const [pin, setPin] = useState('');
   const [ok, setOk] = useState(false);
-  const [ajudas, setAjudas] = useState<string[]>([]);
+  const [ajudas, setAjudas] = useState<{ nick: string; em: number }[]>([]);
   const [pulsos, setPulsos] = useState(0);
   const [grade, setGrade] = useState<Grade | null>(null);
   const [verGrade, setVerGrade] = useState(false);
@@ -113,15 +113,37 @@ export default function Host() {
 
   const puxarGrade = useCallback(() => emit('host:grade', null, (g: Grade) => setGrade(g)), [emit]);
 
+  /**
+   * Avisos que chegam da turma (pedido de ajuda e "me perdi").
+   *
+   * A limpeza com `off` é obrigatória: sem ela cada re-render registrava mais
+   * um ouvinte no mesmo socket, e um único clique em Ajuda aparecia três vezes
+   * na tela. Efeito separado do polling da grade, para não re-registrar
+   * ouvintes a cada troca de função.
+   */
+  useEffect(() => {
+    const s = arena.socket;
+    if (!ok || !s) return;
+
+    const aoPedirAjuda = ({ nick }: { nick: string }) => setAjudas((fila) => {
+      // a mesma pessoa clicando de novo atualiza o horário, não duplica a fila
+      const sem = fila.filter((p) => p.nick !== nick);
+      return [...sem, { nick, em: Date.now() }].slice(-10);
+    });
+    const aoSePerder = () => setPulsos((n) => n + 1);
+
+    s.on('ajuda', aoPedirAjuda);
+    s.on('pulso', aoSePerder);
+    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); };
+  }, [ok, arena.socket]);
+
+  /** a grade é atualizada por tempo, e isso não deve mexer nos ouvintes */
   useEffect(() => {
     if (!ok) return;
-    const s = arena.socket;
-    s?.on('ajuda', (p: { nick: string }) => setAjudas((a) => [...a.slice(-9), p.nick]));
-    s?.on('pulso', () => setPulsos((p) => p + 1));
-    const t = setInterval(puxarGrade, 5000);
     puxarGrade();
+    const t = setInterval(puxarGrade, 5000);
     return () => clearInterval(t);
-  }, [ok, arena.socket, puxarGrade]);
+  }, [ok, puxarGrade]);
 
   useEffect(() => {
     if (!ok) return;
@@ -147,7 +169,7 @@ export default function Host() {
   if (!ok) {
     return (
       <div className="centro">
-        <div className="cartao" style={{ display: 'grid', gap: 12, width: 'min(360px, 100%)' }}>
+        <div className="cartao" style={{ display: 'grid', gap: 'var(--e2)', width: 'min(360px, 100%)' }}>
           <div className="olho">painel do apresentador</div>
           <input className="btn" style={{ textAlign: 'left' }} placeholder="PIN" value={pin} type="password"
             onChange={(e) => setPin(e.target.value)}
@@ -176,7 +198,7 @@ export default function Host() {
                 <tr>
                   <th style={{ textAlign: 'left', padding: 6 }}>pessoa</th>
                   {Object.entries(grade.labs).map(([slug, cs]) =>
-                    cs.map((c) => <th key={c.id} title={`${slug} · ${c.descricao}`} style={{ padding: 4, writingMode: 'vertical-rl', fontWeight: 500, color: 'var(--tinta-2)' }}>{c.id}</th>))}
+                    cs.map((c) => <th key={c.id} title={`${slug} · ${c.descricao}`} style={{ padding: 'var(--e05)', writingMode: 'vertical-rl', fontWeight: 500, color: 'var(--tinta-2)' }}>{c.id}</th>))}
                   <th style={{ padding: 6 }}>XP</th>
                 </tr>
               </thead>
@@ -198,7 +220,7 @@ export default function Host() {
               </tbody>
             </table>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
             {grade.pessoas.map((p) => (
               <button key={p.id} className="btn" onClick={() => emit('host:reset', { id: p.id }, () => avisar(`ambiente de ${p.nick} resetado`))}>
                 resetar {p.nick}
@@ -308,8 +330,21 @@ export default function Host() {
             <span className="chip forte" title="regra dos 70%: só avance quando passar disso">{concluiramPrincipal}% no 1º critério</span>
           )}
           {travados.length > 0 && <span className="chip forte">🚩 {travados.length} travados</span>}
-          {pulsos > 0 && <span className="chip" title="gente que clicou em 'me perdi'">😵 {pulsos}</span>}
-          {ajudas.length > 0 && <span className="chip forte"><Icone nome="ajuda" tamanho={14} /> {ajudas.slice(-3).join(', ')}</span>}
+          {ajudas.length > 0 && (
+            <button className="chip forte" title="clique para limpar a fila de ajuda"
+              onClick={() => setAjudas([])}
+              style={{ cursor: 'pointer', border: '1px solid var(--acento)' }}>
+              <Icone nome="ajuda" tamanho={14} />
+              {ajudas.slice(-3).map((p) => p.nick).join(', ')}
+              {ajudas.length > 3 && ` +${ajudas.length - 3}`}
+            </button>
+          )}
+          {pulsos > 0 && (
+            <button className="chip" title="quem clicou em 'me perdi'. Clique para zerar"
+              onClick={() => setPulsos(0)} style={{ cursor: 'pointer' }}>
+              😵 {pulsos}
+            </button>
+          )}
           {grade && <span className="chip" title="terminais abertos · fila de verificações · modo do lab">{grade.sessoes}🖥 {grade.fila}⏳ {grade.modo}</span>}
         </div>
       </div>

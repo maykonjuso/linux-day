@@ -50,7 +50,7 @@ export function Escolhas({ rodadas, onConcluir }: { rodadas: Rodada[]; onConclui
       </div>
 
       {op && (
-        <div className="cartao" style={{ borderColor: op.certo ? 'var(--ok)' : 'var(--atencao)', display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="cartao" style={{ borderColor: op.certo ? 'var(--ok)' : 'var(--atencao)', display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
           <span>{op.certo ? '✅' : '↩︎'} {op.porque}</span>
           {op.certo ? (
             <button className="btn primario" style={{ marginLeft: 'auto' }}

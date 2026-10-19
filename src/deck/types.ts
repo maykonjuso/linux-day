@@ -40,6 +40,13 @@ interface CenaBase {
   modulo: number;
   titulo: string;
   /**
+   * Ilustração da cena (arquivo em public/ilustra, ver src/components/Ilustra).
+   * Opcional: sem ela a cena usa a ilustração padrão do módulo. Serve para dar
+   * uma imagem ao conceito, que é o que a memória guarda quando o texto já
+   * escorreu.
+   */
+  ilustra?: string;
+  /**
    * Quantos avanços esta cena consome antes de passar para a próxima.
    *
    * Vale só para cenas de CONTEÚDO (as linhas do terminal demonstrado, o

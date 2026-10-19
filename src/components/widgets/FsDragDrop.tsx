@@ -33,7 +33,7 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
   return (
     <div className="grade" style={{ gap: 14 }}>
       <div className="olho">clique num arquivo e depois na área da pasta certa</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', minHeight: 44 }}>
+      <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap', minHeight: 44 }}>
         {soltos.map((a) => (
           <button key={a.nome} className="btn" data-arquivo={a.nome} onClick={() => setSel(a.nome === sel ? null : a.nome)}
             style={{ fontFamily: 'var(--mono)', borderColor: sel === a.nome ? 'var(--acento)' : 'var(--borda)' }}>
@@ -71,7 +71,7 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
                 {dentro.map((n) => {
                   const certo = ARQUIVOS.find((a) => a.nome === n)?.pasta === p;
                   return (
-                    <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 14, color: certo ? 'var(--ok)' : 'var(--erro)' }}>
+                    <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 'var(--e05)', fontFamily: 'var(--mono)', fontSize: 14, color: certo ? 'var(--ok)' : 'var(--erro)' }}>
                       {certo ? '✓' : '✗'} {n}
                       <button
                         aria-label={`tirar ${n} de ${p}`}
@@ -92,10 +92,10 @@ export default function FsDragDrop({ onConcluir }: { onConcluir?: () => void }) 
       {pronto && (
         <div className="cartao" style={{ borderColor: 'var(--ok)' }}>
           <div className="olho">você acabou de executar isto, com o mouse</div>
-          <div className="term" style={{ marginTop: 10 }}>
+          <div className="term" style={{ marginTop: 'var(--e1)' }}>
             {comandos.map((c) => <div key={c}><span className="cmd">{c}</span></div>)}
           </div>
-          <button className="btn primario" style={{ marginTop: 12 }} onClick={() => onConcluir?.()}>agora no teclado</button>
+          <button className="btn primario" style={{ marginTop: 'var(--e2)' }} onClick={() => onConcluir?.()}>agora no teclado</button>
         </div>
       )}
     </div>

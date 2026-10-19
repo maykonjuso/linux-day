@@ -13,7 +13,7 @@ export default function Regras() {
       <div className="grade" style={{ maxWidth: 880 }}>
         <div className="cartao">
           <h2 style={{ fontSize: 22 }}>Duas moedas</h2>
-          <p style={{ color: 'var(--tinta-2)', marginTop: 8 }}>
+          <p style={{ color: 'var(--tinta-2)', marginTop: 'var(--e1)' }}>
             <strong>XP</strong> é a sua pontuação: <strong>nunca diminui</strong>. Dica, erro, reset e
             desconexão não tiram XP de ninguém.<br />
             <strong>Tokens 🪙</strong> são recurso: começam em 3, você ganha em acertos e gasta em dicas.
@@ -24,7 +24,7 @@ export default function Regras() {
 
         <div className="cartao">
           <h2 style={{ fontSize: 22 }}>De onde vem o XP</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 'var(--e1)' }}>
             <tbody>
               {ECONOMIA.map((e) => (
                 <tr key={e.fonte} style={{ borderTop: '1px solid var(--borda)' }}>
@@ -38,9 +38,9 @@ export default function Regras() {
 
         <div className="cartao">
           <h2 style={{ fontSize: 22 }}>Níveis</h2>
-          <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
+          <div style={{ display: 'grid', gap: 'var(--e05)', marginTop: 'var(--e1)' }}>
             {NIVEIS.map((n) => (
-              <div key={n.nivel} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div key={n.nivel} style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
                 <span className="chip">{n.xp} XP</span>
                 <strong style={{ width: 110 }}>{n.patente}</strong>
                 <code className="kbd">{n.prompt}</code>

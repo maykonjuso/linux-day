@@ -14,26 +14,26 @@ import type { Cena } from './types';
 export const DECK: Cena[] = [
   // ════════════════════════════ ABERTURA ════════════════════════════════════
   {
-    id: 'abertura', tipo: 'ModuleCover', modulo: 0, passos: 1,
+    id: 'abertura', ilustra: 'pinguim', tipo: 'ModuleCover', modulo: 0, passos: 1,
     titulo: 'Linux Day',
     pergunta: 'Duas horas. Do "nunca abri um terminal" a consertar um servidor quebrado.',
     xpDoModulo: 2800,
   },
   {
-    id: 'abertura-grupos', tipo: 'GroupScene', modulo: 0, passos: 1,
+    id: 'abertura-grupos', ilustra: 'pessoas', tipo: 'GroupScene', modulo: 0, passos: 1,
     titulo: 'Escolham seu grupo',
-    enunciado: 'Clique num grupo para entrar. Dá para trocar depois. O placar de grupo usa a média, e não a soma. Assim nenhum grupo ganha por ter mais gente.',
+    enunciado: 'Clique num grupo para entrar, e dá para trocar depois. O placar de grupo usa a **média**, não a soma: assim nenhum grupo ganha só por ter mais gente.',
   },
 
   // ═══════════════════════ M0 · INTRODUÇÃO (KAHOOT) ═════════════════════════
   {
-    id: 'm0-capa', tipo: 'ModuleCover', modulo: 0, passos: 1,
+    id: 'm0-capa', ilustra: 'pinguim', tipo: 'ModuleCover', modulo: 0, passos: 1,
     titulo: 'O que é Linux, afinal',
     pergunta: 'De onde isso veio e por que está em tudo?',
     xpDoModulo: 630,
   },
   {
-    id: 'm0-origem', tipo: 'TerminalDemo', modulo: 0, passos: 3,
+    id: 'm0-origem', ilustra: 'livro', tipo: 'TerminalDemo', modulo: 0, passos: 3,
     titulo: 'Ciclo 1 · de onde veio',
     linhas: [
       { comando: '# 1983: Richard Stallman começa o projeto GNU', saida: 'software livre: usar, estudar, modificar, distribuir', traducao: 'Primeiro vieram as ferramentas. Faltava o núcleo.' },
@@ -42,7 +42,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm0-q1', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q1', ilustra: 'relogio', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 1',
     pergunta: 'Em que ano Linus Torvalds anunciou o Linux?',
     alternativas: [{ id: 'a', texto: '1983' }, { id: 'b', texto: '1991' }, { id: 'c', texto: '1998' }, { id: 'd', texto: '2004' }],
@@ -50,7 +50,7 @@ export const DECK: Cena[] = [
     explicacao: 'Em 1991, num post de grupo de discussão. O projeto GNU já existia desde 1983. Faltava só o núcleo do sistema, e foi isso que o Linux trouxe.',
   },
   {
-    id: 'm0-q2', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q2', ilustra: 'arquivo', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 2',
     pergunta: 'Que nome Linus queria dar ao sistema, antes de "Linux"?',
     alternativas: [{ id: 'a', texto: 'Freax' }, { id: 'b', texto: 'Minix' }, { id: 'c', texto: 'Tux' }, { id: 'd', texto: 'GNUx' }],
@@ -58,7 +58,7 @@ export const DECK: Cena[] = [
     explicacao: '"Freax" (free + freak + x). Quem salvou o mundo foi o amigo que administrava o servidor e renomeou a pasta para "linux" sem pedir licença.',
   },
   {
-    id: 'm0-q3', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q3', ilustra: 'pinguim', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 1 · pergunta 3',
     pergunta: 'Por que o mascote do Linux é um pinguim?',
     alternativas: [
@@ -71,13 +71,13 @@ export const DECK: Cena[] = [
     explicacao: 'O Linus foi mordido por um pinguim num zoológico, na Austrália. O mascote se chama Tux. Um sistema que roda metade da internet tem esse símbolo por causa de uma mordida.',
   },
   {
-    id: 'm0-kernel', tipo: 'MentalModel', modulo: 0, passos: 1,
+    id: 'm0-kernel', ilustra: 'arvore', tipo: 'MentalModel', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · kernel ≠ distribuição',
     diagrama: 'arvore',
-    legenda: 'O Linux é só o núcleo: ele conversa com o hardware. Uma distro é o núcleo + as ferramentas GNU + o gerenciador de pacotes + a interface. Debian → Ubuntu → Mint. Red Hat → Fedora → Rocky. Arch → Manjaro. Mesmo coração, embalagens diferentes.',
+    legenda: 'O **Linux é só o núcleo**: ele conversa com o hardware. Uma **distro** é o núcleo mais as ferramentas, o gerenciador de pacotes e a interface. Debian → Ubuntu → Mint. Red Hat → Fedora → Rocky. Arch → Manjaro. Mesmo coração, embalagens diferentes.',
   },
   {
-    id: 'm0-q4', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q4', ilustra: 'engrenagem', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 1',
     pergunta: 'O que é, exatamente, "o Linux"?',
     alternativas: [
@@ -90,7 +90,7 @@ export const DECK: Cena[] = [
     explicacao: 'O kernel. O que você instala na máquina é uma distribuição: kernel + ferramentas + gerenciador de pacotes + ambiente gráfico.',
   },
   {
-    id: 'm0-q5', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q5', ilustra: 'pacote', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 2',
     pergunta: 'Ubuntu é baseado em qual distribuição?',
     alternativas: [{ id: 'a', texto: 'Fedora' }, { id: 'b', texto: 'Arch' }, { id: 'c', texto: 'Debian' }, { id: 'd', texto: 'Alpine' }],
@@ -98,7 +98,7 @@ export const DECK: Cena[] = [
     explicacao: 'Debian. Por isso o Ubuntu usa o `apt` para instalar programas. Guardem essa palavra. Ela volta no módulo 5.',
   },
   {
-    id: 'm0-q6', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q6', ilustra: 'loja', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 2 · pergunta 3',
     pergunta: 'Qual comando instala programas numa máquina Ubuntu?',
     alternativas: [{ id: 'a', texto: 'install' }, { id: 'b', texto: 'apt' }, { id: 'c', texto: 'brew' }, { id: 'd', texto: 'yum' }],
@@ -106,7 +106,7 @@ export const DECK: Cena[] = [
     explicacao: '`apt`. O `brew` é do macOS, o `yum`/`dnf` é da família Red Hat. Vocês vão rodar um `apt install` de verdade hoje.',
   },
   {
-    id: 'm0-onde', tipo: 'TerminalDemo', modulo: 0, passos: 4,
+    id: 'm0-onde', ilustra: 'celular', tipo: 'TerminalDemo', modulo: 0, passos: 4,
     titulo: 'Ciclo 3 · onde o Linux está',
     linhas: [
       { comando: '# o celular de vocês', saida: 'Android roda sobre o kernel Linux', traducao: 'Quase todo mundo nesta sala usa Linux todos os dias, sem saber.' },
@@ -116,7 +116,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm0-q7', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q7', ilustra: 'celular', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta 1',
     pergunta: 'Qual destes NÃO roda sobre o kernel Linux?',
     alternativas: [{ id: 'a', texto: 'Android' }, { id: 'b', texto: 'ChromeOS' }, { id: 'c', texto: 'iOS' }, { id: 'd', texto: 'Steam Deck' }],
@@ -124,7 +124,7 @@ export const DECK: Cena[] = [
     explicacao: 'iOS. Android, ChromeOS e o Steam Deck são todos Linux por baixo.',
   },
   {
-    id: 'm0-q8', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q8', ilustra: 'foguete', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta 2',
     pergunta: 'Quantos dos 500 supercomputadores mais rápidos do mundo rodam Linux?',
     alternativas: [{ id: 'a', texto: 'Uns 150' }, { id: 'b', texto: 'Cerca de 300' }, { id: 'c', texto: '480' }, { id: 'd', texto: 'Todos os 500' }],
@@ -132,7 +132,7 @@ export const DECK: Cena[] = [
     explicacao: 'Todos os 500. Em máquina grande, não existe outra opção. Saber usar o terminal muda o seu currículo.',
   },
   {
-    id: 'm0-q9', tipo: 'QuizScene', modulo: 0, passos: 1,
+    id: 'm0-q9', ilustra: 'ferramenta', tipo: 'QuizScene', modulo: 0, passos: 1,
     titulo: 'Ciclo 3 · pergunta final',
     pergunta: 'Qual outra ferramenta que vocês usam foi criada pelo Linus Torvalds?',
     alternativas: [{ id: 'a', texto: 'Docker' }, { id: 'b', texto: 'Git' }, { id: 'c', texto: 'VS Code' }, { id: 'd', texto: 'Python' }],
@@ -142,19 +142,19 @@ export const DECK: Cena[] = [
 
   // ═══════════════════════════ M1 · NAVEGAÇÃO ═══════════════════════════════
   {
-    id: 'm1-capa', tipo: 'ModuleCover', modulo: 1, passos: 1,
+    id: 'm1-capa', ilustra: 'bussola', tipo: 'ModuleCover', modulo: 1, passos: 1,
     titulo: 'Cheguei no servidor',
     pergunta: 'Onde eu estou, como olho em volta e como me ajudo sozinho?',
     xpDoModulo: 150,
   },
   {
-    id: 'm1-arvore', tipo: 'MentalModel', modulo: 1, passos: 1,
+    id: 'm1-arvore', ilustra: 'arvore', tipo: 'MentalModel', modulo: 1, passos: 1,
     titulo: 'O sistema de arquivos é uma árvore',
     diagrama: 'arvore',
-    legenda: 'Tudo começa em / (a raiz). Sua casa é /home/aluno, e ~ é um atalho para ela. /home/aluno/docs e ~/docs são o mesmo lugar escrito de duas formas.',
+    legenda: 'Tudo começa em `/`, a **raiz**. Sua casa é `/home/aluno`, e `~` é um atalho para ela. Então `/home/aluno/docs` e `~/docs` são **o mesmo lugar**.',
   },
   {
-    id: 'm1-prompt', tipo: 'CommandAnatomy', modulo: 1, passos: 1,
+    id: 'm1-prompt', ilustra: 'mapa', tipo: 'CommandAnatomy', modulo: 1, passos: 1,
     titulo: 'O prompt é um mapa',
     comando: 'aluno@servidor:~$',
     partes: [
@@ -165,7 +165,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm1-demo', tipo: 'TerminalDemo', modulo: 1, passos: 6,
+    id: 'm1-demo', ilustra: 'bussola', tipo: 'TerminalDemo', modulo: 1, passos: 6,
     titulo: 'Olhando em volta',
     linhas: [
       { comando: 'whoami', saida: 'aluno', traducao: 'Quem eu sou nesta máquina.' },
@@ -177,7 +177,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm1-fuga', tipo: 'WillGoWrong', modulo: 1, passos: 1,
+    id: 'm1-fuga', ilustra: 'extintor', tipo: 'WillGoWrong', modulo: 1, passos: 1,
     titulo: 'O kit de fuga (os 5 minutos de maior retorno do dia)',
     erros: [
       { mensagem: 'a tela do man/less não fecha', significa: 'você está num visualizador, não travado', causa: 'aperte q' },
@@ -188,30 +188,30 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm1-fuga-widget', tipo: 'WidgetScene', modulo: 1, passos: 1,
+    id: 'm1-fuga-widget', ilustra: 'porta', tipo: 'WidgetScene', modulo: 1, passos: 1,
     titulo: 'Qual tecla te salva?',
     widget: 'escape-room',
-    enunciado: 'Três telas em que todo iniciante trava. Escolha como sair de cada uma. Errar aqui não custa nada.',
+    enunciado: 'Três telas em que **todo iniciante trava**. Escolha como sair de cada uma. Errar aqui não custa nada.',
     segundos: 60, pontePara: 'q · Esc :q! · Ctrl+C',
   },
   {
-    id: 'm1-widget', tipo: 'WidgetScene', modulo: 1, passos: 1,
+    id: 'm1-widget', ilustra: 'mapa', tipo: 'WidgetScene', modulo: 1, passos: 1,
     titulo: 'Onde eu caio?',
     widget: 'path-quiz',
-    enunciado: 'Clique na pasta onde você termina depois do comando. Caminho relativo deixa de ser abstrato antes de você digitar o primeiro cd.',
+    enunciado: 'Clique na pasta onde você **termina** depois do comando.',
     segundos: 90, pontePara: 'cd ../..',
   },
   {
-    id: 'm1-lab', tipo: 'LabScene', modulo: 1, passos: 1,
+    id: 'm1-lab', ilustra: 'bandeira', tipo: 'LabScene', modulo: 1, passos: 1,
     titulo: 'Mão na massa · a flag escondida',
     taskSlug: 'm1-flag',
-    objetivo: 'Existe um arquivo chamado flag.txt escondido na sua pasta pessoal, quatro níveis abaixo. Ache, abra e escreva o conteúdo dele no campo aqui embaixo. Cada pessoa tem uma flag diferente, então copiar a resposta do colega não funciona. Copiar o comando dele funciona, e isso é aprender.',
+    objetivo: 'Existe um arquivo `flag.txt` **escondido** na sua pasta pessoal, quatro níveis abaixo. Ache, abra e escreva o conteúdo dele no campo aqui embaixo. Cada pessoa tem uma flag diferente, então **copiar a resposta do colega não funciona**. Copiar o comando dele funciona, e isso é aprender.',
     criterios: [{ id: 'm1-c1', descricao: 'Entregar o conteúdo de flag.txt', xp: 150 }],
     comandosDoModulo: ['pwd', 'ls -la', 'cd', 'cat', 'find', 'Tab', '--help'],
     segundos: 360, escopo: 'individual',
   },
   {
-    id: 'm1-recap', tipo: 'Recap', modulo: 1, passos: 2,
+    id: 'm1-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 1, passos: 2,
     titulo: 'Fecho do módulo 1',
     perguntaDeRecuperacao: 'Você está perdido numa máquina qualquer. Quais são os dois primeiros comandos?',
     resumo: ['pwd', 'ls -la', 'cd', 'cat', 'Tab', '↑', '--help', 'q', 'Ctrl+C'],
@@ -219,13 +219,13 @@ export const DECK: Cena[] = [
 
   // ════════════════════════════ M2 · ARQUIVOS ═══════════════════════════════
   {
-    id: 'm2-capa', tipo: 'ModuleCover', modulo: 2, passos: 1,
+    id: 'm2-capa', ilustra: 'pasta', tipo: 'ModuleCover', modulo: 2, passos: 1,
     titulo: 'Mexendo nas coisas',
     pergunta: 'Como eu crio, movo, leio, edito e apago arquivos?',
     xpDoModulo: 240,
   },
   {
-    id: 'm2-demo', tipo: 'TerminalDemo', modulo: 2, passos: 7,
+    id: 'm2-demo', ilustra: 'pasta-aberta', tipo: 'TerminalDemo', modulo: 2, passos: 7,
     titulo: 'Criar, mover, ler, editar',
     linhas: [
       { comando: 'mkdir -p projeto/src && tree projeto', saida: 'projeto\n└── src', traducao: 'O -p cria o caminho inteiro de uma vez, sem reclamar se já existir.' },
@@ -238,7 +238,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm2-coringa', tipo: 'CommandAnatomy', modulo: 2, passos: 1,
+    id: 'm2-coringa', ilustra: 'estrela', tipo: 'CommandAnatomy', modulo: 2, passos: 1,
     titulo: 'O coringa: * significa "qualquer coisa aqui"',
     comando: 'mv *.png imagens/',
     partes: [
@@ -248,24 +248,24 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm2-perigo', tipo: 'WidgetScene', modulo: 2, passos: 1,
+    id: 'm2-perigo', ilustra: 'bomba', tipo: 'WidgetScene', modulo: 2, passos: 1,
     titulo: 'Ache o comando perigoso',
     widget: 'spot-the-danger',
-    enunciado: 'Duas rodadas. Descubra qual comando faz estrago de verdade, sem correr risco nenhum.',
+    enunciado: 'Duas rodadas: descubra qual comando **faz estrago de verdade**, sem correr risco nenhum.',
     segundos: 60, pontePara: 'rm -rf ~   # o que você NUNCA digita no automático',
   },
   {
-    id: 'm2-widget', tipo: 'WidgetScene', modulo: 2, passos: 1,
+    id: 'm2-widget', ilustra: 'pasta', tipo: 'WidgetScene', modulo: 2, passos: 1,
     titulo: 'Arrume a bagunça (com o mouse, antes do teclado)',
     widget: 'fs-dragdrop',
-    enunciado: 'Clique num arquivo e depois na pasta certa. No fim, eu mostro os comandos mv que você acabou de executar com o mouse.',
+    enunciado: 'Clique num arquivo e depois na pasta certa. No fim eu mostro os comandos `mv` que **você acabou de executar** com o mouse.',
     segundos: 90, pontePara: 'mv *.png imagens/',
   },
   {
-    id: 'm2-lab', tipo: 'LabScene', modulo: 2, passos: 1,
+    id: 'm2-lab', ilustra: 'pasta-aberta', tipo: 'LabScene', modulo: 2, passos: 1,
     titulo: 'Mão na massa · arrumando o diretório',
     taskSlug: 'm2-bagunca',
-    objetivo: 'Organize a pasta ~/bagunca seguindo a lista ao lado. Cada item acende sozinho quando fica certo, e cada um vale XP. Ninguém sai com zero.',
+    objetivo: 'Organize a pasta `~/bagunca` seguindo a lista ao lado. Cada item **acende sozinho** quando fica certo, e cada um vale XP. Ninguém sai com zero.',
     criterios: [
       { id: 'm2-c1', descricao: 'imagens/ com todos os .png e .jpg', xp: 40 },
       { id: 'm2-c2', descricao: 'docs/ com todos os .txt e .md', xp: 40 },
@@ -278,7 +278,7 @@ export const DECK: Cena[] = [
     segundos: 480, escopo: 'individual',
   },
   {
-    id: 'm2-recap', tipo: 'Recap', modulo: 2, passos: 2,
+    id: 'm2-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 2, passos: 2,
     titulo: 'Fecho do módulo 2',
     perguntaDeRecuperacao: 'Qual a diferença entre > e >> ?',
     resumo: ['mkdir -p', 'cp', 'mv', 'rm -r', 'cat', 'less', 'nano', '*', '>', '>>'],
@@ -286,19 +286,19 @@ export const DECK: Cena[] = [
 
   // ═══════════════════════════ M3 · PERMISSÕES ══════════════════════════════
   {
-    id: 'm3-capa', tipo: 'ModuleCover', modulo: 3, passos: 1,
+    id: 'm3-capa', ilustra: 'cadeado', tipo: 'ModuleCover', modulo: 3, passos: 1,
     titulo: 'Quem manda aqui',
     pergunta: 'Por que "permission denied"? O que é sudo?',
     xpDoModulo: 200,
   },
   {
-    id: 'm3-cadeados', tipo: 'MentalModel', modulo: 3, passos: 1,
+    id: 'm3-cadeados', ilustra: 'cadeado', tipo: 'MentalModel', modulo: 3, passos: 1,
     titulo: 'Três cadeados em todo arquivo',
     diagrama: 'cadeados',
-    legenda: 'Dono, grupo, outros. Cada um pode ler (r=4), escrever (w=2) e executar (x=1). Some o que está ligado e você tem o número: 7 para o dono, 5 para o grupo, 4 para os outros = 754.',
+    legenda: '**Dono**, **grupo** e **outros**. Cada um pode ler (`r`=4), escrever (`w`=2) e executar (`x`=1). Some o que está ligado e sai o número: 7 para o dono, 5 para o grupo, 4 para os outros, ou seja `754`.',
   },
   {
-    id: 'm3-demo', tipo: 'TerminalDemo', modulo: 3, passos: 6,
+    id: 'm3-demo', ilustra: 'chave', tipo: 'TerminalDemo', modulo: 3, passos: 6,
     titulo: 'Erro → diagnóstico → conserto',
     linhas: [
       { comando: 'cat relatorio.txt', saida: 'cat: relatorio.txt: Permission denied', destaque: 'Permission denied', traducao: 'A mensagem mais comum do Linux. Não é o computador quebrado: é o sistema protegendo algo.' },
@@ -310,14 +310,14 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm3-widget', tipo: 'WidgetScene', modulo: 3, passos: 1,
+    id: 'm3-widget', ilustra: 'cadeado-aberto', tipo: 'WidgetScene', modulo: 3, passos: 1,
     titulo: 'Clique nos cadeados',
     widget: 'permission-toggles',
-    enunciado: 'Ligue e desligue cada permissão e olhe o rwx e o número mudando ao vivo. Depois resolva os três desafios.',
+    enunciado: 'Ligue e desligue cada permissão e olhe o `rwx` **e o número** mudando ao vivo. Depois resolva os três desafios.',
     segundos: 120, pontePara: 'chmod 755 deploy.sh',
   },
   {
-    id: 'm3-lab', tipo: 'LabScene', modulo: 3, passos: 1,
+    id: 'm3-lab', ilustra: 'chave', tipo: 'LabScene', modulo: 3, passos: 1,
     titulo: 'Mão na massa · fazendo um script rodar',
     taskSlug: 'm3-permissoes',
     objetivo: 'Crie o ~/deploy.sh (com shebang e um echo), faça ele rodar, e conserte o relatorio.txt que está ilegível.',
@@ -330,7 +330,7 @@ export const DECK: Cena[] = [
     segundos: 420, escopo: 'individual',
   },
   {
-    id: 'm3-recap', tipo: 'Recap', modulo: 3, passos: 2,
+    id: 'm3-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 3, passos: 2,
     titulo: 'Fecho do módulo 3',
     perguntaDeRecuperacao: 'Deu "permission denied". Quais são as duas primeiras coisas que você olha?',
     resumo: ['ls -l', 'chmod +x', 'chmod 644', 'chmod 755', 'sudo', 'whoami', 'id'],
@@ -338,7 +338,7 @@ export const DECK: Cena[] = [
 
   // ══════════════════════ KAHOOT RELÂMPAGO (M3 → M4) ════════════════════════
   {
-    id: 'kr-1', tipo: 'QuizScene', modulo: 3, passos: 1,
+    id: 'kr-1', ilustra: 'lixeira', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 1 de 4',
     pergunta: 'Qual comando apaga uma pasta e tudo dentro dela?',
     alternativas: [{ id: 'a', texto: 'rm pasta' }, { id: 'b', texto: 'rm -r pasta' }, { id: 'c', texto: 'del pasta' }, { id: 'd', texto: 'mv pasta' }],
@@ -346,7 +346,7 @@ export const DECK: Cena[] = [
     explicacao: 'É o `rm -r`. Sem o -r ele avisa que aquilo é uma pasta. Com -rf ele não pergunta nada, e aí mora o perigo.',
   },
   {
-    id: 'kr-2', tipo: 'QuizScene', modulo: 3, passos: 1,
+    id: 'kr-2', ilustra: 'chave', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 2 de 4',
     pergunta: 'O que `chmod +x arquivo` faz?',
     alternativas: [
@@ -359,7 +359,7 @@ export const DECK: Cena[] = [
     explicacao: 'Liga o bit de execução. É o que falta em 90% dos "não consigo rodar meu script".',
   },
   {
-    id: 'kr-3', tipo: 'QuizScene', modulo: 3, passos: 1,
+    id: 'kr-3', ilustra: 'mapa', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 3 de 4',
     pergunta: 'O que `..` significa num caminho?',
     alternativas: [
@@ -372,7 +372,7 @@ export const DECK: Cena[] = [
     explicacao: 'Um nível acima. `.` é a atual, `~` é a sua casa, `/` é a raiz.',
   },
   {
-    id: 'kr-4', tipo: 'QuizScene', modulo: 3, passos: 1,
+    id: 'kr-4', ilustra: 'alarme', tipo: 'QuizScene', modulo: 3, passos: 1,
     titulo: 'Kahoot relâmpago · 4 de 4',
     pergunta: 'Você roda um programa e fecha o terminal. O que acontece com ele?',
     alternativas: [
@@ -387,19 +387,19 @@ export const DECK: Cena[] = [
 
   // ══════════════════════════ M4 · PIPES E BUSCA ════════════════════════════
   {
-    id: 'm4-capa', tipo: 'ModuleCover', modulo: 4, passos: 1,
+    id: 'm4-capa', ilustra: 'lupa', tipo: 'ModuleCover', modulo: 4, passos: 1,
     titulo: 'O superpoder',
     pergunta: 'Como eu acho uma agulha no palheiro e ligo comandos entre si?',
     xpDoModulo: 350,
   },
   {
-    id: 'm4-encanamento', tipo: 'MentalModel', modulo: 4, passos: 1,
+    id: 'm4-encanamento', ilustra: 'elo', tipo: 'MentalModel', modulo: 4, passos: 1,
     titulo: 'O pipe é um encanamento',
     diagrama: 'encanamento',
-    legenda: 'Todo comando tem uma entrada e uma saída. A barra | liga a saída de um comando na entrada do próximo. O sinal > joga o resultado dentro de um arquivo. É assim que comandos simples resolvem problemas grandes.',
+    legenda: 'Todo comando tem uma entrada e uma saída. A barra `|` **liga a saída de um na entrada do próximo**. O sinal `>` joga o resultado dentro de um arquivo. É assim que comandos simples resolvem problemas grandes.',
   },
   {
-    id: 'm4-demo', tipo: 'TerminalDemo', modulo: 4, passos: 7,
+    id: 'm4-demo', ilustra: 'lupa', tipo: 'TerminalDemo', modulo: 4, passos: 7,
     titulo: 'Montando a linha, peça por peça',
     linhas: [
       { comando: 'wc -l app.log', saida: '50402 app.log', traducao: 'Cinquenta mil linhas. Boa sorte com o mouse.' },
@@ -412,7 +412,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm4-encadear', tipo: 'CommandAnatomy', modulo: 4, passos: 1,
+    id: 'm4-encadear', ilustra: 'elo', tipo: 'CommandAnatomy', modulo: 4, passos: 1,
     titulo: 'Encadear: ; e &&',
     comando: 'mkdir relatorios && cd relatorios',
     partes: [
@@ -422,14 +422,14 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm4-widget', tipo: 'WidgetScene', modulo: 4, passos: 1,
+    id: 'm4-widget', ilustra: 'elo', tipo: 'WidgetScene', modulo: 4, passos: 1,
     titulo: 'Monte o encanamento',
     widget: 'pipe-builder',
-    enunciado: 'Encaixe as peças e veja a saída se transformando a cada uma: 50.000 linhas → 1.031 → só os IPs → ordenados → contados → o top 3.',
+    enunciado: 'Encaixe as peças e **veja a saída se transformando** a cada uma: 50.000 linhas, depois 1.031, depois só os IPs, ordenados, contados, e o top 3.',
     segundos: 150, pontePara: 'grep ERROR app.log | cut -d" " -f3 | sort | uniq -c | sort -rn | head -3',
   },
   {
-    id: 'm4-lab', tipo: 'LabScene', modulo: 4, passos: 1,
+    id: 'm4-lab', ilustra: 'detetive', tipo: 'LabScene', modulo: 4, passos: 1,
     titulo: 'Mão na massa · caçando no log',
     taskSlug: 'm4-pipes',
     objetivo: 'Seu ~/app.log tem 50 mil linhas. Responda as duas primeiras perguntas no campo abaixo (uma por vez) e grave as linhas FATAL em ~/fatais.txt.',
@@ -442,7 +442,7 @@ export const DECK: Cena[] = [
     segundos: 540, escopo: 'individual',
   },
   {
-    id: 'm4-recap', tipo: 'Recap', modulo: 4, passos: 2,
+    id: 'm4-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 4, passos: 2,
     titulo: 'Fecho do módulo 4',
     perguntaDeRecuperacao: 'Você quer achar o arquivo chamado config.yml. find ou grep?',
     resumo: ['grep -rn', 'grep -c', 'find -name', '|', '>', 'sort', 'uniq -c', 'cut', 'wc -l', '&&'],
@@ -450,19 +450,19 @@ export const DECK: Cena[] = [
 
   // ════════════════════ M5 · PROGRAMAS E PROCESSOS ══════════════════════════
   {
-    id: 'm5-capa', tipo: 'ModuleCover', modulo: 5, passos: 1,
+    id: 'm5-capa', ilustra: 'engrenagem', tipo: 'ModuleCover', modulo: 5, passos: 1,
     titulo: 'Programas e processos',
     pergunta: 'Como instalo coisas e o que faço quando algo travou?',
     xpDoModulo: 280,
   },
   {
-    id: 'm5-processo', tipo: 'MentalModel', modulo: 5, passos: 1,
+    id: 'm5-processo', ilustra: 'engrenagem', tipo: 'MentalModel', modulo: 5, passos: 1,
     titulo: 'Um processo é uma caixa com número',
     diagrama: 'processo',
-    legenda: 'Sem o & o programa fica preso ao seu terminal. Se você fechar o terminal, ele morre. Com o & ele solta e o seu prompt volta. O número que aparece é o PID, e é por ele que você encerra o programa depois.',
+    legenda: 'Sem o `&` o programa fica **preso ao seu terminal**: se você fechar, ele morre. Com o `&` ele **solta** e o seu prompt volta. O número que aparece é o **PID**, e é por ele que você encerra o programa depois.',
   },
   {
-    id: 'm5-demo', tipo: 'TerminalDemo', modulo: 5, passos: 7,
+    id: 'm5-demo', ilustra: 'pacote', tipo: 'TerminalDemo', modulo: 5, passos: 7,
     titulo: 'Instalar, ver, matar',
     linhas: [
       { comando: 'sudo apt install -y htop', saida: 'Setting up htop ...', traducao: 'Vem de um repositório: é uma loja de aplicativos, não um .exe baixado de um site qualquer.' },
@@ -475,24 +475,24 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm5-prever', tipo: 'WidgetScene', modulo: 5, passos: 1,
+    id: 'm5-prever', ilustra: 'robo', tipo: 'WidgetScene', modulo: 5, passos: 1,
     titulo: 'O que vai acontecer?',
     widget: 'predict-output',
-    enunciado: 'Três comandos. Antes de rodar, aposte no que vai acontecer. Acertar vale XP.',
+    enunciado: 'Três comandos. Antes de rodar, **aposte** no que vai acontecer. Acertar vale XP.',
     segundos: 60, pontePara: 'node app.js &',
   },
   {
-    id: 'm5-builder', tipo: 'WidgetScene', modulo: 5, passos: 1,
+    id: 'm5-builder', ilustra: 'ferramenta', tipo: 'WidgetScene', modulo: 5, passos: 1,
     titulo: 'Monte o comando',
     widget: 'command-builder',
-    enunciado: 'Encaixe as peças na ordem certa. Depois de montar alguns, você começa a entender comandos novos sozinho.',
+    enunciado: 'Encaixe as peças na ordem certa. Depois de montar alguns, você começa a **entender comandos novos sozinho**.',
     segundos: 90, pontePara: 'sudo apt install -y htop',
   },
   {
-    id: 'm5-lab', tipo: 'LabScene', modulo: 5, passos: 1,
+    id: 'm5-lab', ilustra: 'loja', tipo: 'LabScene', modulo: 5, passos: 1,
     titulo: 'Mão na massa · instalar, soltar, matar',
     taskSlug: 'm5-processos',
-    objetivo: 'Cada pessoa recebeu um programa diferente para instalar. Veja qual é o seu com `cat ~/.pacote`, instale, depois rode a app em segundo plano e por último encerre ela pelo PID.',
+    objetivo: 'Cada pessoa recebeu **um programa diferente** para instalar. Veja qual é o seu com `cat ~/.pacote`, instale, depois rode a app em **segundo plano** e por último encerre ela pelo **PID**.',
     criterios: [
       { id: 'm5-c1', descricao: 'Seu pacote sorteado está instalado', xp: 80 },
       { id: 'm5-c2', descricao: 'app.js rodando em background (com &)', xp: 80 },
@@ -502,7 +502,7 @@ export const DECK: Cena[] = [
     segundos: 420, escopo: 'individual',
   },
   {
-    id: 'm5-recap', tipo: 'Recap', modulo: 5, passos: 2,
+    id: 'm5-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 5, passos: 2,
     titulo: 'Fecho do módulo 5',
     perguntaDeRecuperacao: 'Um programa travou e não responde ao Ctrl+C. O que você faz?',
     resumo: ['sudo apt install', 'ps aux', 'top', 'kill', 'kill -9', '&', 'jobs', 'which'],
@@ -510,22 +510,22 @@ export const DECK: Cena[] = [
 
   // ═════════════════════════ BOSS · O CHAMADO ═══════════════════════════════
   {
-    id: 'pre-boss-erros', tipo: 'WidgetScene', modulo: 6, passos: 1,
+    id: 'pre-boss-erros', ilustra: 'alerta', tipo: 'WidgetScene', modulo: 6, passos: 1,
     titulo: 'Leia o erro (o hábito que fica para a vida)',
     widget: 'error-match',
-    enunciado: 'Três mensagens que vocês já viram hoje. Para cada uma, a causa. É exatamente o que o chamado vai exigir.',
+    enunciado: 'Três mensagens que vocês **já viram hoje**. Para cada uma, a causa.',
     segundos: 60, pontePara: 'pwd · ls -l · apt install',
   },
   {
-    id: 'm6-capa', tipo: 'ModuleCover', modulo: 6, passos: 1,
+    id: 'm6-capa', ilustra: 'alarme', tipo: 'ModuleCover', modulo: 6, passos: 1,
     titulo: 'O Chamado',
     pergunta: '"O relatório da madrugada não foi gerado." Vocês têm 10 minutos e um servidor quebrado.',
     xpDoModulo: 700,
   },
   {
-    id: 'm6-cartas', tipo: 'GroupScene', modulo: 6, passos: 1,
+    id: 'm6-cartas', ilustra: 'aperto-de-mao', tipo: 'GroupScene', modulo: 6, passos: 1,
     titulo: 'Dividam as cartas de função',
-    enunciado: 'Cada critério do chamado só pode ser fechado por quem está com a carta correspondente. Não é burocracia: é o que impede uma pessoa fazer tudo sozinha enquanto quatro assistem.',
+    enunciado: 'Cada critério do chamado **só pode ser fechado por quem está com a carta**. Não é burocracia: é o que impede uma pessoa fazer tudo sozinha enquanto quatro assistem.',
     papeis: [
       { id: 'investigador', nome: 'Investigador', faz: 'acha o log e a mensagem de erro (find, grep)' },
       { id: 'operador', nome: 'Operador', faz: 'acha e mata o processo travado (top, ps, kill)' },
@@ -534,10 +534,10 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm6-boss', tipo: 'LabScene', modulo: 6, passos: 1,
+    id: 'm6-boss', ilustra: 'ferramenta', tipo: 'LabScene', modulo: 6, passos: 1,
     titulo: 'Boss · o relatório da madrugada não rodou',
     taskSlug: 'boss-chamado',
-    objetivo: 'Quatro defeitos no diretório do grupo (/srv/chamado/grupo-<cor>). Nada aqui é novo: tudo está nos últimos 50 minutos. O Investigador responde a mensagem de erro no campo abaixo.',
+    objetivo: 'São **quatro defeitos** no diretório do grupo. **Nada aqui é novo**: tudo o que vocês precisam está nos últimos 50 minutos. O Investigador responde a mensagem de erro no campo abaixo.',
     criterios: [
       { id: 'b-c1', descricao: 'Investigador: qual é a mensagem de erro do log?', xp: 150 },
       { id: 'b-c2', descricao: 'Operador: o processo travado foi morto', xp: 150 },
@@ -548,13 +548,13 @@ export const DECK: Cena[] = [
     segundos: 600, escopo: 'grupo',
   },
   {
-    id: 'm6-placar', tipo: 'Scoreboard', modulo: 6, passos: 1,
+    id: 'm6-placar', ilustra: 'trofeu', tipo: 'Scoreboard', modulo: 6, passos: 1,
     titulo: 'Chamados fechados', escopo: 'grupo',
   },
 
   // ═════════════════════════════ ENCERRAMENTO ═══════════════════════════════
   {
-    id: 'fim-alias', tipo: 'TerminalDemo', modulo: 6, passos: 4,
+    id: 'fim-alias', ilustra: 'coracao', tipo: 'TerminalDemo', modulo: 6, passos: 4,
     titulo: 'Bônus · deixe o terminal do seu jeito',
     linhas: [
       { comando: "alias ll='ls -la'", saida: '', traducao: 'Um apelido para o comando que vocês mais usaram hoje.' },
@@ -564,7 +564,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'fim-pacote', tipo: 'Recap', modulo: 6, passos: 2,
+    id: 'fim-pacote', ilustra: 'festa', tipo: 'Recap', modulo: 6, passos: 2,
     titulo: 'O que vocês sabem fazer agora',
     perguntaDeRecuperacao: 'Você abre um Linux desconhecido, sem mouse, sem janela. E agora?',
     resumo: [
@@ -575,7 +575,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'fim-placar', tipo: 'Scoreboard', modulo: 6, passos: 1,
+    id: 'fim-placar', ilustra: 'trofeu', tipo: 'Scoreboard', modulo: 6, passos: 1,
     titulo: 'Pódio', escopo: 'individual',
   },
 ];

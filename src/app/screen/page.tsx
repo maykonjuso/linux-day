@@ -3,27 +3,40 @@
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
-import { DECK } from '@/deck/content';
 
-/** A tela do projetor. Sem interação: é para ser olhada por 30 pessoas. */
+/**
+ * A tela do projetor: só conteúdo.
+ *
+ * Nada de número de cena, contagem de gente na sala ou barra de status. Isso é
+ * informação de operação, serve para QUEM APRESENTA (está no /host) e na parede
+ * só rouba atenção e espaço do conteúdo. O cronômetro e o "quantos já
+ * responderam" continuam aparecendo, mas dentro da própria cena de pergunta,
+ * onde a turma está olhando.
+ *
+ * As duas únicas coisas que aparecem por cima são transitórias e deliberadas:
+ * um recado que o apresentador manda para a sala, e o aviso de pausa.
+ */
 export default function Screen() {
   const arena = useArena('screen');
-  const { estado, cena, presenca, aviso } = arena;
-  const ativos = presenca.filter((p) => p.presenca !== 'desconectado').length;
+  const { estado, cena, aviso } = arena;
 
   return (
-    <div className="palco" data-papel="screen">
+    <div className="palco palco-limpo" data-papel="screen">
       <Encaixe chave={`${cena.id}:${estado.passo}:${estado.fase}`}>
         <SceneRouter arena={arena} papel="screen" />
       </Encaixe>
-      <div className="barra">
-        <span className="chip">cena {estado.cenaIndex + 1}/{DECK.length}</span>
-        <span className="chip">{ativos} na sala</span>
-        {estado.restante !== null && <span className="chip forte">⏱ {estado.restante}s</span>}
-        {aviso && <span className="chip forte">📣 {aviso}</span>}
-        <span className="cresce" />
-        {estado.pausado && <span className="chip forte">⏸ pausado</span>}
-      </div>
+
+      {aviso && <div className="toast">📣 {aviso}</div>}
+
+      {estado.pausado && (
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+          padding: '10px 26px', borderRadius: 999, background: 'var(--tinta)', color: 'var(--papel)',
+          fontWeight: 650, fontSize: 'clamp(16px, 1.6vw, 24px)',
+        }}>
+          pausado
+        </div>
+      )}
     </div>
   );
 }

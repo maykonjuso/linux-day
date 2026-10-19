@@ -116,6 +116,24 @@ for (let i = 0; i < DECK.length; i++) {
     if (m.largura > 4) cortadas.push(`${c.id} (${nome}: ${m.largura}px de corte lateral)`);
   }
 
+    // o projetor não tem barra de status: conferimos que ela não voltou
+  if ((await telas.projetor.locator('.controles, .barra').count()) > 0) {
+    cortadas.push(`${c.id} (projetor: barra de status na tela do projetor)`);
+  }
+
+  // ilustrações: arquivo faltando aparece como imagem quebrada no projetor
+  const ilustracoes = await telas.participante.evaluate(() =>
+    [...document.querySelectorAll('img[src^="/ilustra/"]')].map((i) => ({
+      src: i.getAttribute('src'),
+      carregou: i.complete && i.naturalWidth > 0,
+    })));
+  for (const il of ilustracoes) {
+    if (!il.carregou) cortadas.push(`${c.id}: ilustração não carregou (${il.src})`);
+  }
+  if (['ModuleCover', 'MentalModel', 'QuizScene'].includes(c.tipo) && ilustracoes.length === 0) {
+    cortadas.push(`${c.id}: cena sem ilustração`);
+  }
+
   const tParticipante = (await telas.participante.locator('.cena .titulo, .cena .olho').first().textContent())?.trim();
   const tProjetor = (await telas.projetor.locator('.cena .titulo, .cena .olho').first().textContent())?.trim();
   if (tParticipante !== tProjetor) divergentes.push(`${c.id} ("${tParticipante}" × "${tProjetor}")`);

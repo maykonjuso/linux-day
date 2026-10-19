@@ -41,14 +41,14 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
 
   return (
     <div className="grade" style={{ gap: 16 }}>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap', alignItems: 'center' }}>
         <code className="kbd" style={{ fontSize: '1.05em' }}>cat app.log</code>
         {tubo.map((id, i) => (
           <span key={`${id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <strong style={{ color: 'var(--acento)' }}>|</strong>
             <button className="btn" data-tubo={id} onClick={() => setTubo(tubo.slice(0, i))}
               title="clique para remover esta peça e as seguintes"
-              style={{ borderColor: 'var(--acento)', color: 'var(--acento)', fontFamily: 'var(--mono)', display: 'flex', gap: 6, alignItems: 'center' }}>
+              style={{ borderColor: 'var(--acento)', color: 'var(--acento)', fontFamily: 'var(--mono)', display: 'flex', gap: 'var(--e05)', alignItems: 'center' }}>
               {PECAS.find((p) => p.id === id)?.rotulo}
               <span aria-hidden style={{ opacity: 0.55 }}>×</span>
             </button>
@@ -58,7 +58,7 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
       </div>
 
       <div className="olho">peças disponíveis. Clique para encaixar no fim do encanamento</div>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
         {PECAS.filter((p) => !tubo.includes(p.id)).map((p) => (
           <button key={p.id} className="btn" data-peca={p.id} onClick={() => setTubo([...tubo, p.id])}
             style={{ display: 'grid', gap: 2, textAlign: 'left', fontFamily: 'var(--mono)' }}>
@@ -76,7 +76,7 @@ export default function PipeBuilder({ onConcluir }: { onConcluir?: () => void })
         Nesta ordem o encanamento não faz sentido. Tente outra. Tentar de novo é de graça.
       </div>}
       {certo && (
-        <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
           <strong style={{ color: 'var(--ok)' }}>✅ é esse o top 3</strong>
           <code className="kbd">cat app.log | grep ERROR | cut -d&quot; &quot; -f3 | sort | uniq -c | sort -rn | head -3</code>
           <button className="btn primario" style={{ marginLeft: 'auto' }} onClick={() => onConcluir?.()}>concluir</button>
