@@ -13,7 +13,8 @@
 | 3 | ~~Onde os comandos rodam~~ | **decidido:** tudo no seu Mac (Lima VM + Incus, um container por pessoa), acesso pelo Wi-Fi da sala em `http://<seu-ip>:3000`. Ver `infra-mac.md` | — |
 | 4 | ~~Orçamento~~ | **decidido:** infraestrutura custa zero. Só um roteador de bolso (~R$ 200) e impressão | — |
 | 4b | ~~Modelo e RAM do Mac~~ | **decidido:** M4 com 24 GB → **30 participantes com folga, teto técnico 40**. VM com 14 GB/6 vCPU, 640 MB rígidos por container. Ver `infra-mac.md` §2 | — |
-| 4c | **É MacBook Air M4?** | Air é sem ventoinha: 2h de carga sustentada + espelhamento throttla e o lab engasga no meio | se for Air, ensaio térmico de 40 min é obrigatório; em mini/Pro é um não-problema |
+| 4c | **É MacBook Air M4?** | Air é sem ventoinha: 2h de carga + espelhamento throttla e o lab engasga no meio | se for Air, ensaio térmico de 40 min é obrigatório; em mini/Pro é um não-problema |
+| 4d | ~~Ambiente de lab~~ | **decidido:** uma Lima VM com um usuário Linux por participante (sem containers), isolados por `chmod 700` + `hidepid=2` + cota + `sudo` em lista branca. Metade dos exercícios é widget no slide, sem shell | — |
 | 5 | **Participantes trazem notebook?** | sem notebook, nada de lab | duplas obrigatórias, anunciadas na inscrição |
 | 6 | **Quantos monitores você tem?** | 1 por 10 pessoas é o mínimo viável | recrute e treine com 1 semana de antecedência |
 | 7 | **Vai repetir o workshop?** | muda o quanto vale investir em conteúdo reaproveitável | se sim, o banco de perguntas e os seeds/checks valem o dobro do esforço |
@@ -29,9 +30,10 @@
 5. **Teclado ABNT2:** com terminal no navegador, o layout é o do próprio participante e já funciona — o problema desaparece. O que **permanece** é ele não saber *onde* estão `|`, `~`, `/` e `$`; isso é slide, não configuração. Ainda assim, fixe locale `pt_BR.UTF-8` na imagem base para as mensagens.
 5b. **DHCP trocando o IP do Mac no meio do evento** invalida o QR code projetado. IP manual ou reserva no roteador, e gere o QR do IP real detectado no boot.
 6. **Copiar/colar no terminal** não é `Ctrl+C`. Diga isso no M1 ou perca 5 minutos depois (e no xterm.js configure `Ctrl+Shift+V` e colagem por clique do meio).
-7. **Limites por container** são o que garante o isolamento que você pediu: alguém **vai** rodar `:(){ :|:& };:` ou `dd if=/dev/zero`. `limits.cpu.allowance=40%`, 768 MB com `enforce=hard`, `limits.processes=400`, disco 2 GB. Sem isso, um participante congela a turma inteira.
-7b. **Isolamento de rede entre participantes** via ACL do Incus — e com um liga/desliga, porque no M5 alcançar o servidor do colega passa a ser o objetivo. Teste os dois estados no ensaio.
-7c. **O container do grupo é compartilhado de propósito** (4 terminais na mesma máquina). Mostre na tela quem mais está conectado ali, senão dois colegas editam o mesmo `app.conf` e ninguém entende o que aconteceu.
+7. **Isolamento entre usuários na mesma VM** é o item que exige mais cuidado nesta arquitetura, e são quatro linhas: `chmod 700` nas homes, **`hidepid=2`** no `/proc` (senão qualquer um mata o processo do colega no M5), cota de disco e `limits.conf` (`nproc 300`) — alguém **vai** rodar `:(){ :|:& };:`. Sem `hidepid`, o M5 vira bagunça; valide com `sudo -u aluno02 ps aux | grep aluno01` (deve vir vazio).
+7b. **`sudo` tem que ser lista branca**, nunca irrestrito: 30 pessoas com root na mesma máquina é uma questão de quando, não de se. Rode `sudo visudo -c` depois de editar — um `sudoers` quebrado te tranca fora da sua própria VM.
+7c. **O `apt install` só funciona para todos se cada um instalar um pacote diferente** — senão o segundo em diante vê *"already the newest version"* e o lab perde o sentido. Sorteie o pacote no provisionamento.
+7d. **O diretório do grupo** (`2770`, setgid) é compartilhado de propósito. Mostre na tela quem mais está mexendo ali, senão dois colegas editam o mesmo arquivo e ninguém entende o que houve.
 8. **Snapshot e reset em segundos.** Sem reset rápido, cada ambiente destruído é uma pessoa perdida pelo resto do workshop.
 9. **Reconexão é o caso normal, não exceção.** Notebook fecha, Wi-Fi cai, aba recarrega. O cliente tem que reconstruir todo o estado a partir de um `GET /api/state`. Teste isso fechando a tampa de verdade.
 10. **Relógio e fuso.** Bônus de velocidade dependem de tempo; calcule **sempre no servidor**, nunca no cliente.

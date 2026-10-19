@@ -24,39 +24,58 @@ O que vale é o contrário, e é melhor: **o Mac roda a infraestrutura; os parti
 ### 1.2 A pilha no Mac
 
 ```
-macOS (seu Mac)
-└── Lima VM  (Ubuntu 24.04, Virtualization.framework)      ← um Linux de verdade
-    ├── Next.js + Socket.IO  :3000                          ← o app/deck
-    ├── apt-cacher-ng        :3142                           ← cache de pacotes local
-    ├── SQLite (arquivo no disco da VM)                      ← banco
-    └── Incus
-        ├── ld-01  (Ubuntu + systemd)   ← participante 1
-        ├── ld-02  (Ubuntu + systemd)   ← participante 2
-        ├── …
-        └── grupo-azul (Ubuntu + systemd) ← container compartilhado do grupo (boss)
+macOS (seu Mac M4, 24 GB)
+└── Lima VM  (Ubuntu 24.04, Virtualization.framework, 8 GB / 6 vCPU)
+    ├── Next.js + Socket.IO  :3000        ← o app/deck
+    ├── SQLite (arquivo)                  ← banco
+    └── 30 usuários Linux  (aluno01 … aluno30)
+        ├── /home/aluno01   (chmod 700)   ← ninguém mais entra
+        ├── /home/aluno02   (chmod 700)
+        └── /srv/chamado/grupo-azul       ← diretório do grupo (setgid), para o boss
 ```
 
-Por que assim:
-- **Lima** (`brew install lima`) sobe uma VM Linux nativa no Apple Silicon, rápida, com montagem do seu diretório de código e port-forward para o macOS. É o único jeito de ter systemd real no Mac.
-- **Incus** (containers de *sistema*, sucessor do LXD) dá a cada participante um Ubuntu completo com `apt`, `sudo`, `top`, `/home` e um `systemd` de verdade — um Linux honesto, igual ao que ele vai encontrar depois — gastando ~150–250 MB de RAM cada, não 2 GB como uma VM.
-- **O app roda dentro da VM**, não no macOS: assim ele fala com o socket do Incus e alcança os containers direto pela bridge interna, sem gambiarra de rede. Você edita o código no Mac (diretório montado) e o processo roda na VM.
-- **apt-cacher-ng** pré-aquecido faz os 30 `apt install` do M5 baixarem **uma vez** e depois servirem do disco: o lab fica rápido e **funciona mesmo se a internet do local cair** — e `apt install` com a sala toda clicando junto é o momento de maior carga de rede do workshop.
+**Uma VM, um usuário por participante.** Não há containers. Decisão sua, e está certa para este currículo: sem o módulo de expor aplicação, nada do que a pessoa faz precisa de uma máquina inteira — precisa de uma `$HOME` própria e de um `sudo` que não derrube a casa. Isso corta o Incus, os snapshots, a ACL de rede e ~2 dias de trabalho, e derruba o uso de RAM de ~7 GB para ~400 MB.
 
-### 1.3 Isolamento — ninguém pisa no pé de ninguém
+### 1.3 Isolamento entre usuários no mesmo Linux
 
-Requisito que você levantou, e é o motivo de usar um container por pessoa em vez de contas num servidor só:
+O requisito que você levantou antes continua valendo — ninguém pode atrapalhar ninguém. Com usuários, isso se resolve com quatro medidas, todas de uma linha:
 
 | Garantia | Como |
 |---|---|
-| Sistema de arquivos próprio | container independente; ninguém vê nem apaga o arquivo do outro |
-| `root` sem risco | a pessoa é root **dentro** do próprio container, e container não-privilegiado não alcança o host nem a VM |
-| Porta 80 e 3000 livres para todos | cada container tem a própria pilha de rede — 30 pessoas usam a porta 80 ao mesmo tempo sem conflito, o que seria impossível num shell compartilhado |
-| Um não derruba os outros | limites por container: **1 vCPU (`limits.cpu.allowance=40%`), 768 MB de RAM, `limits.processes=400`, disco 2 GB**. `fork bomb` e `dd` matam só o próprio container |
-| Rede isolada entre pessoas | ACL do Incus: cada container alcança só a VM (para o cache de pacotes) e o gateway. Ninguém faz `curl` no colega, e a regra fica ligada do começo ao fim — não há mais exceção a gerenciar |
-| Destruição sem dano | `incus snapshot` no estado inicial; reset = `incus restore` em ~2 s. Perder o ambiente deixa de ser tragédia |
-| Nada toca o seu Mac | o pior cenário é um container morto. Seus arquivos e o app estão dois níveis acima |
+| Ninguém lê nem apaga o arquivo do outro | `chmod 700 /home/alunoNN` na criação |
+| Ninguém vê nem mata o processo do outro | `/proc` montado com **`hidepid=2`**: cada usuário só enxerga os próprios PIDs no `ps aux` e no `top`. É o que torna o M5 seguro numa máquina compartilhada |
+| Ninguém enche o disco | cota por usuário (`quota`), 500 MB |
+| Ninguém derruba a VM | `limits.conf`: `nproc 300`, `as` (memória) 512 MB por usuário — `fork bomb` e `dd` matam só a sessão de quem rodou |
+| `sudo` não é chave da casa | `sudoers` com **lista branca**: `apt-get install <pacote da lista>` e `cat /srv/cofre/$USER.txt`, e nada mais. O `sudo` é real, a aula funciona, o estrago é impossível |
+| Reset individual | `rm -rf ~alunoNN/* && cp -a /opt/seed/<modulo>/. ~alunoNN/` — ~1 s, e não afeta mais ninguém |
 
-**Exceção deliberada: o container do grupo.** No boss o grupo trabalha em **um container compartilhado** (`grupo-azul`), com 4 terminais atacados à mesma máquina — todos veem o que o outro digitou, que é exactamente a experiência de um plantão de verdade (e a razão das cartas de função existirem). A implementação é `incus exec` múltiplo no mesmo container, com um indicador na tela de quem mais está conectado ali.
+**O detalhe que faz o `apt install` funcionar para 30 pessoas na mesma máquina:** quem instala primeiro deixa o pacote instalado, e os outros 29 veriam *"already the newest version"* — a aula morre. Solução: **cada participante recebe um pacote diferente** (`htop`, `jq`, `cowsay`, `figlet`, `ncdu`, `sl`, `tree`, `neofetch`, `fortune`, `lolcat`…), sorteado no provisionamento, e o lab pede "instale **o seu** pacote". É um `apt install` de verdade, verificável com `dpkg -s`, e com o efeito colateral ótimo de a sala inteira descobrir 30 programas diferentes em vez de um.
+
+**O que você perde em relação a containers, dito com honestude:** o raio de explosão passa a ser compartilhado — se alguém escapar das medidas acima, atrapalha todos. Para este currículo (navegar, arquivos, permissões, pipes, processos) as medidas cobrem tudo, e a simplicidade compensa. Se um dia você voltar a ensinar serviço e rede, volte para um container por pessoa.
+
+### 1.3b Nem tudo precisa de terminal: os exercícios interativos do slide
+
+Mudança pedagógica, não só técnica. A tela da pessoa durante a mão na massa é **o próprio slide**, e o exercício que aparece ali pode ser:
+
+| Tipo de exercício | O que a pessoa faz | Serve para |
+|---|---|---|
+| `terminal` | digita comando de verdade no shell dela | consolidar: é o único que prova que ela sabe fazer |
+| `command-builder` | **arrasta as peças** (programa · subcomando · flag · argumento) para montar o comando | a anatomia do comando, sem erro de digitação no caminho |
+| `pipe-builder` | encaixa comandos no encanamento e **vê a saída se transformando** a cada peça | a ideia do pipe, que é abstrata demais para ser só explicada |
+| `permission-toggles` | clica nos 9 cadeados e vê `-rwxr-xr--` **e** o `755` mudando ao vivo | permissões, que ninguém entende por texto |
+| `fs-dragdrop` | arrasta arquivos para as pastas certas | o modelo de árvore antes de digitar `mv` |
+| `path-quiz` | clica na árvore: "onde eu caio com `cd ../..`?" | caminhos relativos |
+| `predict-output` | escolhe, entre 3, a saída que o comando vai produzir | atenção ao resultado (e vale XP de predição) |
+| `error-match` | liga mensagem de erro ↔ causa ↔ conserto | o hábito nº 1: ler o erro |
+| `escape-room` | "essa tela não fecha — qual tecla te salva?" | o kit de fuga |
+| `spot-the-danger` | acha o comando destrutivo entre quatro parecidos | `rm -rf` e `sudo` sem trauma |
+| `quiz` | Kahoot | história, conceitos, recuperação |
+
+**A regra pedagógica que governa isso: widget antes, terminal depois.** O widget ensina o modelo mental com erro impossível e feedback imediato; o terminal consolida com as mãos. Isso ataca o que mais destrói a confiança do iniciante — errar por digitação e achar que errou por não entender.
+
+Três ganhos de bônus: todo widget **funciona no celular** (quem não tem notebook participa de verdade), todo widget é **verificável sem tocar no shell** (nada de checker nem de reset), e eles salvam o cronograma — um exercício de 60 segundos onde não cabe um lab de 8 minutos.
+
+**Mínimo por módulo:** 1 widget de modelo mental + 1 lab de terminal. O M0 é só quiz e widgets (ninguém toca no shell antes do M1).
 
 ### 1.4 Rede da sala: como eles chegam até você
 
@@ -69,21 +88,27 @@ O app escuta na VM, o Lima encaminha para o macOS, e o macOS expõe no Wi-Fi:
 - **O risco real: AP isolation.** Wi-Fi de instituição e de convidados muito frequentemente **bloqueia tráfego entre clientes** — e aí o "eles estão na mesma rede, então alcançam meu IP" simplesmente não acontece, mesmo com tudo certo do seu lado. Mitigação, em ordem: (1) **leve um roteador próprio** (um GL.iNet de bolso resolve: todos conectam nele, você é o gateway); (2) teste no local, com 2 celulares, antes do dia; (3) `Compartilhamento de Internet` do macOS como último recurso (limitado em nº de clientes e exige uplink por cabo). **Teste isso na primeira semana** — é o risco nº 1 do novo arranjo.
 - **Porta:** use `:3000` e pronto; porta 80 no macOS exige privilégio e não ganha nada. O QR code esconde a porta do participante.
 
-### 1.5 O boss em grupo: um container compartilhado
+### 1.5 O boss em grupo: um diretório compartilhado
 
-Com o módulo de expor aplicação fora do currículo (ver `plano-workshop.md` §1), **a aplicação não precisa expor container nenhum para a rede** — o que simplifica bastante a infraestrutura: sem proxy por grupo, sem faixa de portas encaminhadas, sem liga/desliga de ACL. A única coisa que trafega na rede da sala é o próprio app, em `:3000`.
+O grupo não precisa de máquina própria: precisa de um **lugar compartilhado onde os quatro mexem nos mesmos arquivos**. Em Linux isso é um diretório de grupo — e ensinar isso de graça, no boss, é um bônus pedagógico:
 
-O que o boss precisa é diferente e mais simples: **um container compartilhado por grupo**, pré-quebrado pelo `seed` com os 4 defeitos, e 4 terminais atacados nele ao mesmo tempo (`incus exec` múltiplo). Requisitos de interface:
+```
+/srv/chamado/grupo-azul/     grupo: g-azul   permissão: 2770  (setgid)
+```
 
-- indicador de **quem mais está conectado** naquele container, com o nick de cada um — sem isso, dois colegas editam o mesmo arquivo e ninguém entende o que aconteceu;
-- o **critério só aceita submissão da carta de função** correspondente (`Investigador`/`Operador`/`Mecânico`/`Relator`);
-- o checker roda de fora do container, como nos labs individuais, lendo o estado final (`~/laudo.txt`, o PID morto, o modo do `backup.sh`).
+Todos os membros pertencem ao grupo `g-azul`, o `setgid` faz todo arquivo criado ali nascer pertencendo ao grupo, e o `2770` impede qualquer outro grupo de entrar. Os quatro trabalham lado a lado, cada um no próprio terminal, nos mesmos arquivos — exatamente um plantão.
+
+Requisitos de interface:
+- indicador de **quem mais está mexendo ali**, com o nick de cada um — sem isso, dois colegas editam o mesmo arquivo e ninguém entende o que houve;
+- o critério só aceita submissão da **carta de função** correspondente (`Investigador`/`Operador`/`Mecânico`/`Relator`);
+- o processo travado do defeito nº 2 roda como um usuário de serviço do grupo, e o `hidepid` é relaxado **só** para os membros daquele grupo (eles precisam ver o PID para matá-lo);
+- o checker roda como `root`, de fora da sessão, lendo o estado final (`laudo.txt`, o processo morto, o modo do `backup.sh`).
 
 ### 1.6 Ponto único de falha: o seu Mac
 
 Com tudo no seu Mac, três coisas podem acabar com o evento. Trate-as como itens de checklist:
 
-1. **Recursos — resolvido.** Seu Mac é **M4 com 24 GB**: 8 GB para o macOS/navegador/projeção, 14 GB para a Lima VM, ~12 GB efetivos para containers a ~200 MB cada. **30 participantes com folga de 2×, teto técnico ~40.** Dimensionamento completo e limites por container em `infra-mac.md` §2.
+1. **Recursos — deixou de ser problema.** Seu Mac é **M4 com 24 GB** e a arquitetura virou uma VM com 30 usuários: a VM pede 8 GB / 6 vCPU, os 30 shells somam ~400 MB. Sobram 14 GB para o macOS, navegador e projeção. Dimensionamento em `infra-mac.md` §2.
 2. **Térmica e energia — o risco que sobrou.** Com RAM resolvida, é aqui que o aperto aparece: apresentar + espelhar tela + 30 containers por 2 horas derruba o clock de um MacBook (e num **Air M4, sem ventoinha**, derruba antes). Na tomada, `caffeinate -dimsu` ativo, nada mais aberto, **build de produção** (nunca `next dev`), e um ensaio de 30 min com carga total para ver a temperatura.
 3. **Se o Mac morrer, não existe nada.** Mitigação: a imagem base da VM + o app + o banco num **SSD externo**, com um `restore.sh` testado; os slides exportados em **PDF**; e os labs em uma folha impressa com o checklist para verificação manual. Um segundo notebook capaz de assumir o mesmo IP é o plano A do plano B.
 
@@ -102,8 +127,8 @@ Zero de infraestrutura. O que aparece é um roteador de bolso (~R$ 150–250, e 
 | Slides | componentes React próprios — **9 tipos de cena fixos** (incluindo cena de quiz e cena de lab), descritos em `plano-slides-ux.md`; **não** use Reveal.js nem nada baseado em `iframe`/HTML estático | o slide **é** a aplicação: ele hospeda o terminal, o quiz e o placar, lê estado ao vivo e muda de layout por papel (projetor / participante). Nenhuma biblioteca de deck suporta isso |
 | Tempo real | **Socket.IO** em servidor Node custom (`server.ts` que embrulha o Next) | salas nativas (`room`-per-sessão e per-grupo), reconexão automática, funciona offline. Alternativa gerenciada: Partykit/Supabase Realtime |
 | Banco | **SQLite (arquivo) + Drizzle ORM** | 30 pessoas num evento de 2h não justificam um servidor de banco; um arquivo é trivial de copiar, versionar e restaurar do SSD no meio do evento. Drizzle deixa a porta aberta para Postgres se você for repetir em escala |
-| Terminal | **xterm.js** montado **uma única vez** na raiz do app e posicionado dentro do slot da cena (ver §3.4) ↔ WebSocket ↔ `incus exec --interactive` | PTY real; e montar/desmontar junto com o slide perderia histórico, scroll e sessão a cada navegação |
-| Orquestração do lab | **Incus dentro de uma Lima VM** + um serviço `lab-orchestrator` em Node que clona/reseta/destrói containers e roda os checkers (fila com no máx. 6 em paralelo) | systemd de verdade no Mac; clone e restore de snapshot em segundos; a fila impede que 30 cliques no `Verificar` derretam a máquina |
+| Terminal | **xterm.js** montado **uma única vez** na raiz do app e posicionado dentro do slot da cena (ver §3.4) ↔ WebSocket ↔ `node-pty` abrindo `su - alunoNN` na VM | PTY real; e montar/desmontar junto com o slide perderia histórico, scroll e sessão a cada navegação |
+| Ambiente do lab | **um usuário Linux por participante** na própria Lima VM (`aluno01…aluno30`), com `hidepid=2`, cota, `limits.conf` e `sudo` em lista branca; checkers rodam como `root` via fila (máx. 6 em paralelo) | infra mínima, reset em 1 s, e nada do currículo atual precisa de mais que isso |
 | Auth | código de sala + nickname, cookie assinado (JWT httpOnly). Sem senha | atrito zero; o facilitador entra com um PIN separado |
 | Deploy | **nenhum**: `pnpm build && pnpm start` dentro da Lima VM, porta 3000 encaminhada para `0.0.0.0` no macOS, acesso por `http://<seu-ip>:3000` + QR code gerado do IP real | é a sua máquina na rede local, e uma porta só — nada de DNS, TLS ou proxy por grupo |
 | Observabilidade | painel de status na sua tela: containers vivos, RAM/CPU da VM, sockets conectados, fila de checkers, temperatura/throttling do Mac | sem nuvem, o monitoramento é você olhando — então tem que estar na tela, não num dashboard externo |
@@ -139,7 +164,7 @@ Cada tipo de cena exporta **três renderizações do mesmo conteúdo** — é o 
 
 Implementação: `scenes/<Tipo>/{Screen,Player,Host}.tsx` + um `index.ts` que declara `passos`, `fases` e o schema do conteúdo. O conteúdo em MDX é um só; quem muda é a projeção. Nunca duplique conteúdo entre papéis — é assim que deck e lab saem de sincronia na véspera.
 
-### 3.3 Os 9 tipos de cena
+### 3.3 Os 10 tipos de cena
 
 1. `ModuleCover` — capa de módulo
 2. `MentalModel` — diagrama grande
@@ -148,10 +173,11 @@ Implementação: `scenes/<Tipo>/{Screen,Player,Host}.tsx` + um `index.ts` que de
 5. `WillGoWrong` — erros previstos e como lê-los
 6. **`QuizScene`** — Kahoot dentro do slide (passos: pergunta → contagem → trava → revelação → explicação)
 7. **`LabScene`** — terminal dentro do slide (passos: enunciado → abrir terminal → abrir critérios → encerrar → gabarito)
+7b. **`WidgetScene`** — exercício interativo sem terminal (arrastar, clicar, encaixar); o tipo de widget é um parâmetro da cena. Catálogo em §1.3b
 8. `Scoreboard` — placar, individual ou de grupos
 9. `Recap` — recuperação + resumo acumulado do módulo
 
-`QuizScene` e `LabScene` são cenas de primeira classe, não modais em cima do slide. Modal implica "você saiu da apresentação"; a ideia aqui é o oposto.
+`QuizScene`, `WidgetScene` e `LabScene` são cenas de primeira classe, não modais em cima do slide. Modal implica "você saiu da apresentação"; a ideia aqui é o oposto.
 
 ### 3.4 O terminal persistente (detalhe que decide o sucesso)
 
@@ -341,6 +367,9 @@ Next + Socket.IO + Postgres + entrada por código/nickname + presença + o runti
 **Fase 2 — Grupos e presença (2 dias)**
 Grupos tipo Discord (entrar/sair/capacidade/chat), tarefas de escopo grupo, cartas de função, grade pessoas × critérios no painel, estado "travado", pedir ajuda, pausa global, reset e gabarito.
 
+**Fase 2b — Os widgets (2–3 dias)**
+`WidgetScene` + os 4 widgets de maior retorno, nesta ordem: `permission-toggles`, `pipe-builder`, `fs-dragdrop`, `path-quiz`. Cada um é um componente autocontido com o mesmo contrato (`plano-slides-ux.md` T5b), então o quinto em diante sai em ~2 h cada.
+
 **Fase 3 — Camadas finas do jogo (2 dias)**
 Combos, predições durante o slide, diagnóstico de erro, eventos ao vivo (XP dobrado, sabotagem, sudden death, resgate), mentoria, badges, desafios bônus, animações do placar.
 
@@ -359,8 +388,9 @@ Modo offline (SQLite + rede local), export de PDF dos slides, resumo pessoal + c
 - **O slide é a aplicação** (§3): quiz e terminal são tipos de cena, não telas separadas. O participante tem uma URL e nunca troca de contexto.
 - **Slides como código React** (não dados): permite um slide "placar ao vivo" e um slide "sua tarefa" que reagem ao estado. Custo: editar slide = deploy. Aceitável para um evento único.
 - **Um processo Node servindo Next + Socket.IO**: menos partes móveis, essencial para o modo offline.
-- **Containers de sistema (Incus dentro de uma Lima VM), não Docker, e nunca o shell do macOS**: o currículo exige `apt`, `sudo`, `/home`, `ps`/`kill`, utilitários GNU e isolamento por pessoa. Guia completo em `infra-mac.md`.
-- **Um container por participante, um container por grupo**: isolamento total no individual (inclusive porta 80 livre para todos ao mesmo tempo), compartilhamento deliberado no boss do M5.
+- **Uma Lima VM com um usuário por participante, nunca o shell do macOS**: o currículo exige `apt`, `sudo`, `/home`, `ps`/`kill` e utilitários GNU — nenhum deles existe no macOS. Guia completo em `infra-mac.md`.
+- **Isolamento por usuário** (`chmod 700` + `hidepid=2` + cota + `sudo` em lista branca), não por container: suficiente para este currículo e ~2 dias mais barato de construir.
+- **Widget antes, terminal depois**: metade dos exercícios não precisa de shell, e a metade que não precisa é a que ensina o modelo mental.
 - **Tudo idempotente e recuperável**: reconectar, reenviar, resetar e recalcular são operações normais, não exceções.
-- **Limites por container**: `limits.cpu.allowance=40%`, 768 MB `enforce=hard`, `limits.processes=400`, disco 2 GB, ACL de rede ligada no individual e desligada no M5. Alguém vai rodar `:(){ :|:& };:` — isso é parte da diversão, desde que derrube só o próprio container.
-- **O teto de participantes está dimensionado** (M4/24 GB → 30 com folga, 40 no limite): ~200 MB por container, 640 MB de limite rígido.
+- **Limites por usuário**: `nproc 300` e 512 MB de memória em `limits.conf`, cota de 500 MB. Alguém vai rodar `:(){ :|:& };:` — isso é parte da diversão, desde que derrube só a sessão de quem rodou.
+- **Teto de participantes:** com uma VM de 8 GB e ~400 MB de shells, **o limite deixou de ser a máquina**: 30 é o que você atende com 3 monitores, e 60 ainda caberia tecnicamente.

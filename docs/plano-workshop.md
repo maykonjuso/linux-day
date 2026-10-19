@@ -144,7 +144,10 @@ Parece bobo. É a diferença entre "eu travei e desisti" e "eu travei e saí". *
 
 Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliberada: depois do segundo módulo a sala já sabe o que vem, e passa a usar energia no conteúdo em vez de no formato.
 
-> **Gancho** (uma pergunta ou dor, 30s) → **Modelo mental** (um diagrama, 2 min) → **Demonstração** (comandos na ordem, com saída na tela) → **Mão na massa** (lab verificado) → **Fecho** (pergunta de recuperação + resumo que acumula)
+> **Gancho** (uma pergunta ou dor, 30s) → **Modelo mental** (um diagrama, 2 min) → **Demonstração** (comandos na ordem, com saída na tela) → **Widget** (exercício interativo de 60s no slide, sem terminal) → **Mão na massa** (lab verificado no terminal) → **Fecho** (pergunta de recuperação + resumo que acumula)
+
+**A batida do widget é nova e é a mais importante para o iniciante: widget antes, terminal depois.** O widget é um exercício interativo dentro do próprio slide — arrastar, clicar, encaixar — onde **errar por digitação é impossível** e o feedback é imediato. Ele instala o modelo mental; o terminal depois consolida com as mãos. Isso ataca o que mais destrói a confiança de quem está começando: errar um `cd` por causa de uma letra e concluir que não entendeu o conceito.
+Bônus: todo widget **funciona no celular**, então quem veio sem notebook participa de verdade; e nenhum widget precisa de checker, shell ou reset — o que também salva o cronograma, porque cabe um exercício de 60 segundos onde não cabe um lab de 8 minutos. O catálogo completo dos tipos está em `plano-app.md` §1.3b.
 
 ### M1 — Cheguei no servidor · 12 min
 
@@ -162,6 +165,9 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 7. **Editar a linha sem usar a seta 40 vezes:** `Ctrl+A` vai para o início, `Ctrl+E` para o fim, `Ctrl+W` apaga a última palavra, `Ctrl+U` apaga tudo. É o tipo de coisa que faz a pessoa parar de ter raiva do terminal.
 8. **Copiar e colar:** `Ctrl+Shift+C` / `Ctrl+Shift+V` — e **`Ctrl+C` não copia, interrompe**. Dois segundos de aviso, cinco minutos economizados.
 9. `ls --help` e `man ls` → e sair com `q`. Fecha o laço: *"nunca mais precisam decorar nada"*.
+
+**Widget (`path-quiz`, 60s):** a árvore de diretórios na tela; "você está em `/home/aluno/docs/2024`. Clique onde você cai com `cd ../..`". Três rodadas, cada uma mais fundo. Caminho relativo deixa de ser abstrato **antes** de alguém digitar `cd`.
+**Widget 2 (`escape-room`, 30s):** quatro telas travadas (`less`, `man`, `vim`, um programa rodando) e a pergunta "qual tecla te salva?". É o kit de fuga entrando pela mão, não pelo ouvido.
 
 **Mão na massa:** `flag.txt` escondida 4 níveis abaixo, num diretório que só aparece com `ls -a`. Entregar o conteúdo da flag.
 **XP:** 150 + bônus de velocidade.
@@ -182,6 +188,9 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 6. **O coringa `*`**, montado em três passos com a saída na tela: `ls *.txt` → `ls tmp_*` → `cp *.md docs/`. Diga o que ele é: *"`*` significa 'qualquer coisa aqui' — é o que transforma 20 comandos em um"*. **Sem isso o lab deste módulo é desumano**, e com isso ele fica elegante.
 7. **Nome de arquivo:** `Docs` ≠ `docs`, e `cat meu arquivo.txt` procura dois arquivos — use `"meu arquivo.txt"` ou evite espaço. 20 segundos.
 8. `rm arquivo.txt`, `rm -r pasta/`, e o slide de precipício: *"não existe lixeira. `rm -rf /` apaga a máquina. Nessas duas letras você relê antes de apertar Enter."*
+
+**Widget (`fs-dragdrop`, 90s):** os 20 arquivos bagunçados aparecem como cartões e as três pastas como alvos; a pessoa **arrasta** cada um para o lugar. Ao terminar, o slide mostra **os comandos `mv` equivalentes** ao que ela acabou de fazer com o mouse — e aí o lab no terminal deixa de ser um salto no escuro: é repetir no teclado o que ela já resolveu com a cabeça.
+**Widget 2 (`spot-the-danger`, 30s):** quatro comandos parecidos, um destrói tudo (`rm -rf ~` entre `rm -r ~/tmp`, `rm -i *.log`, `rm tmp_*`). Achar o perigoso sem correr risco nenhum.
 
 **Mão na massa (o lab de arrumar o diretório):** `~/bagunca/` com 20 arquivos soltos; a especificação pede 6 coisas:
 1. `imagens/` com todos os `.png`/`.jpg`
@@ -209,6 +218,8 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 5. `sudo` em uma coisa que precisa (`sudo apt update`): *"`sudo` é pedir a chave do cofre emprestada por um comando só. Funciona — e é por isso que você relê antes."* **Avise antes de eles digitarem: a senha não aparece na tela, nem asterisco. O teclado está funcionando.** Essa frase sozinha evita meia dúzia de mãos levantadas.
 6. Mostre `chmod 777` e diga por que **não**: *"é tirar as três portas da casa porque você perdeu uma chave."*
 
+**Widget (`permission-toggles`, 90s):** os 9 cadeados (dono/grupo/outros × rwx) clicáveis, e **ao lado, ao vivo**, o `-rwxr-xr--` e o número `754` mudando a cada clique. Depois três desafios: "deixe só o dono editar", "deixe todos executarem", "qual número dá isso?". É o único jeito que eu conheço de permissões numéricas entrarem na cabeça de alguém em 90 segundos — por texto, não entram.
+
 **Mão na massa:** criar `~/deploy.sh` com shebang, torná-lo executável e rodar; consertar um `relatorio.txt` com permissão `000`.
 **XP:** 80 + 80 + 40 (200).
 **Fecho:** *"deu permission denied: quais são as duas primeiras coisas que você olha?"* → resumo: `ls -l` `chmod +x` `chmod 644` `sudo`.
@@ -234,6 +245,8 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 6. `... > relatorio.txt` e `cat relatorio.txt` — fechando com o `>` do M2, agora com propósito.
 7. **Encadear:** `mkdir relatorios && cd relatorios` — *"`&&` é 'se o primeiro der certo, faça o segundo'; `;` é 'faça os dois de qualquer jeito'"*. Duas linhas de slide, e eles passam a escrever comandos compostos sem medo.
 
+**Widget (`pipe-builder`, 2 min — o melhor widget do workshop):** as peças (`cat`, `grep ERROR`, `cut`, `sort`, `uniq -c`, `head -3`) ficam disponíveis para **arrastar para o encanamento**, e a cada peça encaixada o painel do lado mostra **a saída real se transformando** — 50 mil linhas → 400 → 400 cortadas → ordenadas → contadas → top 3. A pessoa *vê* o pipe funcionar antes de digitar uma barra vertical. Encaixar na ordem errada mostra a saída errada, sem drama: é assim que se aprende.
+
 **Mão na massa:** `app.log` de 50 mil linhas, três entregas: quantos `ERROR` (número), qual IP aparece mais (string), e gravar as 3 linhas com `FATAL` em `~/fatais.txt` (verificado no arquivo).
 **XP:** 100 + 100 + 150.
 **Desafio bônus (+50):** o top 3 de erros em uma linha só.
@@ -253,7 +266,9 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 5. `kill <PID>`, confirmar com `ps`; e `kill -9` *"quando o programa não ouve o pedido educado"*.
 6. `command not found` depois de instalar → `which htop` → uma frase sobre `PATH`: *"o sistema só encontra o programa se ele estiver numa das pastas da lista."*
 
-**Mão na massa:** instalar um pacote; rodar a app em foreground e matar com `Ctrl+C`; rodar com `&`; achar o PID com `ps aux | grep` e matar com `kill`.
+**Widget (`predict-output`, 60s):** três rodadas de "o que acontece?" — `node app.js` (o prompt não volta), `node app.js &` (volta, e aparece um número), `Ctrl+C` numa das duas. Escolher entre 3 respostas. Vale XP de predição, e prepara o terminal.
+
+**Mão na massa:** instalar **o seu pacote** (cada participante recebe um diferente — `htop`, `jq`, `cowsay`, `figlet`…; a sala descobre 30 programas em vez de um); rodar a app em foreground e matar com `Ctrl+C`; rodar com `&`; achar o PID com `ps aux | grep` e matar com `kill`.
 **XP:** 80 + 80 + 120.
 **Fecho:** *"um programa travou e não responde ao `Ctrl+C`. O que você faz?"* → resumo: `apt install` `ps aux` `top` `kill` `&` `jobs`.
 
@@ -261,14 +276,14 @@ Cada módulo segue a mesma estrutura de 5 batidas — e a repetição é deliber
 
 **Gancho (2 min, slide único):** *"Chegou um chamado: 'o relatório da madrugada não foi gerado'. Vocês têm 10 minutos e um servidor quebrado. Nada de novo aqui — tudo que vocês precisam está nos últimos 50 minutos."*
 
-Cada grupo recebe **um container compartilhado** (quatro terminais na mesma máquina, como um plantão de verdade) já quebrado de propósito, com 4 defeitos, um por módulo:
+Cada grupo recebe **um diretório compartilhado** em `/srv/chamado/grupo-<cor>` (permissão `2770`, os quatro mexendo nos mesmos arquivos, cada um no seu terminal — um plantão de verdade, e uma aula de grupo em Linux de graça), já quebrado de propósito, com 4 defeitos, um por módulo:
 
 | # | Defeito | Resolve com | Carta de função | XP |
 |---|---|---|---|---|
 | 1 | Achar o log do serviço e a mensagem de erro (ninguém disse onde ele está) | `find` · `grep` · `less` | `Investigador` | 150 |
 | 2 | Um processo travado comendo CPU — identificar e matar | `top` · `ps aux \| grep` · `kill` | `Operador` | 150 |
 | 3 | O `backup.sh` não roda: falta permissão de execução | `ls -l` · `chmod +x` · `./backup.sh` | `Mecânico` | 150 |
-| 4 | Entregar o laudo: gravar em `~/laudo.txt` o nome do grupo, a contagem de `ERROR` no log e o PID que foi morto | `grep -c` · `>` · `nano` | `Relator` | 250 |
+| 4 | Entregar o laudo: gravar em `laudo.txt` (no diretório do grupo) o nome do grupo, a contagem de `ERROR` no log e o PID que foi morto | `grep -c` · `>` · `nano` | `Relator` | 250 |
 
 **Cartas de função:** cada critério só pode ser submetido pela pessoa que está com a carta correspondente. É o que impede o aluno mais rápido de fazer tudo sozinho enquanto o grupo assiste — e o que garante que cada pessoa digite comando no boss.
 
@@ -276,6 +291,10 @@ Cada grupo recebe **um container compartilhado** (quatro terminais na mesma máq
 
 **Momento de palco:** o primeiro grupo a fechar o chamado toca o som, a animação do placar e leva o badge `Chamado Fechado`. Projete o placar de grupos com os 4 critérios acendendo ao vivo, e **fique calado nos últimos 2 minutos** — a sala se resolve sozinha e é o melhor momento do evento.
 **Desempate:** horário de conclusão do critério 4.
+
+### Antes do boss — widget de 60s: `error-match`
+
+Ligue as seis mensagens de erro do workshop às suas causas e aos seus consertos, arrastando. É a última coisa antes do chamado, e é exactamente a habilidade que o boss vai exigir: ler o erro e saber para onde ir.
 
 ### Encerramento · 8 min
 

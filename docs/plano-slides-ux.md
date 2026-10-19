@@ -20,7 +20,7 @@
 
 ## 2. Anatomia dos tipos de slide
 
-O deck tem **7 tipos** de slide e nada além disso. Consistência é o que permite a pessoa parar de decodificar o layout e usar a cabeça para o conteúdo.
+O deck tem **8 tipos** de slide e nada além disso. Consistência é o que permite a pessoa parar de decodificar o layout e usar a cabeça para o conteúdo.
 
 ### T1 · Capa de módulo
 Número + título + a pergunta do capítulo em uma frase + barra de progresso do workshop (`Módulo 3 de 6`) + o que vai ganhar de ponto. Mostra à pessoa onde ela está na jornada — isso reduz ansiedade e ancora a memória.
@@ -64,6 +64,17 @@ Dois a três erros reais, cada um com: a mensagem exata, a tradução em portugu
 | `No such process` | "esse PID não existe mais" | o processo já morreu — confirme com `ps` |
 Ensine o **reflexo diagnóstico** junto: `pwd` → onde estou, `ls -la` → o que tem aqui, `ls -l arquivo` → quem é o dono, `whoami` → quem eu sou, `ps aux | grep` → ainda está rodando?
 E o **kit de fuga** (`Ctrl+C`, `q`, `:q!`, `Ctrl+L`) tem um slide `WillGoWrong` só dele, no M1: é o conteúdo que mais destrava gente de verdade, e nenhum workshop ensina.
+
+### T5b · Widget (exercício interativo no slide)
+Um exercício jogável dentro do próprio slide, de 30 a 120 segundos, sem terminal: arrastar, clicar, encaixar. Catálogo dos 11 tipos em `plano-app.md` §1.3b (`pipe-builder`, `permission-toggles`, `fs-dragdrop`, `path-quiz`, `escape-room`, `spot-the-danger`, `predict-output`, `error-match`, `command-builder`, `quiz`…).
+Contrato de todo widget, sem exceção:
+- **errar não dói:** nenhuma ação destrói progresso, e tentar de novo é imediato e ilimitado;
+- **feedback em menos de 300 ms**, visual, no próprio lugar onde a pessoa agiu;
+- **estado sempre visível:** o resultado da ação aparece ao lado da ação (o `755` mudando enquanto os cadeados são clicados; a saída se transformando enquanto o pipe é montado);
+- **ponte explícita para o terminal:** ao concluir, o widget mostra **o comando equivalente** ao que a pessoa acabou de fazer com o mouse. É isso que transforma o widget em preparação em vez de distração;
+- **funciona com o dedo**, em tela de celular, sem hover.
+
+Por que isso existe: o iniciante que erra um `mv` por causa de uma letra conclui que não entendeu o conceito. O widget separa as duas coisas — primeiro o conceito, com erro de digitação impossível; depois o teclado.
 
 ### T6 · Mão na massa (ponte para o lab)
 Objetivo em uma frase, os critérios como checklist, tempo, pontos, e **a dica de partida** (qual comando dos últimos slides é o ponto de entrada). Nenhuma solução. Quando você avança deste slide, o app abre o lab na tela de todos automaticamente.
