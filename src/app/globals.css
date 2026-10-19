@@ -353,21 +353,30 @@ button { font: inherit; color: inherit; }
  */
 .controles {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--e1) var(--e2);
+  gap: var(--e1);
   padding: var(--e1) var(--e2);
   border-top: 1px solid var(--borda);
   background: var(--papel-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.controles::-webkit-scrollbar {
+  display: none;
 }
 .bloco-controle {
   display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--e05);
   padding: var(--e05) var(--e1);
   border: 1px solid var(--borda);
   border-radius: var(--r);
   background: var(--papel);
+  white-space: nowrap;
 }
 .bloco-controle > .rotulo {
   font-size: 10px;
@@ -376,17 +385,19 @@ button { font: inherit; color: inherit; }
   color: var(--tinta-2);
   margin-right: 2px;
   user-select: none;
+  white-space: nowrap;
 }
 .btn-icone {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: var(--e1);
+  gap: var(--e05);
   border: 1px solid transparent;
   background: transparent;
   border-radius: var(--r-p);
-  padding: var(--e1);
+  padding: 6px var(--e1);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: background 140ms ease, transform 140ms var(--ease);
   white-space: nowrap;
 }
@@ -396,12 +407,21 @@ button { font: inherit; color: inherit; }
 .btn-icone.destaque { background: var(--tinta); color: var(--papel); font-weight: 650; }
 .btn-icone.destaque:hover { background: #26262b; }
 .estado-faixa {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--e1);
-  margin-left: auto; font-size: 13px; color: var(--tinta-2);
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--e1);
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--tinta-2);
+  white-space: nowrap;
+}
+@media (max-width: 1120px) {
+  .bloco-controle > .rotulo { display: none; }
 }
 @media (max-width: 860px) {
   .btn-icone .texto { display: none; }        /* no celular sobra só o ícone */
-  .bloco-controle > .rotulo { display: none; }
 }
 
 /*

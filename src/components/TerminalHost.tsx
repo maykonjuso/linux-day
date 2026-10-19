@@ -19,8 +19,8 @@ import { temaTerminalPadrao, type TemaTerminal } from '@/deck/temas';
  * comando no meio de um slide de teoria, e deixar isso acontecer é ótimo.
  */
 export function TerminalHost({
-  socket, ativo, gaveta, tema = temaTerminalPadrao,
-}: { socket: Socket | null; ativo: boolean; gaveta: boolean; tema?: TemaTerminal }) {
+  socket, ativo, gaveta, tema = temaTerminalPadrao, onFechar,
+}: { socket: Socket | null; ativo: boolean; gaveta: boolean; tema?: TemaTerminal; onFechar?: () => void }) {
   const [focado, setFocado] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
   const termRef = useRef<{
@@ -213,6 +213,40 @@ export function TerminalHost({
         transition: 'opacity 200ms var(--ease)',
       }}
     >
+      {/* Botão de fechar no canto superior direito: só aparece no terminal aberto pela barra (gaveta) depois que a pessoa clica nele */}
+      {gaveta && !ativo && focado && onFechar && (
+        <button
+          type="button"
+          aria-label="fechar terminal"
+          title="Fechar terminal"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            termRef.current?.blurir();
+            onFechar();
+          }}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 45,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            background: 'rgba(22, 22, 26, 0.88)',
+            border: '1px solid #3a3a42',
+            color: '#e8e8ea',
+            borderRadius: 6,
+            padding: '2px 8px',
+            fontSize: 12,
+            fontFamily: 'var(--sans)',
+            cursor: 'pointer',
+          }}
+        >
+          ✕ fechar
+        </button>
+      )}
       <div ref={caixa} style={{ width: '100%', height: 'calc(100% - 26px)' }} />
       {/* rodapé do terminal: diz onde está o teclado e como sair dele */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', height: 22, color: focado ? tema.cores.green : tema.cores.brightBlack, fontSize: 11, fontFamily: 'var(--sans)' }}>

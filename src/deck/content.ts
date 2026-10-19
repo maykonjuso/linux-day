@@ -193,6 +193,9 @@ export const DECK: Cena[] = [
     widget: 'escape-room',
     enunciado: 'Três telas em que **todo iniciante trava**. Escolha como sair de cada uma. Errar aqui não custa nada.',
     segundos: 60, pontePara: 'q · Esc :q! · Ctrl+C',
+    referencias: [
+      { id: 'm1-fuga', titulo: 'O kit de fuga' },
+    ],
   },
   {
     id: 'm1-widget', ilustra: 'mapa', tipo: 'WidgetScene', modulo: 1, passos: 1,
@@ -200,6 +203,10 @@ export const DECK: Cena[] = [
     widget: 'path-quiz',
     enunciado: 'Clique na pasta onde você **termina** depois do comando.',
     segundos: 90, pontePara: 'cd ../..',
+    referencias: [
+      { id: 'm1-arvore', titulo: 'Árvore de arquivos' },
+      { id: 'm1-demo', titulo: 'Olhando em volta (pwd, ls, cd)' },
+    ],
   },
   {
     id: 'm1-lab', ilustra: 'bandeira', tipo: 'LabScene', modulo: 1, passos: 1,
@@ -209,6 +216,11 @@ export const DECK: Cena[] = [
     criterios: [{ id: 'm1-c1', descricao: 'Entregar o conteúdo de flag.txt', xp: 150 }],
     comandosDoModulo: ['pwd', 'ls -la', 'cd', 'cat', 'find', 'Tab', '--help'],
     segundos: 360, escopo: 'individual',
+    referencias: [
+      { id: 'm1-arvore', titulo: 'Árvore de arquivos' },
+      { id: 'm1-demo', titulo: 'Olhando em volta (pwd, ls -la, cd)' },
+      { id: 'm1-fuga', titulo: 'O kit de fuga' },
+    ],
   },
   {
     id: 'm1-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 1, passos: 2,
@@ -253,6 +265,10 @@ export const DECK: Cena[] = [
     widget: 'spot-the-danger',
     enunciado: 'Duas rodadas: descubra qual comando **faz estrago de verdade**, sem correr risco nenhum.',
     segundos: 60, pontePara: 'rm -rf ~   # o que você NUNCA digita no automático',
+    referencias: [
+      { id: 'm2-demo', titulo: 'Criar, mover, ler, editar (rm)' },
+      { id: 'm2-coringa', titulo: 'O coringa: *' },
+    ],
   },
   {
     id: 'm2-widget', ilustra: 'pasta', tipo: 'WidgetScene', modulo: 2, passos: 1,
@@ -260,6 +276,10 @@ export const DECK: Cena[] = [
     widget: 'fs-dragdrop',
     enunciado: 'Clique num arquivo e depois na pasta certa. No fim eu mostro os comandos `mv` que **você acabou de executar** com o mouse.',
     segundos: 90, pontePara: 'mv *.png imagens/',
+    referencias: [
+      { id: 'm2-demo', titulo: 'Criar, mover, ler, editar (mv)' },
+      { id: 'm2-coringa', titulo: 'O coringa: *' },
+    ],
   },
   {
     id: 'm2-lab', ilustra: 'pasta-aberta', tipo: 'LabScene', modulo: 2, passos: 1,
@@ -276,6 +296,10 @@ export const DECK: Cena[] = [
     ],
     comandosDoModulo: ['mkdir -p', 'mv', 'cp', 'rm', 'cat', 'nano', '*', '>', '>>'],
     segundos: 480, escopo: 'individual',
+    referencias: [
+      { id: 'm2-demo', titulo: 'Criar, mover, ler, editar' },
+      { id: 'm2-coringa', titulo: 'O coringa: *' },
+    ],
   },
   {
     id: 'm2-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 2, passos: 2,
@@ -315,6 +339,10 @@ export const DECK: Cena[] = [
     widget: 'permission-toggles',
     enunciado: 'Ligue e desligue cada permissão e olhe o `rwx` **e o número** mudando ao vivo. Depois resolva os três desafios.',
     segundos: 120, pontePara: 'chmod 755 deploy.sh',
+    referencias: [
+      { id: 'm3-cadeados', titulo: 'Três cadeados (rwx)' },
+      { id: 'm3-demo', titulo: 'Erro → diagnóstico → conserto (chmod)' },
+    ],
   },
   {
     id: 'm3-lab', ilustra: 'chave', tipo: 'LabScene', modulo: 3, passos: 1,
@@ -328,6 +356,11 @@ export const DECK: Cena[] = [
     ],
     comandosDoModulo: ['ls -l', 'chmod +x', 'chmod 644', 'nano', 'sudo', 'id'],
     segundos: 420, escopo: 'individual',
+    referencias: [
+      { id: 'm3-cadeados', titulo: 'Três cadeados (rwx)' },
+      { id: 'm3-demo', titulo: 'Consertando permissões (chmod +x, 644)' },
+      { id: 'm2-demo', titulo: 'Criar e editar arquivos (>, nano)' },
+    ],
   },
   {
     id: 'm3-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 3, passos: 2,
@@ -344,6 +377,10 @@ export const DECK: Cena[] = [
     enunciado: 'Cada equipe monta o comando clicando nas peças, na ordem. A primeira equipe a acertar leva mais XP, e errar não custa nada.',
     segundos: 90,
     premios: [250, 170, 120, 70],
+    referencias: [
+      { id: 'm3-cadeados', titulo: 'Três cadeados (rwx)' },
+      { id: 'm3-demo', titulo: 'Comandos chmod e sudo' },
+    ],
   },
 
   // ══════════════════════ KAHOOT RELÂMPAGO (M3 → M4) ════════════════════════
@@ -437,6 +474,10 @@ export const DECK: Cena[] = [
     widget: 'pipe-builder',
     enunciado: 'Encaixe as peças e **veja a saída se transformando** a cada uma: 50.000 linhas, depois 1.031, depois só os IPs, ordenados, contados, e o top 3.',
     segundos: 150, pontePara: 'grep ERROR app.log | cut -d" " -f3 | sort | uniq -c | sort -rn | head -3',
+    referencias: [
+      { id: 'm4-encanamento', titulo: 'O pipe é um encanamento' },
+      { id: 'm4-demo', titulo: 'Montando a linha (grep, cut, sort, uniq)' },
+    ],
   },
   {
     id: 'm4-lab', ilustra: 'detetive', tipo: 'LabScene', modulo: 4, passos: 1,
@@ -450,6 +491,11 @@ export const DECK: Cena[] = [
     ],
     comandosDoModulo: ['grep -c', 'grep -rn', 'find', '|', '>', 'sort', 'uniq -c', 'cut', 'wc -l', 'head'],
     segundos: 540, escopo: 'individual',
+    referencias: [
+      { id: 'm4-encanamento', titulo: 'O pipe (|) e redirecionamento (>)' },
+      { id: 'm4-demo', titulo: 'Montando a linha, peça por peça' },
+      { id: 'm4-encadear', titulo: 'Encadear (; e &&)' },
+    ],
   },
   {
     id: 'm4-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 4, passos: 2,
@@ -467,6 +513,10 @@ export const DECK: Cena[] = [
     segundos: 180,
     taskSlug: 'corrida-1',
     premios: [300, 200, 140, 90],
+    referencias: [
+      { id: 'm2-demo', titulo: 'Criar pasta e arquivo (mkdir -p, echo >)' },
+      { id: 'm4-encadear', titulo: 'Encadear comandos (&&)' },
+    ],
   },
   {
     id: 'arena-pipeline', ilustra: 'elo', tipo: 'ArenaScene', modulo: 4, passos: 1,
@@ -475,6 +525,10 @@ export const DECK: Cena[] = [
     enunciado: 'Sete peças, uma ordem certa. A primeira equipe a montar a linha que mostra os três erros mais frequentes leva mais XP.',
     segundos: 150,
     premios: [300, 200, 140, 90],
+    referencias: [
+      { id: 'm4-encanamento', titulo: 'O pipe é um encanamento' },
+      { id: 'm4-demo', titulo: 'Montando a linha, peça por peça' },
+    ],
   },
 
   // ════════════════════ M5 · PROGRAMAS E PROCESSOS ══════════════════════════
@@ -509,6 +563,10 @@ export const DECK: Cena[] = [
     widget: 'predict-output',
     enunciado: 'Três comandos. Antes de rodar, **aposte** no que vai acontecer. Acertar vale XP.',
     segundos: 60, pontePara: 'node app.js &',
+    referencias: [
+      { id: 'm5-processo', titulo: 'Processo e PID (&)' },
+      { id: 'm5-demo', titulo: 'Instalar, ver, matar' },
+    ],
   },
   {
     id: 'm5-builder', ilustra: 'ferramenta', tipo: 'WidgetScene', modulo: 5, passos: 1,
@@ -516,6 +574,9 @@ export const DECK: Cena[] = [
     widget: 'command-builder',
     enunciado: 'Encaixe as peças na ordem certa. Depois de montar alguns, você começa a **entender comandos novos sozinho**.',
     segundos: 90, pontePara: 'sudo apt install -y htop',
+    referencias: [
+      { id: 'm5-demo', titulo: 'Instalar, ver, matar (apt, ps, kill)' },
+    ],
   },
   {
     id: 'm5-lab', ilustra: 'loja', tipo: 'LabScene', modulo: 5, passos: 1,
@@ -529,6 +590,10 @@ export const DECK: Cena[] = [
     ],
     comandosDoModulo: ['apt install', 'cat', 'ps aux', 'top', 'kill', '&', 'jobs', 'which'],
     segundos: 420, escopo: 'individual',
+    referencias: [
+      { id: 'm5-processo', titulo: 'Um processo é uma caixa com número (PID)' },
+      { id: 'm5-demo', titulo: 'Instalar, ver, matar (apt, &, ps, kill)' },
+    ],
   },
   {
     id: 'm5-recap', ilustra: 'bandeira', tipo: 'Recap', modulo: 5, passos: 2,
@@ -545,6 +610,12 @@ export const DECK: Cena[] = [
     enunciado: 'Oito linhas de comando na tela. **Três não funcionam.** Marquem as três e enviem. A equipe mais rápida leva mais XP, e errar só custa tempo.',
     segundos: 150,
     premios: [280, 190, 130, 80],
+    referencias: [
+      { id: 'm2-demo', titulo: 'Arquivos e pastas' },
+      { id: 'm3-demo', titulo: 'Permissões (chmod)' },
+      { id: 'm4-demo', titulo: 'Pipes e busca (grep, find)' },
+      { id: 'm5-demo', titulo: 'Processos e pacotes' },
+    ],
   },
   {
     id: 'arena-buzzer', ilustra: 'alarme', tipo: 'ArenaScene', modulo: 5, passos: 1,
@@ -554,6 +625,10 @@ export const DECK: Cena[] = [
     enunciado: 'A primeira equipe que aperta responde em voz alta. Se errar, a vez passa para a próxima da fila.',
     segundos: 120,
     premios: [250],
+    referencias: [
+      { id: 'm5-processo', titulo: 'O que é o PID' },
+      { id: 'm5-demo', titulo: 'Instalar, ver, matar (ps aux, kill -9)' },
+    ],
   },
 
   // ═════════════════════════ BOSS · O CHAMADO ═══════════════════════════════
@@ -563,6 +638,11 @@ export const DECK: Cena[] = [
     widget: 'error-match',
     enunciado: 'Três mensagens que vocês **já viram hoje**. Para cada uma, a causa.',
     segundos: 60, pontePara: 'pwd · ls -l · apt install',
+    referencias: [
+      { id: 'm1-demo', titulo: 'Olhando em volta (pwd, ls)' },
+      { id: 'm3-demo', titulo: 'Permission denied (ls -l, chmod)' },
+      { id: 'm5-demo', titulo: 'Command not found (apt, which)' },
+    ],
   },
   {
     id: 'm6-capa', ilustra: 'alarme', tipo: 'ModuleCover', modulo: 6, passos: 1,
@@ -599,6 +679,12 @@ export const DECK: Cena[] = [
     ],
     comandosDoModulo: ['find', 'grep', 'grep -c', 'ps aux', 'top', 'kill', 'ls -l', 'chmod +x', 'nano', '>'],
     segundos: 600, escopo: 'grupo',
+    referencias: [
+      { id: 'm4-demo', titulo: 'Investigador: find e grep' },
+      { id: 'm5-demo', titulo: 'Operador: ps aux e kill' },
+      { id: 'm3-demo', titulo: 'Mecânico: chmod +x' },
+      { id: 'm2-demo', titulo: 'Relator: criar arquivo (>, nano)' },
+    ],
   },
   {
     id: 'm6-placar', ilustra: 'trofeu', tipo: 'Scoreboard', modulo: 6, passos: 1,

@@ -8,6 +8,7 @@ import { Ilustra } from '../Ilustra';
 import { usuarioDoNick } from '@/deck/avatares';
 import { Texto } from '../Texto';
 import { Cabecalho } from '../Cabecalho';
+import { ReferenciasConteudo } from '../ReferenciasConteudo';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -24,7 +25,11 @@ type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
  *    freio do iniciante;
  *  - a régua de comandos do módulo fica sempre visível (só os nomes).
  */
-export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; papel: Papel }) {
+export function LabScene({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaLab; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const [resultados, setResultados] = useState<Record<string, ResultadoCriterio>>({});
   const [resposta, setResposta] = useState('');
   const [dica, setDica] = useState<string | null>(null);
@@ -138,6 +143,8 @@ export function LabScene({ cena, arena, papel }: { cena: CenaLab; arena: Arena; 
               {cena.comandosDoModulo.length > 8 && <span className="apoio">+{cena.comandosDoModulo.length - 8} na consulta (?)</span>}
             </div>
           </div>
+
+          {souJogador && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
           {dica && (
             <div className="cartao" style={{ borderColor: 'var(--acento)', display: 'flex', gap: 'var(--e1)', padding: 'var(--e2)' }}>

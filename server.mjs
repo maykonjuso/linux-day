@@ -36,7 +36,8 @@ const io = new Server(server, { path: '/rt', cors: { origin: '*' }, maxHttpBuffe
 const fila = criarFila(Number(process.env.ARENA_CHECKERS ?? 6));
 
 // ───────────────────────────── estado do evento ─────────────────────────────
-const estado = dao.getEstado('evento') ?? { cenaIndex: 0, passo: 0, fase: 'idle', pausado: false, restante: null, cenaId: null };
+const estado = dao.getEstado('evento') ?? { cenaIndex: 0, maxCenaIndex: 0, passo: 0, fase: 'idle', pausado: false, restante: null, cenaId: null };
+estado.maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, estado.cenaIndex ?? 0);
 estado.restante = null;
 
 /**
@@ -614,7 +615,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }) => {
-    Object.assign(estado, { cenaIndex, cenaId, passo, fase });
+    const maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, cenaIndex);
+    Object.assign(estado, { cenaIndex, maxCenaIndex, cenaId, passo, fase });
     pararTimer(); estado.restante = null;
     // o gabarito vem do servidor, nunca do cliente
     const gab = cenaId ? gabaritoDe(cenaId) : null;

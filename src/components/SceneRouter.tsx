@@ -17,6 +17,7 @@ import { Escolhas, ESCAPE, PERIGO, PREVER, ERROS } from './widgets/Escolhas';
 import { LabScene } from './scenes/LabScene';
 import { GroupScene } from './scenes/GroupScene';
 import { ArenaScene } from './scenes/ArenaScene';
+import { ReferenciasConteudo } from './ReferenciasConteudo';
 
 /**
  * Uma cena, três projeções. O conteúdo é o mesmo objeto; quem muda é o papel:
@@ -25,22 +26,26 @@ import { ArenaScene } from './scenes/ArenaScene';
  *  - host    → sua tela (resposta certa, progresso, controles)
  * Nunca duplique conteúdo entre papéis: é assim que deck e lab saem de sincronia.
  */
-export function SceneRouter({ arena, papel, cenaForcada }: { arena: Arena; papel: Papel; cenaForcada?: Cena }) {
+export function SceneRouter({
+  arena, papel, cenaForcada, onIrParaSlide,
+}: {
+  arena: Arena; papel: Papel; cenaForcada?: Cena; onIrParaSlide?: (id: string) => void;
+}) {
   // no modo livre o participante olha outra cena sem tirar a sala do lugar
   const cena = cenaForcada ?? arena.cena;
   switch (cena.tipo) {
     case 'ModuleCover': return <Capa cena={cena} />;
     case 'MentalModel': return <Modelo cena={cena} />;
     case 'CommandAnatomy': return <Anatomia cena={cena} />;
-    case 'TerminalDemo': return <Demo cena={cena} passo={arena.estado.passo} />;
+    case 'TerminalDemo': return <Demo cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
     case 'WillGoWrong': return <Erros cena={cena} />;
     case 'QuizScene': return <Quiz cena={cena} arena={arena} papel={papel} />;
-    case 'WidgetScene': return <Widget cena={cena} arena={arena} papel={papel} />;
-    case 'LabScene': return <LabScene cena={cena} arena={arena} papel={papel} />;
+    case 'WidgetScene': return <Widget cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
+    case 'LabScene': return <LabScene cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
     case 'GroupScene': return <GroupScene cena={cena} arena={arena} papel={papel} />;
-    case 'ArenaScene': return <ArenaScene cena={cena} arena={arena} papel={papel} />;
+    case 'ArenaScene': return <ArenaScene cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
     case 'Scoreboard': return <Placar cena={cena} arena={arena} />;
-    case 'Recap': return <Recap cena={cena} passo={arena.estado.passo} />;
+    case 'Recap': return <Recap cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
   }
 }
 
@@ -270,7 +275,11 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
   );
 }
 
-function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; papel: Papel }) {
+function Widget({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: C<'WidgetScene'>; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const [feito, setFeito] = useState(false);
   useEffect(() => setFeito(false), [cena.id]);
 
@@ -302,6 +311,7 @@ function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; 
       <Cabecalho ilustra={ilustraDa(cena)} titulo={cena.titulo}
         olho={`exercício na tela${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
+      {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
       {interativo ? qual() : (
         <div className="cartao" style={{ fontSize: 'clamp(18px, 2vw, 30px)' }}>

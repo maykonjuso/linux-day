@@ -7,6 +7,7 @@ import { Cabecalho } from '../Cabecalho';
 import { Ilustra } from '../Ilustra';
 import { Icone } from '../Icone';
 import { Texto } from '../Texto';
+import { ReferenciasConteudo } from '../ReferenciasConteudo';
 
 type CenaArena = Extract<Cena, { tipo: 'ArenaScene' }>;
 
@@ -20,11 +21,15 @@ type CenaArena = Extract<Cena, { tipo: 'ArenaScene' }>;
  * Buzzer: uma pergunta e a primeira equipe que aperta responde. Errou, passa a
  * vez para a próxima da fila.
  */
-export function ArenaScene({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: Papel }) {
-  if (cena.jogo === 'corrida') return <Corrida cena={cena} arena={arena} papel={papel} />;
-  if (cena.jogo === 'buzzer') return <Buzzer cena={cena} arena={arena} papel={papel} />;
-  if (cena.jogo === 'montagem') return <Montagem cena={cena} arena={arena} papel={papel} />;
-  return <CacaAoErro cena={cena} arena={arena} papel={papel} />;
+export function ArenaScene({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaArena; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
+  if (cena.jogo === 'corrida') return <Corrida cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
+  if (cena.jogo === 'buzzer') return <Buzzer cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
+  if (cena.jogo === 'montagem') return <Montagem cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
+  return <CacaAoErro cena={cena} arena={arena} papel={papel} onIrParaSlide={onIrParaSlide} />;
 }
 
 /** a pista compartilhada: quem chegou, em que posição e quanto levou */
@@ -85,7 +90,11 @@ function Premios({ premios }: { premios: number[] }) {
  * monta a linha. A ordem certa não está no navegador, então não dá para ler o
  * gabarito nas ferramentas de desenvolvedor.
  */
-function Montagem({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: Papel }) {
+function Montagem({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaArena; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const rodada = arena.arena?.cenaId === cena.id ? arena.arena : null;
   const desafio = rodada?.desafio;
   const [linha, setLinha] = useState<string[]>([]);
@@ -110,7 +119,10 @@ function Montagem({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel
       <Cabecalho ilustra="elo" titulo={cena.titulo}
         olho={`montagem em equipe${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{desafio?.enunciado ?? cena.enunciado}</Texto></p>
-      <Premios premios={rodada?.premios ?? cena.premios ?? [300, 200, 140, 90]} />
+      <div style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Premios premios={rodada?.premios ?? cena.premios ?? [300, 200, 140, 90]} />
+        {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
+      </div>
 
       {papel === 'player' && !jaAcertou && (
         <>
@@ -204,7 +216,11 @@ function Montagem({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel
  * as três. Treina o hábito que mais importa no workshop, que é ler o comando
  * antes de apertar Enter.
  */
-function CacaAoErro({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: Papel }) {
+function CacaAoErro({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaArena; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const rodada = arena.arena?.cenaId === cena.id ? arena.arena : null;
   const desafio = rodada?.desafio;
   const [marcadas, setMarcadas] = useState<string[]>([]);
@@ -236,7 +252,10 @@ function CacaAoErro({ cena, arena, papel }: { cena: CenaArena; arena: Arena; pap
       <Cabecalho ilustra="lupa" titulo={cena.titulo}
         olho={`caça ao erro em equipe${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{desafio?.enunciado ?? cena.enunciado}</Texto></p>
-      <Premios premios={rodada?.premios ?? cena.premios ?? [300, 200, 140, 90]} />
+      <div style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Premios premios={rodada?.premios ?? cena.premios ?? [300, 200, 140, 90]} />
+        {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
+      </div>
 
       <div className="term" style={{ display: 'grid', gap: 'var(--e05)' }}>
         {linhas.map((l) => {
@@ -316,7 +335,11 @@ function explicaPeca(rotulo: string): string {
   return 'faz parte do comando';
 }
 
-function Corrida({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: Papel }) {
+function Corrida({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaArena; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const [ocupado, setOcupado] = useState(false);
   const [recado, setRecado] = useState<string | null>(null);
   const rodada = arena.arena?.cenaId === cena.id ? arena.arena : null;
@@ -331,7 +354,10 @@ function Corrida({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel:
         olho={`corrida de equipes${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
 
-      <Premios premios={premios} />
+      <div style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Premios premios={premios} />
+        {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
+      </div>
       <Pista cena={cena} arena={arena} />
 
       {/* o terminal entra aqui: a tarefa da corrida é digitada nele */}
@@ -360,7 +386,11 @@ function Corrida({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel:
   );
 }
 
-function Buzzer({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: Papel }) {
+function Buzzer({
+  cena, arena, papel, onIrParaSlide,
+}: {
+  cena: CenaArena; arena: Arena; papel: Papel; onIrParaSlide?: (id: string) => void;
+}) {
   const rodada = arena.arena?.cenaId === cena.id ? arena.arena : null;
   const fila = rodada?.fila ?? [];
   const erradas = rodada?.erradas ?? [];
@@ -376,6 +406,7 @@ function Buzzer({ cena, arena, papel }: { cena: CenaArena; arena: Arena; papel: 
     <div className="cena" data-modulo={cena.modulo} data-denso="true">
       <Cabecalho ilustra="alarme" titulo={cena.titulo} olho="quem aperta primeiro responde" />
       <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta ?? cena.enunciado}</Texto></h2>
+      {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
 
       {papel === 'player' && (
         <button

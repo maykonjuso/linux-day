@@ -35,6 +35,11 @@ export interface Alternativa {
   texto: string;
 }
 
+export interface ReferenciaSlide {
+  id: string;
+  titulo: string;
+}
+
 interface CenaBase {
   id: string;
   modulo: number;
@@ -55,6 +60,11 @@ interface CenaBase {
    * senão o painel pede cliques que não mudam nada na tela.
    */
   passos: number;
+  /**
+   * Slides conteudistas que ensinam como resolver este exercício, para o
+   * participante clicar e revisar diretamente.
+   */
+  referencias?: ReferenciaSlide[];
 }
 
 export interface CenaCapa extends CenaBase {
@@ -193,6 +203,8 @@ export type Cena =
 /** Estado sincronizado do evento — a única fonte de verdade, no servidor. */
 export interface EstadoEvento {
   cenaIndex: number;
+  /** maior índice de slide já mostrado pelo apresentador */
+  maxCenaIndex?: number;
   /** id da cena da vez: usado para validar resposta de quiz no servidor */
   cenaId?: string | null;
   passo: number;

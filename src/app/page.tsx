@@ -41,6 +41,8 @@ export default function Player() {
   /** índice da cena que estou olhando por conta própria (null = ao vivo) */
   const [livre, setLivre] = useState<number | null>(null);
 
+  const tetoSlide = Math.min(DECK.length - 1, Math.max(estado.maxCenaIndex ?? 0, estado.cenaIndex));
+
   // volta ao vivo quando o apresentador pede, ou quando a sala muda de cena
   useEffect(() => {
     const s = arena.socket;
@@ -57,13 +59,13 @@ export default function Player() {
       if (digitando) return;
       if (e.key === '?') setConsulta((c) => !c);
       if (e.key === 'Escape') { setConsulta(false); setLivre(null); }
-      // navegação livre: só com as setas, e sempre com volta ao vivo à mão
+      // navegação livre: só com as setas, travada no último slide já mostrado pelo apresentador
       if (e.key === 'ArrowLeft') setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1));
-      if (e.key === 'ArrowRight') setLivre((l) => Math.min(DECK.length - 1, (l ?? estado.cenaIndex) + 1));
+      if (e.key === 'ArrowRight') setLivre((l) => Math.min(tetoSlide, (l ?? estado.cenaIndex) + 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [estado.cenaIndex]);
+  }, [estado.cenaIndex, tetoSlide]);
 
   if (!eu) {
     const usados = new Set(arena.placar.individual.map((p) => p.emoji));
@@ -186,6 +188,7 @@ export default function Player() {
 
   const nivel = nivelDe(eu.xp);
   const posicao = arena.placar.individual.findIndex((p) => p.id === eu.id) + 1;
+  const indiceAtual = livre ?? estado.cenaIndex;
   const cenaVista = livre === null ? arena.cena : DECK[livre];
   /**
    * O terminal entra na cena quando a tarefa é digitada nele: nos laboratórios
@@ -196,15 +199,32 @@ export default function Player() {
     (cenaVista.tipo === 'ArenaScene' && cenaVista.jogo === 'corrida')
   );
 
+  const irParaSlidePorId = (id: string) => {
+    const idx = DECK.findIndex((c) => c.id === id);
+    if (idx >= 0 && idx <= tetoSlide) {
+      setLivre(idx);
+    }
+  };
+
   return (
     <div className="palco" data-papel="player">
       <Encaixe chave={`${cenaVista.id}:${estado.passo}:${estado.fase}`}>
-        <SceneRouter arena={arena} papel="player" cenaForcada={livre === null ? undefined : cenaVista} />
+        <SceneRouter
+          arena={arena}
+          papel="player"
+          cenaForcada={livre === null ? undefined : cenaVista}
+          onIrParaSlide={irParaSlidePorId}
+        />
       </Encaixe>
 
       {/* o terminal é montado UMA vez e segue vivo o workshop inteiro */}
-      <TerminalHost socket={arena.socket} ativo={emLab} gaveta={gaveta && !emLab}
-        tema={temaTerminalPorId(temaTerminal)} />
+      <TerminalHost
+        socket={arena.socket}
+        ativo={emLab}
+        gaveta={gaveta && !emLab}
+        tema={temaTerminalPorId(temaTerminal)}
+        onFechar={() => setGaveta(false)}
+      />
 
       {/* fora do ao vivo: faixa grande, impossível de não ver */}
       {livre !== null && (
@@ -235,11 +255,14 @@ export default function Player() {
         <div className="bloco-controle">
           <span className="rotulo">slides</span>
           <button className="btn-icone" title="olhar o slide anterior"
+            disabled={indiceAtual <= 0}
             onClick={() => setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1))}>
             <Icone nome="anterior" tamanho={16} /><span className="texto">voltar</span>
           </button>
-          <button className="btn-icone" title="olhar o próximo slide"
-            onClick={() => setLivre((l) => Math.min(DECK.length - 1, (l ?? estado.cenaIndex) + 1))}>
+          <button className="btn-icone"
+            title={indiceAtual >= tetoSlide ? 'você já está no último slide liberado pelo apresentador' : 'olhar o próximo slide'}
+            disabled={indiceAtual >= tetoSlide}
+            onClick={() => setLivre((l) => Math.min(tetoSlide, (l ?? estado.cenaIndex) + 1))}>
             <span className="texto">avançar</span><Icone nome="proximo" tamanho={16} />
           </button>
           {livre !== null && (
