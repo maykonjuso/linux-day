@@ -1,4 +1,10 @@
 /*
+ * O CSS do xterm.js é obrigatório. Sem ele o cursor fica fora de lugar, o
+ * espaçamento das linhas quebra e a fonte parece "errada" na tela.
+ */
+@import "@xterm/xterm/css/xterm.css";
+
+/*
  * Tema do deck. Decisão deliberada: CLARO por padrão.
  * Projetor em sala com luz come o preto; dark theme bonito no monitor vira
  * sopa cinza na parede. O bloco de terminal é a única área escura — e isso
@@ -18,8 +24,9 @@
   --term-tinta: #e8e8ea;
   --r: 14px;
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* só fontes que existem na máquina: nada é baixado (a rede é local, sem internet) */
+  --mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "DejaVu Sans Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
 }
 
 * { box-sizing: border-box; }

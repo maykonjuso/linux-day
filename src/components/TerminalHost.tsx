@@ -39,12 +39,32 @@ export function TerminalHost({ socket, ativo, gaveta }: { socket: Socket | null;
       if (!vivo || !caixa.current) return;
 
       const term = new Terminal({
-        fontFamily: 'var(--mono), monospace',
+        /**
+         * Fonte como string literal: o xterm mede o caractere para calcular a
+         * grade, e `var(--mono)` não é resolvido por ele. Com variável CSS as
+         * métricas saem erradas e o texto fica torto e feio.
+         */
+        fontFamily: '"SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "DejaVu Sans Mono", monospace',
         fontSize: 15,
+        fontWeight: 400,
+        fontWeightBold: 600,
+        lineHeight: 1.3,
+        letterSpacing: 0,
         cursorBlink: true,
+        cursorStyle: 'bar',
         convertEol: true,
+        drawBoldTextInBrightColors: true,
+        minimumContrastRatio: 4.5,
         // "escuro = é aqui que se digita": o único bloco escuro da tela
-        theme: { background: '#16161a', foreground: '#e8e8ea', cursor: '#7dd3a0', selectionBackground: '#334155' },
+        theme: {
+          background: '#16161a', foreground: '#e8e8ea',
+          cursor: '#7dd3a0', cursorAccent: '#16161a', selectionBackground: '#33415588',
+          black: '#16161a', red: '#ff7b72', green: '#7dd3a0', yellow: '#ffd479',
+          blue: '#79b8ff', magenta: '#d2a8ff', cyan: '#76e3ea', white: '#e8e8ea',
+          brightBlack: '#6b6b76', brightRed: '#ffa198', brightGreen: '#a2f0c1',
+          brightYellow: '#ffe3a3', brightBlue: '#a5d6ff', brightMagenta: '#e2c5ff',
+          brightCyan: '#a5f3f6', brightWhite: '#ffffff',
+        },
         scrollback: 2000,
       });
       const fit = new FitAddon();

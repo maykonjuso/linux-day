@@ -20,11 +20,22 @@ export function abrirSessao(participanteId, conta, aoReceber) {
     return s;
   }
 
-  const { arquivo, args, cwd, home } = shellDe(conta);
+  const { arquivo, args, cwd, home, caminhoExtra } = shellDe(conta);
   const proc = spawn(arquivo, args, {
     name: 'xterm-256color',
     cols: 100, rows: 28, cwd,
-    env: { ...process.env, HOME: home, USER: conta, LOGNAME: conta, PS1: '\\u@linuxday:\\w$ ', TERM: 'xterm-256color', LANG: 'pt_BR.UTF-8' },
+    env: {
+      ...process.env,
+      HOME: home, USER: conta, LOGNAME: conta,
+      PATH: caminhoExtra ? `${caminhoExtra}:${process.env.PATH}` : process.env.PATH,
+      /**
+       * O nome da conta vai LITERAL no prompt. Com `\u` o bash mostra o
+       * usuário real do sistema operacional, e no modo local isso é o seu
+       * usuário do Mac: a sala inteira aparecia como "aluno1".
+       */
+      PS1: `${conta}@linuxday:\\w$ `,
+      TERM: 'xterm-256color', LANG: 'pt_BR.UTF-8', LC_ALL: 'pt_BR.UTF-8',
+    },
   });
 
   s = { proc, conta, buffer: '', ouvintes: new Set([aoReceber]), morto: false };

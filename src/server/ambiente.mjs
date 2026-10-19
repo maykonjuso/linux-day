@@ -11,7 +11,7 @@
  * resetar, aplicar gabarito, rodar check.
  */
 import { execFile } from 'node:child_process';
-import { mkdirSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 
@@ -57,7 +57,8 @@ export function casaDe(conta) {
 function comoUsuario(conta, script, env = {}, timeout = 10_000) {
   const home = casaDe(conta);
   const ambiente = {
-    PATH: process.env.PATH,
+    // os atalhos locais (whoami/id) vêm antes do PATH do sistema
+    PATH: MODO === 'local' ? `${resolve(home, '.arena/bin')}:${process.env.PATH}` : process.env.PATH,
     HOME: home,
     USER: conta,
     LOGNAME: conta,
@@ -80,7 +81,26 @@ export function shellDe(conta) {
   const home = casaDe(conta);
   if (MODO === 'usuarios') return { arquivo: 'su', args: ['-', conta], cwd: '/', home };
   mkdirSync(home, { recursive: true });
-  return { arquivo: 'bash', args: ['--noprofile', '--norc', '-i'], cwd: home, home };
+  // No modo local todo mundo roda como o MESMO usuário do sistema, então
+  // `whoami` e `id` respondiam o seu usuário do Mac para a sala inteira.
+  // Estes atalhos deixam o ambiente de desenvolvimento igual ao do evento.
+  prepararAtalhosLocais(conta, home);
+  return {
+    arquivo: 'bash', args: ['--noprofile', '--norc', '-i'], cwd: home, home,
+    caminhoExtra: resolve(home, '.arena/bin'),
+  };
+}
+
+function prepararAtalhosLocais(conta, home) {
+  const bin = resolve(home, '.arena/bin');
+  mkdirSync(bin, { recursive: true });
+  const escrever = (nome, corpo) => {
+    const caminho = resolve(bin, nome);
+    writeFileSync(caminho, corpo, { mode: 0o755 });
+  };
+  escrever('whoami', `#!/bin/sh\necho ${conta}\n`);
+  escrever('id', `#!/bin/sh\nif [ "$1" = "-u" ]; then echo 1000; else echo "uid=1000(${conta}) gid=1000(${conta}) groups=1000(${conta}),27(sudo)"; fi\n`);
+  escrever('groups', `#!/bin/sh\necho "${conta} sudo"\n`);
 }
 
 async function rodarScriptDeArquivo(pasta, nome, conta, env) {
