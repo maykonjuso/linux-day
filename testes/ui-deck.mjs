@@ -30,7 +30,11 @@ const srv = spawn('node', ['server.mjs'], {
 });
 const matar = () => { try { srv.kill('SIGKILL'); } catch { /* vazio */ } };
 process.on('uncaughtException', (e) => { console.error('\n❌', e.message); matar(); process.exit(1); });
-await new Promise((r) => { const t = setTimeout(r, 40_000); srv.stdout.on('data', (d) => { if (String(d).includes('apresentador')) { clearTimeout(t); r(); } }); });
+let subiu = false;
+srv.stderr.on('data', (d) => { if (/EADDRINUSE/.test(String(d))) console.error(`  ⚠ porta ${PORTA} ocupada por um servidor antigo`); });
+await new Promise((r) => { const t = setTimeout(r, 40_000); srv.stdout.on('data', (d) => { if (String(d).includes('apresentador')) { subiu = true; clearTimeout(t); r(); } }); });
+ok(subiu, 'servidor no ar (processo novo, estado limpo)');
+if (!subiu) { matar(); process.exit(1); }
 
 const { DECK } = await import('../src/deck/content.ts');
 const host = io(URL, { path: '/rt', transports: ['websocket'] });

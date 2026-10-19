@@ -71,6 +71,49 @@ botão grande oferece voltar ao vivo). Tem também **consultar** (comandos que j
 vimos, lista por situação e glossário), **me perdi** (avisa o monitor, sem
 custo), o ícone de informação (explica cada item da tela) e o terminal.
 
+### Quando outro computador não abre
+
+```bash
+npm run rede
+```
+
+Verifica em ordem o que realmente impede o acesso: o servidor está no ar, está
+escutando em todas as interfaces (e não só no localhost), o firewall do macOS
+está liberado, e qual é o endereço para passar para a turma. Também imprime o
+roteiro de teste: se o `ping` do outro computador falha, o problema é a rede
+(Wi-Fi de instituição costuma isolar os clientes entre si) e não o aplicativo.
+
+### Ilustrações
+
+As imagens do deck são SVG próprios em `public/ilustra`, extraídos do Noto por
+`npm run ilustracoes` (o pacote fica só como dependência de desenvolvimento).
+São 51 arquivos, 336 KB no total: nada é baixado da internet no dia do evento,
+e o desenho fica igual no seu Mac, no notebook da pessoa e no projetor.
+
+Para acrescentar uma, inclua o nome e o codepoint em `MAPA`, dentro de
+`scripts/extrair-ilustracoes.mjs`, e rode `npm run ilustracoes`.
+
+### Escrita dos slides
+
+O texto das cenas aceita uma marcação mínima, que o componente `Texto` desenha:
+
+| Escreve | Vira |
+|---|---|
+| `**assim**` | negrito, para a palavra que a pessoa precisa levar embora |
+| `` `assim` `` | tecla, comando ou caminho |
+
+A regra é uma ênfase por frase. Sem destaque, a frase inteira tem o mesmo peso
+e ninguém sabe onde olhar a dez metros do projetor; com destaque em tudo, é a
+mesma coisa.
+
+### Espaçamento
+
+Tudo usa uma escala fechada de 8px (`--e05` a `--e8`, com 4px como meio-passo)
+e quatro raios (8, 12, 16, 24). Em tela de até 560px a escala comprime um
+passo, mantendo a proporção. Uma escala fechada é o que faz telas diferentes
+parecerem o mesmo produto: sem ela, cada caixa recebe um número inventado na
+hora e o olho percebe o desalinho sem saber dizer onde está.
+
 ### Testes
 
 ```bash
