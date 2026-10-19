@@ -119,7 +119,13 @@ export interface CenaLab extends CenaBase {
 export interface CenaGrupos extends CenaBase {
   tipo: 'GroupScene';
   enunciado: string;
-  /** no boss, as cartas de função que cada membro assume */
+  /**
+   * Duas telas separadas, de propósito: escolher a equipe é uma decisão, e
+   * escolher a carta de função é outra. Juntas na mesma cena, os cartões
+   * ficavam pequenos e a informação vazava deles.
+   */
+  modo: 'equipes' | 'papeis';
+  /** no chamado, as cartas de função que cada membro assume (modo papeis) */
   papeis?: { id: string; nome: string; faz: string }[];
 }
 
@@ -178,6 +184,8 @@ export interface Participante {
   criterios?: string[];
   badges?: string[];
   combo?: number;
+  /** o apresentador silenciou o chat desta pessoa */
+  silenciado?: boolean;
 }
 
 /** Mesma tabela do servidor (src/server/jogo.mjs) — mantenha as duas em sincronia. */

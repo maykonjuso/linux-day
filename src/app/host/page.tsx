@@ -20,9 +20,13 @@ const FASE_EM_PORTUGUES: Record<string, string> = {
 
 interface Grade {
   labs: Record<string, { id: string; descricao: string; xp: number }[]>;
-  pessoas: { id: string; nick: string; emoji: string; xp: number; presenca: string; grupo: string | null; feitos: string[]; travado: boolean }[];
+  pessoas: {
+    id: string; nick: string; emoji: string; xp: number; presenca: string; grupo: string | null;
+    feitos: string[]; travado: boolean; codigo?: string; silenciado?: boolean; conta?: string;
+  }[];
   grupos: Record<string, string[]>;
   sessoes: number; fila: number; modo: string;
+  travas?: { processos: number; memoriaKb: number; cpuSegundos: number; tetos: { processos: number; memoriaMb: number; cpuSegundos: number } };
 }
 
 /**
@@ -134,8 +138,14 @@ export default function Host() {
 
     s.on('ajuda', aoPedirAjuda);
     s.on('pulso', aoSePerder);
-    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); };
-  }, [ok, arena.socket]);
+
+    // o vigia encerrou a sessão de alguém: o apresentador precisa saber, porque
+    // a pessoa vai perguntar o que aconteceu
+    const aoVigiar = ({ nick, motivo }: { nick: string; motivo: string }) => avisar(`terminal de ${nick} reiniciado: ${motivo}`);
+    s.on('vigia', aoVigiar);
+
+    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); s.off('vigia', aoVigiar); };
+  }, [ok, arena.socket, avisar]);
 
   /** a grade é atualizada por tempo, e isso não deve mexer nos ouvintes */
   useEffect(() => {
@@ -220,13 +230,50 @@ export default function Host() {
               </tbody>
             </table>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
+          {/* ações por pessoa: o apresentador precisa resolver caso a caso sem
+              sair do painel */}
+          <div className="checklist" style={{ maxHeight: '34vh', overflowY: 'auto' }}>
             {grade.pessoas.map((p) => (
-              <button key={p.id} className="btn" onClick={() => emit('host:reset', { id: p.id }, () => avisar(`ambiente de ${p.nick} resetado`))}>
-                resetar {p.nick}
-              </button>
+              <div key={p.id} className="item-check" style={{ alignItems: 'center', gridTemplateColumns: 'auto 1fr auto' }}>
+                <span className="marca">{p.emoji}</span>
+                <span className="texto-item">
+                  <span>
+                    <strong>{p.nick}</strong>
+                    <small style={{ color: 'var(--tinta-2)' }}>
+                      {' '}· {p.xp} XP · {p.grupo ?? 'sem equipe'} · código {p.codigo ?? '—'}
+                      {p.conta ? ` · ${p.conta}` : ''}
+                      {p.silenciado ? ' · silenciado' : ''}
+                    </small>
+                  </span>
+                </span>
+                <span style={{ display: 'flex', gap: 'var(--e05)' }}>
+                  <button className="btn-icone" title="devolve o ambiente limpo para esta pessoa"
+                    onClick={() => emit('host:reset', { id: p.id }, () => avisar(`ambiente de ${p.nick} recomeçado`))}>
+                    <Icone nome="recomecar" tamanho={15} />
+                  </button>
+                  <button className="btn-icone" title={p.silenciado ? 'devolver o chat' : 'silenciar o chat desta pessoa'}
+                    onClick={() => emit('host:silenciar', { id: p.id, silenciado: !p.silenciado }, (r: { nick: string; silenciado: boolean }) => avisar(`${r?.nick}: chat ${r?.silenciado ? 'silenciado' : 'liberado'}`))}>
+                    <Icone nome={p.silenciado ? 'tocar' : 'pausar'} tamanho={15} />
+                  </button>
+                  <button className="btn-icone" title="expulsar da sala"
+                    onClick={() => {
+                      if (!confirm(`Expulsar ${p.nick}? O XP fica guardado e ela pode entrar de novo.`)) return;
+                      emit('host:expulsar', { id: p.id }, (r: { nick: string }) => avisar(`${r?.nick} saiu da sala`));
+                    }}>
+                    <Icone nome="sair" tamanho={15} cor="var(--erro)" />
+                  </button>
+                </span>
+              </div>
             ))}
           </div>
+
+          {grade.travas && (
+            <small style={{ color: 'var(--tinta-2)' }}>
+              travas por terminal: {grade.travas.processos} processos, {Math.round(grade.travas.memoriaKb / 1024)} MB e{' '}
+              {grade.travas.cpuSegundos}s de CPU por processo · o vigia encerra a sessão que passar de{' '}
+              {grade.travas.tetos.processos} processos, {grade.travas.tetos.memoriaMb} MB ou {grade.travas.tetos.cpuSegundos}s somados
+            </small>
+          )}
         </div>
       ) : (
         <Encaixe chave={`${cena.id}:${estado.passo}:${estado.fase}`}>

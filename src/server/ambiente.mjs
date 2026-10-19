@@ -77,13 +77,74 @@ function comoUsuario(conta, script, env = {}, timeout = 10_000) {
 }
 
 /** Argumentos do PTY: o shell interativo que aparece dentro do slide. */
+/**
+ * Travas aplicadas ANTES de entregar o shell para a pessoa.
+ *
+ * São limites por processo do próprio sistema (setrlimit), então valem para
+ * tudo que ela rodar dali para frente, inclusive o que ela escrever num script:
+ *   -u  quantos processos pode criar      (barra fork bomb)
+ *   -v  memória virtual por processo      (barra `dd` e laço que aloca sem fim)
+ *   -f  tamanho de arquivo que pode criar (barra encher o disco)
+ *   -t  segundos de CPU por processo      (mata `while :; do :; done` sozinho)
+ *   -n  arquivos abertos ao mesmo tempo
+ *   -c  sem core dump (um só enche o disco)
+ *
+ * O `-t` é o mais importante para um workshop: o laço infinito é o acidente
+ * mais comum, e com ele o próprio kernel encerra o processo sem ninguém
+ * precisar notar.
+ */
+export const TRAVAS = {
+  processos: Number(process.env.ARENA_MAX_PROC ?? 120),
+  memoriaKb: Number(process.env.ARENA_MAX_MEM_KB ?? 768 * 1024),
+  arquivoKb: Number(process.env.ARENA_MAX_ARQUIVO_KB ?? 200 * 1024),
+  cpuSegundos: Number(process.env.ARENA_MAX_CPU ?? 90),
+  arquivosAbertos: Number(process.env.ARENA_MAX_FD ?? 256),
+};
+
+function comandoComTravas(comandoFinal) {
+  const t = TRAVAS;
+  /*
+   * `ulimit -u` conta processos POR USUÁRIO DO SISTEMA, não por sessão.
+   *
+   * No modo de contas reais (a VM do evento) isso é exatamente o que
+   * queremos: cada pessoa tem o próprio usuário, e o limite é dela.
+   *
+   * No modo local todas as sessões rodam como o MESMO usuário do Mac, junto
+   * com os seus aplicativos: pôr um teto baixo ali não protege nada e quebra
+   * o shell na hora ("fork: Resource temporarily unavailable"), como apareceu
+   * no teste. Nesse modo quem cuida da quantidade de processos é o vigia.
+   *
+   * `ulimit -v` também não é aplicado pelo kernel do macOS; no Linux é.
+   */
+  const limites = [];
+  if (MODO === 'usuarios') {
+    limites.push(`ulimit -u ${t.processos} 2>/dev/null || true`);
+    limites.push(`ulimit -v ${t.memoriaKb} 2>/dev/null || true`);
+  }
+  // `|| true` em cada ulimit: num sistema onde um limite não pode ser baixado,
+  // o shell não deve morrer antes de a pessoa ver o prompt
+  return [
+    ...limites,
+    `ulimit -f ${Math.round(t.arquivoKb / 512)} 2>/dev/null || true`,
+    `ulimit -t ${t.cpuSegundos} 2>/dev/null || true`,
+    `ulimit -n ${t.arquivosAbertos} 2>/dev/null || true`,
+    'ulimit -c 0 2>/dev/null || true',
+    comandoFinal,
+  ].join('; ');
+}
+
 export function shellDe(conta, nomeVisivel = conta) {
   const home = casaDe(conta);
   if (MODO === 'usuarios') {
     // conta real do sistema; os atalhos abaixo fazem o `whoami` responder o
     // nome escolhido pela pessoa, que é o que ela lê no prompt
     prepararAtalhosLocais(nomeVisivel, home);
-    return { arquivo: 'su', args: ['-', conta], cwd: '/', home, caminhoExtra: resolve(home, '.arena/bin') };
+    return {
+      arquivo: 'su',
+      // o shell de login da pessoa, com as travas já aplicadas
+      args: ['-', conta, '-c', comandoComTravas('exec bash -i')],
+      cwd: '/', home, caminhoExtra: resolve(home, '.arena/bin'),
+    };
   }
   mkdirSync(home, { recursive: true });
   // No modo local todo mundo roda como o MESMO usuário do sistema, então
@@ -91,7 +152,9 @@ export function shellDe(conta, nomeVisivel = conta) {
   // Estes atalhos deixam o ambiente de desenvolvimento igual ao do evento.
   prepararAtalhosLocais(nomeVisivel, home);
   return {
-    arquivo: 'bash', args: ['--noprofile', '--norc', '-i'], cwd: home, home,
+    arquivo: 'bash',
+    args: ['--noprofile', '--norc', '-c', comandoComTravas('exec bash --noprofile --norc -i')],
+    cwd: home, home,
     caminhoExtra: resolve(home, '.arena/bin'),
   };
 }
@@ -129,6 +192,11 @@ async function rodarScriptDeArquivo(pasta, nome, conta, env) {
 }
 
 /** `all.sh` é expandido aqui (e não por include) para funcionar nos dois modos. */
+/** regrava os atalhos (whoami, id, groups) com o nome novo da pessoa */
+export function atualizarIdentidade(conta, nomeVisivel) {
+  prepararAtalhosLocais(nomeVisivel, casaDe(conta));
+}
+
 export const MODULOS_SEED = ['m1.sh', 'm2.sh', 'm3.sh', 'm4.sh', 'm5.sh'];
 
 export async function semear(conta, nome = 'all.sh', env) {

@@ -141,7 +141,7 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
                     : l.saida}
                 </div>
               )}
-              {eAtual && l.traducao && <span className="traducao">{l.traducao}</span>}
+              {eAtual && l.traducao && <span className="traducao"><Texto>{l.traducao}</Texto></span>}
             </div>
           );
         })}
@@ -225,7 +225,7 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
       </div>
       <div style={{ display: 'flex', gap: 'var(--e3)', alignItems: 'center' }}>
         <Ilustra nome={ilustraDa(cena)} tamanho="clamp(44px, 5vw, 86px)" />
-        <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.4vw, 56px)' }}>{cena.pergunta}</h2>
+        <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.4vw, 56px)' }}><Texto>{cena.pergunta}</Texto></h2>
       </div>
 
       <div className="alternativas">
@@ -335,8 +335,16 @@ function Widget({ cena, arena, papel }: { cena: C<'WidgetScene'>; arena: Arena; 
 function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
   const { individual, grupos } = arena.placar;
   const linhas = cena.escopo === 'grupo'
-    ? grupos.map((g) => ({ chave: g.nome, nome: `grupo ${g.nome}`, xp: g.media, extra: `${g.membros.length} pessoas` }))
-    : individual.slice(0, 10).map((p) => ({ chave: p.id, nome: `${p.emoji} ${p.nick}`, xp: p.xp, extra: `nível ${p.nivel}` }));
+    ? grupos.filter((g) => g.membros.length).map((g) => ({ chave: g.nome, nome: `grupo ${g.nome}`, cor: g.cor, xp: g.media, extra: `${g.membros.length} pessoa${g.membros.length > 1 ? 's' : ''}` }))
+    : individual.slice(0, 10).map((p) => ({ chave: p.id, nome: `${p.emoji} ${p.nick}`, cor: undefined, xp: p.xp, extra: `nível ${p.nivel}` }));
+
+  /**
+   * Pódio em destaque e o resto numa lista que rola dentro da própria caixa.
+   * Com dez grupos, a lista inteira em cartões do mesmo tamanho não caberia na
+   * tela, e encolher tudo deixaria o primeiro lugar do tamanho do oitavo.
+   */
+  const podio = linhas.slice(0, 3);
+  const resto = linhas.slice(3);
 
   return (
     <div className="cena">
@@ -344,19 +352,41 @@ function Placar({ cena, arena }: { cena: C<'Scoreboard'>; arena: Arena }) {
         <Ilustra nome="trofeu" tamanho={44} />
         {cena.titulo}
       </h2>
-      <div className="grade">
-        {linhas.length === 0 && <p className="corpo">ninguém pontuou ainda.</p>}
-        {linhas.map((l, i) => (
-          <div key={l.chave} className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)', fontSize: 'clamp(16px, 1.8vw, 26px)' }}>
-            <strong style={{ width: 56, color: 'var(--tinta-2)', display: 'flex', gap: 'var(--e05)', alignItems: 'center' }}>
-              {i === 0 ? <Ilustra nome="medalha" tamanho={20} /> : null}{i + 1}º
-            </strong>
-            <span style={{ flex: 1 }}>{l.nome}</span>
-            <span style={{ color: 'var(--tinta-2)', fontSize: '0.8em' }}>{l.extra}</span>
-            <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{l.xp} XP</strong>
-          </div>
-        ))}
-      </div>
+
+      {linhas.length === 0 && <p className="corpo">ninguém pontuou ainda.</p>}
+
+      {podio.length > 0 && (
+        <div className="grade" style={{ gridTemplateColumns: `repeat(${podio.length}, 1fr)`, gap: 'var(--e2)' }}>
+          {podio.map((l, i) => (
+            <div key={l.chave} className="cartao"
+              style={{
+                display: 'grid', gap: 'var(--e05)', textAlign: 'center',
+                borderColor: i === 0 ? 'var(--atencao)' : l.cor ?? 'var(--borda)',
+                borderWidth: i === 0 ? 2 : 1,
+                transform: i === 0 ? 'scale(1.03)' : undefined,
+              }}>
+              <div style={{ display: 'grid', placeItems: 'center' }}>
+                <Ilustra nome={i === 0 ? 'trofeu' : 'medalha'} tamanho={i === 0 ? 40 : 30} />
+              </div>
+              <strong style={{ fontSize: 'clamp(15px, 1.6vw, 22px)', textTransform: 'capitalize' }}>{l.nome}</strong>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(18px, 2vw, 30px)', fontWeight: 700 }}>{l.xp}</span>
+              <small style={{ color: 'var(--tinta-2)' }}>XP · {l.extra}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {resto.length > 0 && (
+        <div className="checklist" style={{ maxHeight: 'min(30vh, 260px)', overflowY: 'auto' }}>
+          {resto.map((l, i) => (
+            <div key={l.chave} className="item-check" style={{ alignItems: 'center' }}>
+              <span className="marca">{String(i + 4).padStart(2, '0')}º</span>
+              <span style={{ textTransform: 'capitalize' }}>{l.nome}</span>
+              <span className="xp-item">{l.xp} XP</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -367,7 +397,7 @@ function Recap({ cena, passo }: { cena: C<'Recap'>; passo: number }) {
       <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
         <Ilustra nome="bandeira" tamanho={22} /> {cena.titulo}
       </div>
-      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.2vw, 52px)' }}>{cena.perguntaDeRecuperacao}</h2>
+      <h2 className="titulo" style={{ fontSize: 'clamp(26px, 3.2vw, 52px)' }}><Texto>{cena.perguntaDeRecuperacao}</Texto></h2>
       {passo > 0 ? (
         <div style={{ display: 'flex', gap: 'var(--e1)', flexWrap: 'wrap' }}>
           {cena.resumo.map((c) => <code key={c} className="kbd" style={{ fontSize: 'clamp(16px, 1.8vw, 28px)' }}>{c}</code>)}

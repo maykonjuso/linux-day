@@ -8,6 +8,7 @@ import { TerminalHost } from '@/components/TerminalHost';
 import { Consulta } from '@/components/Consulta';
 import { Icone } from '@/components/Icone';
 import { Tour } from '@/components/Tour';
+import { Perfil } from '@/components/Perfil';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
 
@@ -30,6 +31,8 @@ export default function Player() {
   const [gaveta, setGaveta] = useState(false);
   const [consulta, setConsulta] = useState(false);
   const [tour, setTour] = useState(false);
+  const [perfil, setPerfil] = useState(false);
+  const [codigo, setCodigo] = useState('');
   /** índice da cena que estou olhando por conta própria (null = ao vivo) */
   const [livre, setLivre] = useState<number | null>(null);
 
@@ -59,6 +62,18 @@ export default function Player() {
 
   if (!eu) {
     const usados = new Set(arena.placar.individual.map((p) => p.emoji));
+    if (arena.expulso) {
+      return (
+        <div className="centro">
+          <div className="cartao" style={{ width: 'min(440px, 100%)', display: 'grid', gap: 'var(--e2)', textAlign: 'center' }}>
+            <div style={{ display: 'grid', placeItems: 'center' }}><Icone nome="sair" tamanho={40} cor="var(--erro)" /></div>
+            <h1 style={{ fontSize: 24 }}>Sua participação foi encerrada</h1>
+            <p style={{ color: 'var(--tinta-2)' }}>{arena.expulso}</p>
+            <button className="btn" onClick={() => location.reload()}>entrar de novo</button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="centro">
         <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 16 }}>
@@ -127,6 +142,35 @@ export default function Player() {
           <button className="btn primario" disabled={!nick.trim()} onClick={() => entrar(nick.trim(), emoji)}>
             entrar
           </button>
+
+          {!arena.ultimaPessoa && (
+            <details>
+              <summary style={{ cursor: 'pointer', fontSize: 13, color: 'var(--tinta-2)' }}>
+                já participei hoje em outro computador
+              </summary>
+              <div style={{ display: 'flex', gap: 'var(--e1)', marginTop: 'var(--e1)' }}>
+                <input className="btn" style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}
+                  placeholder="código de 4 letras" value={codigo} maxLength={4}
+                  onChange={(e) => setCodigo(e.target.value)} />
+                <button className="btn" disabled={codigo.trim().length < 4}
+                  onClick={() => entrar(nick.trim() || 'voltei', emoji, undefined, codigo.trim())}>
+                  recuperar
+                </button>
+              </div>
+              <small style={{ color: 'var(--tinta-2)' }}>
+                O código aparece no seu perfil, naquele computador. Sem ele ninguém assume a sua conta,
+                nem de propósito nem por acidente.
+              </small>
+            </details>
+          )}
+
+          {arena.ultimaPessoa && (
+            <button className="btn" onClick={() => entrar(arena.ultimaPessoa!.nick, arena.ultimaPessoa!.emoji, arena.ultimaPessoa!.id)}
+              style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icone nome="historico" tamanho={16} />
+              voltar como {arena.ultimaPessoa.emoji} {arena.ultimaPessoa.nick}
+            </button>
+          )}
           <small style={{ color: 'var(--tinta-2)' }}>
             Guardamos só o nick e o emoji. Tudo é apagado depois do evento.
           </small>
@@ -203,6 +247,9 @@ export default function Player() {
           <button className="btn-icone" onClick={() => setTour(true)} title="o que é cada coisa desta tela">
             <Icone nome="info" tamanho={16} />
           </button>
+          <button className="btn-icone" onClick={() => setPerfil(true)} title="trocar seu nome, seu bicho ou sair">
+            <Icone nome="ajustes" tamanho={16} />
+          </button>
           {!emLab && (
             <button className="btn-icone" onClick={() => setGaveta((g) => !g)} title="abrir o terminal fora do laboratório">
               <Icone nome="terminal" tamanho={16} /><span className="texto">terminal</span>
@@ -221,6 +268,7 @@ export default function Player() {
 
       {consulta && <Consulta moduloAtual={cenaVista.modulo} onFechar={() => setConsulta(false)} />}
       {tour && <Tour onFechar={() => setTour(false)} />}
+      {perfil && <Perfil arena={arena} onFechar={() => setPerfil(false)} />}
 
       {/*
         Ninguém mexeu há 4 minutos. A tela pergunta se a pessoa está aí e, até
@@ -252,6 +300,13 @@ export default function Player() {
       {arena.badge && <div className="toast">🏅 {arena.badge.nick}: {arena.badge.badge.replace(/-/g, ' ')}</div>}
       {aviso && <div className="toast">📣 {aviso}</div>}
       {arena.evento && <div className="toast">⚡ {arena.evento.replace(/-/g, ' ')}</div>}
+      {arena.avisoTerminal && (
+        <div className="toast" style={{ background: 'var(--atencao)', maxWidth: '90vw', textAlign: 'center' }}>
+          Seu terminal foi reiniciado porque {arena.avisoTerminal}. Seus arquivos e seu XP continuam lá:
+          clique no terminal para abrir de novo.
+        </div>
+      )}
+      {eu.silenciado && <div className="chip forte" style={{ position: 'fixed', top: 'var(--e2)', right: 'var(--e2)', zIndex: 50 }}>chat silenciado pelo apresentador</div>}
       {arena.subiuNivel && (
         <div className="nivel-cheio">
           <div style={{ textAlign: 'center' }}>

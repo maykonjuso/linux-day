@@ -15,6 +15,7 @@ export interface ResultadoCriterio {
 }
 
 const CHAVE = 'arena:eu';
+const ULTIMO = 'arena:ultimo';
 /** 4 minutos sem tocar em nada = provavelmente saiu da frente do computador */
 const LIMITE_OCIOSO = 4 * 60_000;
 
@@ -73,8 +74,9 @@ export function useArena(papel: Papel) {
       const salvo = typeof localStorage !== 'undefined' ? localStorage.getItem(CHAVE) : null;
       if (salvo) {
         const { id, nick, emoji } = JSON.parse(salvo);
-        s.emit('entrar', { id, nick, emoji }, (r: { eu: Participante; ambientePronto?: boolean }) => {
+        s.emit('entrar', { id, nick, emoji }, (r: { eu: Participante; codigo?: string; ambientePronto?: boolean }) => {
           setEu(r.eu);
+          if (r.codigo) setCodigo(r.codigo);
           setAmbienteOk(r.ambientePronto !== false);
         });
       }
@@ -108,6 +110,14 @@ export function useArena(papel: Papel) {
     s.on('criterios', (lista: string[]) => setEu((p) => (p ? { ...p, criterios: lista } : p)));
     s.on('badges', (lista: string[]) => setEu((p) => (p ? { ...p, badges: lista } : p)));
     s.on('labs', (info: Record<string, { dicas: number }>) => setLabs(info));
+    s.on('expulso', ({ motivo }: { motivo: string }) => {
+      localStorage.removeItem(CHAVE);
+      setEu(null);
+      setExpulso(motivo || 'o apresentador encerrou a sua participação');
+    });
+    s.on('silenciado', (v: boolean) => setEu((p) => (p ? { ...p, silenciado: v } : p)));
+    s.on('terminal:encerrado', ({ motivo }: { motivo: string }) =>
+      efemero('terminal', setAvisoTerminal, motivo, 12_000));
     s.on('grupo:chat', (m: { nick: string; emoji: string; texto: string; em: number }) =>
       setChat((c) => [...c.slice(-40), m]));
 
@@ -143,13 +153,19 @@ export function useArena(papel: Papel) {
 
   /** nome recusado por já estar em uso, com sugestões livres */
   const [nomeRecusado, setNomeRecusado] = useState<{ nome: string; sugestoes: string[] } | null>(null);
+  /** código de retorno: recupera a conta em outro computador */
+  const [codigo, setCodigo] = useState<string | null>(null);
+  /** o apresentador removeu esta pessoa da sala */
+  const [expulso, setExpulso] = useState<string | null>(null);
+  /** o vigia encerrou a sessão de terminal por consumo excessivo */
+  const [avisoTerminal, setAvisoTerminal] = useState<string | null>(null);
 
-  const entrar = useCallback((nick: string, emoji: string) => {
+  const entrar = useCallback((nick: string, emoji: string, idExplicito?: string, codigoDigitado?: string) => {
     const s = socketRef.current;
     if (!s) return;
     const salvo = localStorage.getItem(CHAVE);
-    const id = salvo ? JSON.parse(salvo).id : undefined;
-    s.emit('entrar', { id, nick, emoji }, (r: { eu?: Participante; ambientePronto?: boolean; erro?: string; nome?: string; sugestoes?: string[] }) => {
+    const id = idExplicito ?? (salvo ? JSON.parse(salvo).id : undefined);
+    s.emit('entrar', { id, nick, emoji, codigo: codigoDigitado }, (r: { eu?: Participante; codigo?: string; ambientePronto?: boolean; erro?: string; nome?: string; sugestoes?: string[] }) => {
       if (r?.erro === 'nome-em-uso') {
         setNomeRecusado({ nome: r.nome ?? nick, sugestoes: r.sugestoes ?? [] });
         return;
@@ -157,6 +173,7 @@ export function useArena(papel: Papel) {
       if (!r?.eu) return;
       setNomeRecusado(null);
       setEu(r.eu);
+      if (r.codigo) setCodigo(r.codigo);
       setAmbienteOk(r.ambientePronto !== false);
       localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji }));
     });
@@ -177,6 +194,46 @@ export function useArena(papel: Papel) {
       socketRef.current?.emit('lab:reset', null, ok);
     }), []);
 
+  /** troca o próprio nome (e o avatar), mantendo XP, critérios e grupo */
+  const renomear = useCallback((nick: string, emoji?: string) =>
+    new Promise<{ ok: boolean; erro?: string }>((resolver) => {
+      socketRef.current?.emit('renomear', { nick, emoji }, (r: { eu?: Participante; codigo?: string; erro?: string; nome?: string; sugestoes?: string[] }) => {
+        if (r?.erro === 'nome-em-uso') {
+          setNomeRecusado({ nome: r.nome ?? nick, sugestoes: r.sugestoes ?? [] });
+          return resolver({ ok: false, erro: 'nome-em-uso' });
+        }
+        if (r?.eu) {
+          setEu(r.eu);
+          if (r.codigo) setCodigo(r.codigo);
+          setNomeRecusado(null);
+          localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji }));
+        }
+        resolver({ ok: !!r?.eu, erro: r?.erro });
+      });
+    }), []);
+
+  /**
+   * Sair. Guardamos quem era numa chave separada para a tela de entrada poder
+   * oferecer "voltar como ana": o XP continua gravado no servidor, e voltar
+   * com o mesmo nome reencontra tudo.
+   */
+  const sair = useCallback(() => {
+    const salvo = localStorage.getItem(CHAVE);
+    if (salvo) localStorage.setItem(ULTIMO, salvo);
+    localStorage.removeItem(CHAVE);
+    socketRef.current?.emit('sair');
+    setEu(null);
+    setNomeRecusado(null);
+  }, []);
+
+  /** quem estava usando este navegador antes de sair */
+  const ultimaPessoa = useMemo(() => {
+    if (typeof localStorage === 'undefined') return null;
+    const bruto = localStorage.getItem(ULTIMO);
+    if (!bruto) return null;
+    try { return JSON.parse(bruto) as { id: string; nick: string; emoji: string }; } catch { return null; }
+  }, [eu]);
+
   /** a pessoa confirma que está aí e volta para a contagem da sala */
   const estouAqui = useCallback(() => {
     ultimaInteracao.current = Date.now();
@@ -190,7 +247,8 @@ export function useArena(papel: Papel) {
   return {
     socket, conectado, estado, cena, eu, placar, presenca, revelacao, respostas,
     aviso, badge, subiuNivel, ganho, evento, ambienteOk, chat, meuGrupo, labs, ocioso,
-    nomeRecusado, entrar, verificar, pedirDica, resetarAmbiente, estouAqui,
+    nomeRecusado, ultimaPessoa, codigo, expulso, avisoTerminal,
+    entrar, renomear, sair, verificar, pedirDica, resetarAmbiente, estouAqui,
     emit: (ev: string, ...args: unknown[]) => socketRef.current?.emit(ev, ...args),
   };
 }

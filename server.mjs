@@ -14,11 +14,12 @@ import next from 'next';
 import { Server } from 'socket.io';
 
 import { dao } from './src/server/db.mjs';
-import { criarJogo, nivelDe } from './src/server/jogo.mjs';
+import { criarJogo, nivelDe, CAPACIDADE_DO_GRUPO } from './src/server/jogo.mjs';
 import { criarFila } from './src/server/fila.mjs';
 import { LABS, labDe, scriptDoCheck } from './src/server/labs.mjs';
 import * as amb from './src/server/ambiente.mjs';
 import * as pty from './src/server/pty.mjs';
+import { vistoriar, TETOS } from './src/server/vigia.mjs';
 import { usuarioDoNick } from './src/server/nomes.mjs';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -35,6 +36,13 @@ const fila = criarFila(Number(process.env.ARENA_CHECKERS ?? 6));
 // ───────────────────────────── estado do evento ─────────────────────────────
 const estado = dao.getEstado('evento') ?? { cenaIndex: 0, passo: 0, fase: 'idle', pausado: false, restante: null, cenaId: null };
 estado.restante = null;
+
+/**
+ * Código de retorno: quatro caracteres do próprio id. Serve para a pessoa
+ * recuperar a conta num outro computador, e só aparece na tela dela (e na
+ * grade do apresentador, para ele poder ajudar quem perdeu).
+ */
+const codigoDe = (id) => String(id).slice(0, 4).toUpperCase();
 
 const jogo = criarJogo({
   emitir: (ev, dados) => io.emit(ev, dados),
@@ -130,6 +138,11 @@ io.on('connection', (socket) => {
    * ninguém sabe de quem é o XP, e o apresentador não sabe quem chamar. Então o
    * nome é único, comparado pela forma tratada (sem acento, sem espaço).
    */
+  /**
+   * O nome fica reservado pelo evento inteiro, inclusive para quem fechou o
+   * navegador. Liberar o nome de quem saiu abriria a porta para alguém assumir
+   * a identidade (e o XP) de um colega que foi ao banheiro.
+   */
   function nomeOcupado(nick, meuId) {
     const alvo = usuarioDoNick(nick);
     return [...jogo.participantes.values()].some(
@@ -147,8 +160,19 @@ io.on('connection', (socket) => {
     return sugestoes;
   }
 
-  async function registrar({ id, nick, emoji }, ack) {
-    const existente = id && jogo.participantes.get(id);
+  async function registrar({ id, nick, emoji, codigo }, ack) {
+    /**
+     * Identidade tem que ser PROVADA, nunca digitada.
+     *
+     * Antes, quem entrasse com o nome de outra pessoa herdava a conta dela (e
+     * bastava renomear depois para ficar com o XP). Agora só duas coisas
+     * devolvem uma identidade: o id guardado neste navegador, ou o código de
+     * retorno que só aparece na tela da própria pessoa.
+     */
+    const porCodigo = !id && codigo
+      ? [...jogo.participantes.values()].find((p) => codigoDe(p.id) === String(codigo).trim().toUpperCase())
+      : null;
+    const existente = (id && jogo.participantes.get(id)) || porCodigo;
     let ambientePronto = true;   // quem volta já tem ambiente semeado
 
     // quem está voltando mantém o próprio nome; quem está chegando não pode
@@ -182,7 +206,7 @@ io.on('connection', (socket) => {
     socket.join(`p:${eu.id}`);
     if (eu.grupo) socket.join(`g:${eu.grupo}`);
     dao.salvarParticipante(eu);
-    ack?.({ eu: jogo.publico(eu), estado, placar: jogo.placar(), ambientePronto });
+    ack?.({ eu: jogo.publico(eu), codigo: codigoDe(eu.id), estado, placar: jogo.placar(), ambientePronto });
     emitirPresenca();
   }
 
@@ -365,6 +389,13 @@ io.on('connection', (socket) => {
     if (!eu) return;
     for (const g of jogo.grupos.values()) { g.membros.delete(eu.id); delete g.papeis[eu.id]; }
     if (eu.grupo) socket.leave(`g:${eu.grupo}`);
+    eu.papel = null;
+    if (!nome) {                       // clicou na própria equipe: saiu dela
+      eu.grupo = null;
+      dao.salvarParticipante(eu);
+      socket.emit('grupo', null);
+      return (emitirPlacar(), emitirPresenca());
+    }
     const g = jogo.grupos.get(nome);
     if (g && g.membros.size < g.capacidade) {
       g.membros.add(eu.id); eu.grupo = nome; eu.papel = null; socket.join(`g:${nome}`);
@@ -374,11 +405,30 @@ io.on('connection', (socket) => {
     emitirPlacar(); emitirPresenca();
   });
 
+  /**
+   * Assumir ou largar uma carta de função.
+   *
+   * Um grupo pode ter dez pessoas e só quatro cartas: quem está sem carta
+   * trabalha e ajuda igual, e pode assumir uma carta livre ou receber a de
+   * alguém que largou. Mandar `null` larga a sua.
+   */
   socket.on('grupo:papel', (papel) => {
     if (!eu?.grupo) return;
     const g = jogo.grupos.get(eu.grupo);
-    const tomado = Object.entries(g.papeis).find(([pid, p]) => p === papel && pid !== eu.id);
-    if (tomado) return socket.emit('papel', eu.papel ?? null);
+    if (!g) return;
+
+    if (!papel) {                       // largou
+      delete g.papeis[eu.id];
+      eu.papel = null;
+      dao.salvarParticipante(eu);
+      socket.emit('papel', null);
+      return emitirPlacar();
+    }
+
+    const tomada = Object.entries(g.papeis).find(([pid, p]) => p === papel && pid !== eu.id);
+    if (tomada) return socket.emit('papel', eu.papel ?? null);
+
+    delete g.papeis[eu.id];             // troca de carta: solta a anterior
     g.papeis[eu.id] = papel;
     eu.papel = papel;
     dao.salvarParticipante(eu);
@@ -386,8 +436,54 @@ io.on('connection', (socket) => {
     emitirPlacar();
   });
 
+  /**
+   * Trocar o próprio nome, mantendo tudo o que já conquistou.
+   *
+   * O terminal NÃO é reiniciado: o prompt e o `whoami` passam a responder o
+   * nome novo na mesma sessão. Reiniciar quebrava quem estava no meio de um
+   * laboratório.
+   */
+  socket.on('renomear', ({ nick, emoji }, ack) => {
+    if (!eu) return ack?.({ erro: 'entre primeiro' });
+    const novo = String(nick ?? '').trim().slice(0, 20);
+    if (!novo) return ack?.({ erro: 'escolha um nome' });
+    if (nomeOcupado(novo, eu.id)) {
+      return ack?.({ erro: 'nome-em-uso', nome: novo, sugestoes: sugerirNomes(novo, eu.id) });
+    }
+    eu.nick = novo;
+    if (emoji) eu.emoji = emoji;
+    dao.salvarParticipante(eu);
+
+    // o terminal continua vivo: só o prompt e o `whoami` passam a responder o
+    // nome novo. Matar a sessão aqui quebrava o laboratório em andamento.
+    const usuario = usuarioDoNick(novo);
+    amb.atualizarIdentidade(eu.conta, usuario);
+    pty.atualizarNome(eu.id, usuario);
+    ack?.({ eu: jogo.publico(eu), codigo: codigoDe(eu.id) });
+    emitirPresenca();
+    emitirPlacar();
+  });
+
+  /**
+   * Sair. A pessoa deixa a sala na hora (libera o nome e sai da contagem do
+   * quiz), mas o XP, os critérios e o grupo continuam gravados: se ela voltar
+   * com o mesmo nome, encontra tudo no lugar.
+   */
+  socket.on('sair', (_, ack) => {
+    if (!eu) return ack?.({ ok: true });
+    eu.presenca = 'desconectado';
+    dao.salvarParticipante(eu);
+    pty.matarSessao(eu.id);
+    const quem = eu.id;
+    eu = null;
+    socket.leave(`p:${quem}`);
+    ack?.({ ok: true });
+    emitirPresenca();
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
+  });
+
   socket.on('grupo:chat', (texto) => {
-    if (!eu?.grupo) return;
+    if (!eu?.grupo || eu.silenciado) return;
     const msg = { nick: eu.nick, emoji: eu.emoji, texto: String(texto).slice(0, 300), em: Date.now() };
     jogo.grupos.get(eu.grupo).chat.push(msg);
     io.to(`g:${eu.grupo}`).emit('grupo:chat', msg);
@@ -469,6 +565,34 @@ io.on('connection', (socket) => {
     io.emit('evento', { tipo, segundos });
   }));
 
+  /**
+   * Expulsar. A pessoa sai da sala na hora: a sessão de terminal morre, ela
+   * volta para a tela de entrada com o aviso, e o nome dela é liberado.
+   * O XP fica gravado, porque expulsar costuma ser engano de nome ou brincadeira
+   * de quem entrou duas vezes, e refazer uma conta no meio do workshop é pior.
+   */
+  socket.on('host:expulsar', soHost(({ id, motivo = '' }, ack) => {
+    const p = jogo.participantes.get(id);
+    if (!p) return ack?.({ erro: 'não encontrei essa pessoa' });
+    pty.matarSessao(id);
+    for (const g of jogo.grupos.values()) { g.membros.delete(id); delete g.papeis[id]; }
+    jogo.participantes.delete(id);
+    io.to(`p:${id}`).emit('expulso', { motivo: String(motivo).slice(0, 140) });
+    ack?.({ ok: true, nick: p.nick });
+    emitirPresenca(); emitirPlacar();
+    if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
+  }));
+
+  /** Silenciar só o chat. Serve para resolver bagunça sem tirar a pessoa da aula. */
+  socket.on('host:silenciar', soHost(({ id, silenciado = true }, ack) => {
+    const p = jogo.participantes.get(id);
+    if (!p) return ack?.({ erro: 'não encontrei essa pessoa' });
+    p.silenciado = !!silenciado;
+    io.to(`p:${id}`).emit('silenciado', p.silenciado);
+    ack?.({ ok: true, nick: p.nick, silenciado: p.silenciado });
+    emitirPresenca();
+  }));
+
   socket.on('host:reset', soHost(async ({ id }, ack) => {
     const p = jogo.participantes.get(id);
     if (!p?.conta) return ack?.({ erro: 'sem ambiente' });
@@ -484,11 +608,13 @@ io.on('connection', (socket) => {
       labs: Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, l.criterios.map((c) => ({ id: c.id, descricao: c.descricao, xp: c.xp }))])),
       pessoas: [...jogo.participantes.values()].map((p) => ({
         ...jogo.publico(p),
+        codigo: codigoDe(p.id),
         feitos: porDono[p.id] ?? [],
         travado: p.presenca === 'ativo' && estado.fase === 'aberta' && (estado.restante ?? 999) < 120 && (porDono[p.id] ?? []).length === 0,
       })),
       grupos: Object.fromEntries([...jogo.grupos.keys()].map((g) => [g, porDono[`grupo:${g}`] ?? []])),
       sessoes: pty.sessoesAbertas(), fila: fila.tamanho, modo: amb.MODO,
+      travas: { ...amb.TRAVAS, tetos: TETOS },
     });
   }));
 
@@ -498,7 +624,7 @@ io.on('connection', (socket) => {
     for (const p of jogo.participantes.values()) p.livre = false;
     io.emit('aovivo'); emitirPresenca();
   }));
-  socket.on('host:grupo:criar', soHost(({ nome, cor = '#475569', capacidade = 5 }) => {
+  socket.on('host:grupo:criar', soHost(({ nome, cor = '#475569', capacidade = CAPACIDADE_DO_GRUPO }) => {
     if (!jogo.grupos.has(nome)) {
       jogo.grupos.set(nome, { nome, cor, capacidade, membros: new Set(), papeis: {}, chat: [] });
       dao.salvarGrupo({ nome, cor, capacidade });
@@ -545,6 +671,25 @@ io.on('connection', (socket) => {
     if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   });
 });
+
+/**
+ * Vigia dos terminais.
+ *
+ * O servidor roda na máquina de quem apresenta, com dezenas de pessoas
+ * digitando ao mesmo tempo: travar essa máquina encerra o workshop. As travas
+ * de `ulimit` já cuidam de cada processo; aqui olhamos o CONJUNTO de cada
+ * sessão e encerramos quem passar do teto, avisando a pessoa.
+ */
+setInterval(async () => {
+  const encerrados = await vistoriar(pty.paraVigia());
+  for (const { id, motivo, processos, memoriaMb } of encerrados) {
+    const p = jogo.participantes.get(id);
+    pty.matarSessao(id);
+    io.to(`p:${id}`).emit('terminal:encerrado', { motivo });
+    io.to('host').emit('vigia', { id, nick: p?.nick ?? id, motivo, processos, memoriaMb });
+    console.warn(`[vigia] sessão de ${p?.nick ?? id} encerrada: ${motivo}`);
+  }
+}, 5000);
 
 /**
  * Quem sumiu sem o navegador avisar (rede caiu, tampa fechada) para de dar

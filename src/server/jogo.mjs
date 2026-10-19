@@ -35,6 +35,22 @@ export const BADGES = {
   'relatorio-entregue': 'preencheu o feedback',
 };
 
+export const CAPACIDADE_DO_GRUPO = 10;
+
+/** nome e cor dos dez grupos (as cores viram a borda do card e do placar) */
+export const GRUPOS_PADRAO = [
+  ['azul', '#2563eb'],
+  ['verde', '#16a34a'],
+  ['vermelho', '#dc2626'],
+  ['amarelo', '#ca8a04'],
+  ['roxo', '#7c3aed'],
+  ['laranja', '#ea580c'],
+  ['ciano', '#0891b2'],
+  ['rosa', '#db2777'],
+  ['lima', '#65a30d'],
+  ['grafite', '#475569'],
+];
+
 export function nivelDe(xp) {
   return NIVEIS.reduce((a, n) => (xp >= n.xp ? n : a), NIVEIS[0]);
 }
@@ -47,9 +63,14 @@ export function criarJogo({ emitir, emitirPara }) {
   let multiplicadorGlobal = 1;       // evento "XP dobrado"
   let abertoEm = Date.now();
 
-  for (const [nome, cor] of [['azul', '#2563eb'], ['verde', '#16a34a'], ['vermelho', '#dc2626'], ['amarelo', '#ca8a04']]) {
-    grupos.set(nome, { nome, cor, capacidade: 5, membros: new Set(), papeis: {}, chat: [] });
-    dao.salvarGrupo({ nome, cor, capacidade: 5 });
+  /**
+   * Dez grupos, até dez pessoas em cada. O tamanho de cada um é o que a turma
+   * decidir: ninguém é empurrado para um grupo, e um grupo pequeno não é
+   * penalizado porque o placar de grupo usa a média, não a soma.
+   */
+  for (const [nome, cor] of GRUPOS_PADRAO) {
+    grupos.set(nome, { nome, cor, capacidade: CAPACIDADE_DO_GRUPO, membros: new Set(), papeis: {}, chat: [] });
+    dao.salvarGrupo({ nome, cor, capacidade: CAPACIDADE_DO_GRUPO });
   }
   for (const g of dao.grupos()) {
     if (!grupos.has(g.nome)) grupos.set(g.nome, { nome: g.nome, cor: g.cor, capacidade: g.capacidade, membros: new Set(), papeis: {}, chat: [] });

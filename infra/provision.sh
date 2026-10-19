@@ -40,7 +40,7 @@ done
 
 # grupos do boss: diretório compartilhado com setgid (e uma aula de grupo em
 # Linux de graça)
-for g in azul verde vermelho amarelo; do
+for g in azul verde vermelho amarelo roxo laranja ciano rosa lima grafite; do
   groupadd -f "g-$g"
   install -d -m 2770 -g "g-$g" "/srv/chamado/grupo-$g"
 done

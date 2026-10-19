@@ -125,6 +125,17 @@ for (let i = 0; i < DECK.length; i++) {
     cortadas.push(`${c.id} (projetor: barra de status na tela do projetor)`);
   }
 
+  // marcação crua na tela: **negrito** ou `código` aparecendo literalmente
+  // significa que algum texto não passou pelo componente Texto
+  const cru = await telas.participante.evaluate(() => {
+    const t = document.querySelector('.cena')?.textContent ?? '';
+    const achados = [];
+    if (/\*\*[^*]+\*\*/.test(t)) achados.push('**negrito**');
+    if (/`[^`]+`/.test(t)) achados.push('`código`');
+    return achados;
+  });
+  for (const marca of cru) cortadas.push(`${c.id}: marcação crua na tela (${marca})`);
+
   // ilustrações: arquivo faltando aparece como imagem quebrada no projetor
   const ilustracoes = await telas.participante.evaluate(() =>
     [...document.querySelectorAll('img[src^="/ilustra/"]')].map((i) => ({

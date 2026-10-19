@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Icone } from './Icone';
+import { Texto } from './Texto';
 import { PACOTE, HABITOS, ARMADILHAS } from '@/deck/pacote';
 import { GLOSSARIO } from '@/deck/glossario';
 import { DECK } from '@/deck/content';
@@ -54,7 +55,7 @@ export function Consulta({ moduloAtual, onFechar }: { moduloAtual: number; onFec
                     {c.tipo === 'TerminalDemo' && c.linhas.map((l, i) => (
                       <div key={i}>
                         <span className="cmd">{l.comando}</span>
-                        {l.traducao && <span className="traducao">{l.traducao}</span>}
+                        {l.traducao && <span className="traducao"><Texto>{l.traducao}</Texto></span>}
                       </div>
                     ))}
                     {c.tipo === 'CommandAnatomy' && (

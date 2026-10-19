@@ -307,3 +307,75 @@ button { font: inherit; color: inherit; }
   .alt { padding: var(--e2); }
   .cartao { padding: var(--e2); }
 }
+
+/* ── checklist do laboratório ────────────────────────────────────────────── */
+/*
+ * O checklist usa a linguagem do próprio terminal: a caixa de marcar é `[ ]`
+ * e `[✓]` em fonte mono, e o número do item vem com dois dígitos, como saída
+ * de comando. Nada de barra colorida na borda: a mudança de estado aparece no
+ * próprio marcador, que é onde o olho vai.
+ *
+ * Os itens são separados por fio, e não por cartões soltos: seis cartões com
+ * borda viram seis retângulos competindo entre si, e a pessoa perde a noção de
+ * que aquilo é UMA lista.
+ */
+.checklist {
+  display: grid;
+  border: 1px solid var(--borda);
+  border-radius: var(--r-m);
+  background: var(--papel);
+  overflow: hidden;
+}
+
+.item-check {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--e2);
+  padding: var(--e2);
+  transition: background 200ms ease;
+}
+.item-check + .item-check { border-top: 1px solid var(--borda); }
+.item-check[data-ok="true"] { background: color-mix(in srgb, var(--ok) 7%, var(--papel)); }
+
+/* o marcador: [ ] virando [✓], em mono, como uma saída de terminal */
+.item-check .marca {
+  font-family: var(--mono);
+  font-size: 1em;
+  color: var(--tinta-2);
+  white-space: nowrap;
+  user-select: none;
+}
+.item-check[data-ok="true"] .marca { color: var(--ok); font-weight: 700; }
+
+.item-check .texto-item { display: grid; gap: var(--e05); line-height: 1.5; }
+.item-check[data-ok="true"] .texto-item > span:first-child { color: var(--tinta); }
+
+.item-check .pista {
+  display: flex; gap: var(--e05); align-items: flex-start;
+  font-size: 0.86em; color: var(--atencao);
+}
+
+/* a etiqueta de XP enche quando o item fica pronto */
+.item-check .xp-item {
+  font-family: var(--mono); font-size: 0.8em; white-space: nowrap;
+  padding: 2px var(--e1); border-radius: 999px;
+  border: 1px solid var(--borda); color: var(--tinta-2); background: var(--papel-2);
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+.item-check[data-ok="true"] .xp-item {
+  background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 700;
+}
+
+/* barra de progresso do laboratório */
+.progresso {
+  display: flex; align-items: center; gap: var(--e2);
+}
+.progresso .trilha {
+  flex: 1; height: var(--e1); border-radius: 999px;
+  background: var(--papel-2); border: 1px solid var(--borda); overflow: hidden;
+}
+.progresso .cheio {
+  height: 100%; border-radius: 999px; background: var(--ok);
+  transition: width 320ms var(--ease);
+}

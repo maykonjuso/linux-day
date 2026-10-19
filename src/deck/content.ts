@@ -20,8 +20,8 @@ export const DECK: Cena[] = [
     xpDoModulo: 2800,
   },
   {
-    id: 'abertura-grupos', ilustra: 'pessoas', tipo: 'GroupScene', modulo: 0, passos: 1,
-    titulo: 'Escolham seu grupo',
+    id: 'abertura-grupos', ilustra: 'pessoas', tipo: 'GroupScene', modulo: 0, passos: 1, modo: 'equipes',
+    titulo: 'Escolham sua equipe',
     enunciado: 'Clique num grupo para entrar, e dá para trocar depois. O placar de grupo usa a **média**, não a soma: assim nenhum grupo ganha só por ter mais gente.',
   },
 
@@ -523,7 +523,12 @@ export const DECK: Cena[] = [
     xpDoModulo: 700,
   },
   {
-    id: 'm6-cartas', ilustra: 'aperto-de-mao', tipo: 'GroupScene', modulo: 6, passos: 1,
+    id: 'm6-equipes', ilustra: 'pessoas', tipo: 'GroupScene', modulo: 6, passos: 1, modo: 'equipes',
+    titulo: 'Confirmem a equipe',
+    enunciado: 'Cada equipe recebe o MESMO servidor quebrado e trabalha junto nele. Até dez pessoas por equipe, e o tamanho é escolha de vocês: o placar usa a média, então equipe pequena não é desvantagem.',
+  },
+  {
+    id: 'm6-cartas', ilustra: 'aperto-de-mao', tipo: 'GroupScene', modulo: 6, passos: 1, modo: 'papeis',
     titulo: 'Dividam as cartas de função',
     enunciado: 'Cada critério do chamado **só pode ser fechado por quem está com a carta**. Não é burocracia: é o que impede uma pessoa fazer tudo sozinha enquanto quatro assistem.',
     papeis: [
