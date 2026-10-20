@@ -6,7 +6,7 @@ import { DECK } from './content';
 import type { EstadoEvento, Papel, Participante } from './types';
 
 export interface GrupoPublico {
-  nome: string; cor: string; capacidade: number; media: number; xp: number;
+  nome: string; cor: string; capacidade: number; media: number; xp: number; ordem: number;
   papeis: Record<string, string>; membros: Participante[];
 }
 export interface Placar {

@@ -222,7 +222,9 @@ export const LABS = {
           grep -qi "$GRUPO" "$l" || cai "o laudo precisa ter o nome da equipe ($GRUPO)"
           n="$(grep -c ERROR "$DIR_GRUPO/log/relatorio.log")"
           grep -q "$n" "$l" || cai "o laudo precisa da quantidade de linhas ERROR do log: grep -c ERROR log/relatorio.log"
-          grep -qE '[0-9]{2,}' "$l" || cai "o laudo precisa do PID do processo que vocês mataram"` },
+          # a contagem de ERROR já tem dois dígitos: sem descontá-la, o laudo
+          # passava sem o PID
+          grep -oE '[0-9]{2,}' "$l" | grep -vxF "$n" | grep -q . || cai "o laudo precisa do PID do processo que vocês mataram"` },
     ],
   },
 };

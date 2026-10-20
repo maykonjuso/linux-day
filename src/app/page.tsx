@@ -18,6 +18,9 @@ import { CartaoEvento, CartaoConquista, Confete } from '@/components/Celebracao'
 
 import { AVATARES, AVATAR_PADRAO, usuarioDoNick } from '@/deck/avatares';
 
+/** a cena em que a turma escolhe a equipe (a primeira GroupScene do deck) */
+const ESCOLHA_DE_EQUIPE = DECK.findIndex((c) => c.tipo === 'GroupScene' && c.modo === 'equipes');
+
 /**
  * A tela do participante. É o deck, e é a única URL dele nas 2 horas: o quiz,
  * os exercícios e o terminal acontecem DENTRO do slide.
@@ -237,6 +240,16 @@ export default function Player() {
           onClick={() => setLivre(null)}
           style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
           <Icone nome="tocar" tamanho={16} /> voltar ao vivo (você está olhando sozinho)
+        </button>
+      )}
+
+      {/* chegou depois da escolha de equipe: sem equipe a apresentação não
+          avança, então o caminho de volta para escolher fica na cara */}
+      {livre === null && !eu.grupo && ESCOLHA_DE_EQUIPE >= 0 && estado.cenaIndex > ESCOLHA_DE_EQUIPE && (
+        <button className="btn primario" data-acao="escolher-equipe"
+          onClick={() => setLivre(ESCOLHA_DE_EQUIPE)}
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
+          <Icone nome="pessoas" tamanho={16} /> você está sem equipe: escolher agora
         </button>
       )}
 

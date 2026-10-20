@@ -50,6 +50,9 @@ await pg.goto(URL);
 await pg.fill('input[placeholder="seu nome"]', 'ana');
 await pg.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1500);
+// sem equipe a apresentação não passa da escolha (testes/equipes.mjs)
+await new Promise((r) => host.emit('host:grupo:completar', null, r));
+await dormir(400);
 
 // o XP não aparece mais na barra do participante (só no pódio): lemos do
 // placar que o servidor manda para todo mundo

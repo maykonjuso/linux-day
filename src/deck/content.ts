@@ -552,12 +552,12 @@ export const DECK: Cena[] = [
     taskSlug: 'boss-chamado',
     objetivo: 'Tudo está na **pasta da equipe** (o caminho aparece logo abaixo; entre com `cd`). Lá tem a pasta `log`, o script `backup.sh` e o lugar do `laudo.txt`. **Nada aqui é novo**: cada item usa um comando que vocês já fizeram hoje.',
     criterios: [
-      { id: 'b-c1', descricao: 'Investigador: colar no campo a mensagem da linha `FATAL` do log (o texto depois de FATAL)', xp: 150 },
-      { id: 'b-c2', descricao: 'Operador: abrir o `htop`, achar o processo que mais gasta CPU (o PID está na 1ª coluna), sair com q e encerrar com `kill` + o PID', xp: 150 },
-      { id: 'b-c3', descricao: 'Mecânico: deixar o `backup.sh` executável e rodar ele (`./backup.sh`)', xp: 150 },
-      { id: 'b-c4', descricao: 'Relator: criar `laudo.txt` na pasta da equipe com o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
+      { id: 'b-c1', papel: 'investigador', descricao: 'Colar no campo a mensagem da linha `FATAL` do log (o texto depois de FATAL)', xp: 150 },
+      { id: 'b-c2', papel: 'operador', descricao: 'Abrir o `htop`, achar o processo que mais gasta CPU (o PID está na 1ª coluna), sair com q e encerrar com `kill` + o PID', xp: 150 },
+      { id: 'b-c3', papel: 'mecanico', descricao: 'Deixar o `backup.sh` executável e rodar ele (`./backup.sh`)', xp: 150 },
+      { id: 'b-c4', papel: 'relator', descricao: 'Criar `laudo.txt` na pasta da equipe com o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
     ],
-    comandosDoModulo: ['cd', 'ls -l', 'grep', 'grep -c', 'htop', 'kill', 'chmod +x', './deploy.sh', 'echo >'],
+    comandosDoModulo: ['cd', 'ls -l', 'grep', 'grep -c', 'htop', 'kill', 'chmod +x', './backup.sh', 'echo >'],
     segundos: 540, escopo: 'grupo',
     referencias: [
       { id: 'm4-demo', titulo: 'Investigador e Relator: grep e grep -c' },

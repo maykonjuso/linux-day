@@ -144,7 +144,8 @@ export interface CenaLab extends CenaBase {
   /** casa com a chave em src/server/labs.mjs (os checkers) */
   taskSlug: string;
   objetivo: string;
-  criterios: { id: string; descricao: string; xp: number }[];
+  /** `papel`: no chamado, a carta de função que entrega o critério */
+  criterios: { id: string; descricao: string; xp: number; papel?: string }[];
   comandosDoModulo: string[];
   segundos: number;
   escopo: 'individual' | 'grupo';

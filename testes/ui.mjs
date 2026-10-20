@@ -98,6 +98,30 @@ const antes = await cenaDoHost();
 await host.locator('button[title*="avançar"]').click();
 await dormir(500);
 ok(antes !== (await cenaDoHost()), 'avançar muda a cena no painel', `(${antes.trim()} → ${(await cenaDoHost()).trim()})`);
+
+// ─────────────── sem equipe, a apresentação não passa da escolha ───────────
+for (let i = 0; i < 6; i++) {
+  if ((await host.locator('.estado-faixa .chip', { hasText: /grupos/ }).count()) > 0) break;
+  await host.locator('button[title*="avançar"]').click();
+  await dormir(300);
+}
+ok((await host.locator('.estado-faixa .chip', { hasText: /grupos/ }).count()) > 0, 'cheguei na escolha de equipes');
+ok((await aluno.locator('[data-aviso="sem-equipe"]').count()) > 0, 'quem está sem equipe vê que a apresentação espera por ele');
+ok((await host.locator('[data-aviso="sem-equipe"]', { hasText: 'ana' }).count()) > 0, 'o painel diz quem ainda falta escolher');
+const naEscolha = await cenaDoHost();
+await host.locator('button[title*="avançar"]').click();
+await dormir(600);
+ok((await cenaDoHost()) === naEscolha, 'avançar com alguém sem equipe NÃO muda a cena');
+ok((await host.locator('.toast', { hasText: /sem equipe/ }).count()) > 0, 'e o painel explica por quê');
+await host.locator('select').first().selectOption({ label: 'módulo 2' });
+await dormir(600);
+ok((await cenaDoHost()) === naEscolha, 'pular de módulo com alguém sem equipe também NÃO muda a cena');
+await host.locator('button[title*="quem ainda está sem"]').click();
+await dormir(800);
+ok((await aluno.locator('[data-aviso="sem-equipe"]').count()) === 0, '"completar equipes" põe a pessoa numa equipe');
+await host.locator('button[title*="avançar"]').click();
+await dormir(600);
+ok((await cenaDoHost()) !== naEscolha, 'com todo mundo em equipe, a apresentação avança');
 ok((await cenaDoAluno()).length > 0, 'o slide do participante acompanha');
 
 const tituloAluno = await cenaDoAluno();

@@ -23,6 +23,11 @@ import { vistoriar, TETOS } from './src/server/vigia.mjs';
 import { usuarioDoNick } from './src/server/nomes.mjs';
 import { GABARITOS, gabaritoDe } from './src/server/gabaritos.mjs';
 import { criarArena } from './src/server/arena.mjs';
+import { bloqueioDoAvanco, semEquipe, distribuirSemEquipe, cartasDoDeck } from './src/server/equipes.mjs';
+// o Node 22.18+ lê TypeScript sem build (remove os tipos); o deck é o mesmo do navegador
+import { DECK } from './src/deck/content.ts';
+
+const CARTAS_VALIDAS = new Set(cartasDoDeck(DECK).map((c) => c.id));
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = Number(process.env.PORT ?? 3000);
@@ -50,6 +55,7 @@ const codigoDe = (id) => String(id).slice(0, 4).toUpperCase();
 const jogo = criarJogo({
   emitir: (ev, dados) => io.emit(ev, dados),
   emitirPara: (id, ev, dados) => io.to(`p:${id}`).emit(ev, dados),
+  cartasValidas: CARTAS_VALIDAS,
 });
 jogo.recarregarDoBanco();
 
@@ -101,6 +107,23 @@ let equipesTrancadas = false;
 /** quantas vezes cada pessoa já trocou de equipe (limite baixo de propósito) */
 const trocasDeEquipe = new Map();
 const LIMITE_DE_TROCAS = Number(process.env.ARENA_MAX_TROCAS ?? 3);
+
+/**
+ * Coloca a pessoa numa equipe por decisão do apresentador (sortear, completar).
+ * Muda também a sala de socket: sem isso o chat da equipe nova não chegava a
+ * quem foi sorteado, e o da antiga continuava chegando.
+ */
+function colocarNaEquipe(id, nome) {
+  const p = jogo.participantes.get(id);
+  if (!p) return;
+  for (const g of jogo.grupos.values()) { g.membros.delete(id); delete g.papeis[id]; }
+  if (p.grupo) io.in(`p:${id}`).socketsLeave(`g:${p.grupo}`);
+  jogo.grupos.get(nome).membros.add(id);
+  p.grupo = nome; p.papel = null;
+  dao.salvarParticipante(p);
+  io.in(`p:${id}`).socketsJoin(`g:${nome}`);
+  io.to(`p:${id}`).emit('grupo', nome);
+}
 
 function pararTimer() { if (timer) clearInterval(timer); timer = null; }
 function iniciarTimer(segundos) {
@@ -529,6 +552,8 @@ io.on('connection', (socket) => {
     const g = jogo.grupos.get(eu.grupo);
     if (!g) return;
 
+    if (papel && !CARTAS_VALIDAS.has(papel)) return socket.emit('papel', eu.papel ?? null);
+
     if (!papel) {                       // largou
       delete g.papeis[eu.id];
       eu.papel = null;
@@ -653,7 +678,15 @@ io.on('connection', (socket) => {
     ack?.(host);
   });
 
-  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }) => {
+  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }, ack) => {
+    // a trava fica aqui, e não só no botão do painel: o "ir para…", o teclado
+    // e qualquer outro caminho passam por este evento
+    const bloqueio = bloqueioDoAvanco({ deck: DECK, de: estado.cenaIndex, para: cenaIndex, participantes: jogo.participantes.values() });
+    if (bloqueio) {
+      for (const p of bloqueio.pendentes) io.to(`p:${p.id}`).emit('aviso', 'escolha uma equipe: a apresentação está esperando por você');
+      socket.emit('host:bloqueado', bloqueio);
+      return ack?.({ bloqueado: bloqueio });
+    }
     const maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, cenaIndex);
     // voltar para a mesma cena não refaz a foto (senão o ganho da rodada some)
     if (cenaId && baseDaCena?.cenaId !== cenaId) { fotografarCena(cenaId); emitirPlacar(); }
@@ -674,6 +707,7 @@ io.on('connection', (socket) => {
     salvarEstado();
     io.emit('estado', estado);
     if (cenaId) io.emit('respostas', contagemDeRespostas(cenaId));
+    ack?.({ ok: true });
   }));
   socket.on('host:passo', soHost((d) => { estado.passo = Math.max(0, estado.passo + d); salvarEstado(); io.emit('estado', estado); }));
   socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null, arena: jogoDaArena = null, premios = null }) => {
@@ -810,14 +844,21 @@ io.on('connection', (socket) => {
     const ids = [...jogo.participantes.keys()].sort(() => Math.random() - 0.5);
     const nomes = [...jogo.grupos.keys()];
     for (const g of jogo.grupos.values()) { g.membros.clear(); g.papeis = {}; }
-    ids.forEach((id, i) => {
-      const nome = nomes[i % nomes.length];
-      jogo.grupos.get(nome).membros.add(id);
-      const p = jogo.participantes.get(id);
-      p.grupo = nome; p.papel = null; dao.salvarParticipante(p);
-      io.to(`p:${id}`).emit('grupo', nome);
-    });
+    ids.forEach((id, i) => colocarNaEquipe(id, nomes[i % nomes.length]));
     emitirPlacar(); emitirPresenca();
+  }));
+
+  /**
+   * Põe na equipe só quem está sem. É a saída para a trava do avançar sem
+   * desfazer a escolha de quem já escolheu (o sortear redistribui todo mundo).
+   * Vale mesmo com as equipes trancadas: trancar impede trocar, não chegar.
+   */
+  socket.on('host:grupo:completar', soHost((_, ack) => {
+    const ids = semEquipe(jogo.participantes.values()).map((p) => p.id);
+    const pares = distribuirSemEquipe(jogo.grupos.values(), ids);
+    for (const [id, nome] of pares) colocarNaEquipe(id, nome);
+    emitirPlacar(); emitirPresenca();
+    ack?.({ colocados: pares.length, sobraram: ids.length - pares.length });
   }));
   socket.on('host:boss:semear', soHost(async (_, ack) => {
     let n = 0;

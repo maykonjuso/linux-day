@@ -6,6 +6,7 @@
  *   2. Nenhum critério pontua duas vezes (idempotência no banco).
  */
 import { dao } from './db.mjs';
+import { remontarCartas } from './equipes.mjs';
 
 export const NIVEIS = [
   { nivel: 1, xp: 0, patente: 'Visitante', prompt: 'visitante@linuxday:~$' },
@@ -55,7 +56,7 @@ export function nivelDe(xp) {
   return NIVEIS.reduce((a, n) => (xp >= n.xp ? n : a), NIVEIS[0]);
 }
 
-export function criarJogo({ emitir, emitirPara }) {
+export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
   const participantes = new Map();   // id -> estado completo
   const grupos = new Map();
   const combos = new Map();          // id -> { mult, seguidos }
@@ -93,6 +94,14 @@ export function criarJogo({ emitir, emitirPara }) {
       });
       if (r.grupo && grupos.has(r.grupo)) grupos.get(r.grupo).membros.add(r.id);
     }
+    const doBanco = [...participantes.values()].filter((p) => p.grupo && grupos.has(p.grupo));
+    const { porEquipe, soltos } = remontarCartas(doBanco, cartasValidas);
+    for (const [nome, mapa] of porEquipe) grupos.get(nome).papeis = mapa;
+    for (const id of soltos) {
+      const p = participantes.get(id);
+      p.papel = null;
+      dao.salvarParticipante(p);
+    }
   }
 
   function publico(p) {
@@ -117,11 +126,12 @@ export function criarJogo({ emitir, emitirPara }) {
    */
   function placar() {
     const individual = [...participantes.values()].map(publico).sort((a, b) => b.xp - a.xp);
-    const porGrupo = [...grupos.values()].map((g) => {
+    const porGrupo = [...grupos.values()].map((g, ordem) => {
       const membros = [...g.membros].map((id) => participantes.get(id)).filter(Boolean);
       const media = membros.length ? Math.round(membros.reduce((s, m) => s + m.xp, 0) / membros.length) : 0;
       return {
-        nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis,
+        // a tela de escolha usa a ordem fixa; o placar continua ordenado por XP
+        nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis, ordem,
         xp: xpDaEquipe(g.nome), media, membros: membros.map(publico),
       };
     }).sort((a, b) => b.xp - a.xp || b.media - a.media);

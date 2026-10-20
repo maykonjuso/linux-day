@@ -179,7 +179,13 @@ export default function Host() {
     const aoVigiar = ({ nick, motivo }: { nick: string; motivo: string }) => avisar(`terminal de ${nick} reiniciado: ${motivo}`);
     s.on('vigia', aoVigiar);
 
-    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); s.off('vigia', aoVigiar); };
+    // o servidor recusou o avanço: alguém ativo ainda está sem equipe
+    const aoBloquear = ({ pendentes }: { pendentes: { nick: string }[] }) => avisar(
+      `${pendentes.length === 1 ? '1 pessoa está' : `${pendentes.length} pessoas estão`} sem equipe (${pendentes.slice(0, 4).map((p) => p.nick).join(', ')}${pendentes.length > 4 ? '…' : ''}). Peça para escolherem ou use "completar equipes".`,
+    );
+    s.on('host:bloqueado', aoBloquear);
+
+    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); s.off('vigia', aoVigiar); s.off('host:bloqueado', aoBloquear); };
   }, [ok, arena.socket, avisar]);
 
   /** a grade é atualizada por tempo, e isso não deve mexer nos ouvintes */
@@ -227,6 +233,7 @@ export default function Host() {
   }
 
   const ativos = presenca.filter((p) => p.presenca === 'ativo').length;
+  const semEquipe = presenca.filter((p) => p.presenca === 'ativo' && !p.grupo).length;
   const travados = grade?.pessoas.filter((p) => p.travado) ?? [];
   const criteriosDaCena = taskSlug ? grade?.labs?.[taskSlug] ?? [] : [];
   const concluiramPrincipal = taskSlug && criteriosDaCena.length
@@ -368,6 +375,11 @@ export default function Host() {
           )}
           <button className="btn-icone" onClick={() => { emit('host:grupo:sortear'); avisar('grupos sorteados'); }} title="distribui todos em grupos">
             <Icone nome="caixa" tamanho={17} /><span className="texto">sortear grupos</span>
+          </button>
+          <button className="btn-icone" title="põe nas equipes com menos gente só quem ainda está sem; quem já escolheu fica onde está"
+            onClick={() => emit('host:grupo:completar', null, (r: { colocados: number; sobraram: number }) =>
+              avisar(r.sobraram ? `${r.colocados} colocados, ${r.sobraram} sem vaga` : `${r.colocados} ${r.colocados === 1 ? 'pessoa colocada' : 'pessoas colocadas'} numa equipe`))}>
+            <Icone nome="pessoas" tamanho={17} /><span className="texto">completar equipes{semEquipe ? ` (${semEquipe})` : ''}</span>
           </button>
         </div>
 

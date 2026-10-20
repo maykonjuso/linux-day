@@ -65,6 +65,10 @@ ok(ra.eu.tokens === 3, 'começam com 3 tokens');
 console.log('▸ esperando o seed do ambiente…');
 await esperar(2500);
 
+// sem equipe a apresentação não passa da escolha (testes/equipes.mjs)
+await pedir(ana, 'grupo:entrar', 'azul');
+await pedir(bia, 'grupo:entrar', 'azul');
+
 // ──────────────────────────────── quiz ────────────────────────────────────
 host.emit('host:ir', { cenaIndex: 4, cenaId: 'm0-q1', passo: 0, fase: 'idle' });
 await esperar(200);
