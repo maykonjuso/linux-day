@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { AVATARES, usuarioDoNick } from '@/deck/avatares';
 import { Icone } from './Icone';
+import { Avatar } from './Avatar';
 import type { Arena } from '@/deck/useArena';
+import { prepararFoto } from '@/deck/foto';
 
 /**
  * Trocar o nome, trocar o avatar ou sair.
@@ -19,9 +21,22 @@ export function Perfil({ arena, onFechar }: { arena: Arena; onFechar: () => void
   const [emoji, setEmoji] = useState(eu?.emoji ?? AVATARES[0]);
   const [salvando, setSalvando] = useState(false);
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
+  const [fotoMsg, setFotoMsg] = useState<string | null>(null);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
 
   if (!eu) return null;
   const mudou = nick.trim() !== eu.nick || emoji !== eu.emoji;
+
+  async function escolherFoto(arquivo: File | undefined) {
+    if (!arquivo) return;
+    setFotoMsg(null);
+    const p = await prepararFoto(arquivo);
+    if ('erro' in p) { setFotoMsg(p.erro); return; }
+    setEnviandoFoto(true);
+    const r = await arena.enviarFoto(p.dataUrl);
+    setEnviandoFoto(false);
+    setFotoMsg(r.ok ? 'foto atualizada' : r.erro ?? 'não deu para enviar a foto');
+  }
 
   async function salvar() {
     if (!nick.trim() || salvando) return;
@@ -64,7 +79,26 @@ export function Perfil({ arena, onFechar }: { arena: Arena; onFechar: () => void
           <code className="kbd">{usuarioDoNick(nick || eu.nick)}@linuxday:~$</code>
         </div>
 
-        <label className="olho">seu bicho</label>
+        <label className="olho">sua foto</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)', flexWrap: 'wrap' }}>
+          <Avatar pessoa={{ emoji, foto: eu.foto, nick: eu.nick }} tamanho={56} />
+          <label className="btn" style={{ padding: 'var(--e1) var(--e2)', cursor: 'pointer' }}>
+            {enviandoFoto ? 'enviando…' : eu.foto ? 'trocar a foto' : 'enviar uma foto'}
+            <input type="file" accept="image/png,image/jpeg,image/webp" data-acao="enviar-foto" hidden
+              onChange={(e) => { escolherFoto(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {eu.foto && (
+            <button className="btn" style={{ padding: 'var(--e1) var(--e2)' }}
+              onClick={async () => { const r = await arena.enviarFoto(null); setFotoMsg(r.ok ? 'voltou para o bicho' : r.erro ?? 'falhou'); }}>
+              usar o bicho
+            </button>
+          )}
+        </div>
+        <small style={{ color: fotoMsg && !/atualizada|voltou/.test(fotoMsg) ? 'var(--erro)' : 'var(--tinta-2)' }} role="status">
+          {fotoMsg ?? 'PNG, JPG ou WebP de até 2 MB. A foto é cortada em quadrado e reduzida antes de ir para a tela da sala.'}
+        </small>
+
+        <label className="olho">{eu.foto ? 'ou um bicho (aparece quando você tira a foto)' : 'seu bicho'}</label>
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))', gap: 'var(--e05)',
           maxHeight: 160, overflowY: 'auto', padding: 'var(--e05)',

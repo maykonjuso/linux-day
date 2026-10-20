@@ -13,6 +13,7 @@ import { Aguardando } from '../SceneRouter';
 import { ListaComandos } from '../ListaComandos';
 import { liberada, encerrada } from '@/deck/liberada';
 import { DECK } from '@/deck/content';
+import { CartoesDoChamado } from './CartoesDoChamado';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
 
@@ -63,7 +64,11 @@ export function LabScene({
   /** no chamado, o caminho da pasta da equipe (o servidor sabe onde ela fica) */
   const pastaDaEquipe = cena.escopo === 'grupo' && arena.eu?.grupo && arena.labs[cena.taskSlug]?.pasta
     ? `${arena.labs[cena.taskSlug].pasta}${arena.eu.grupo}` : null;
-  const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes' || cena.taskSlug === 'boss-chamado';
+  // no chamado, o campo de resposta é do Investigador (ou de todos, se a carta estiver livre)
+  const investigadorLivre = !Object.values(arena.meuGrupo?.papeis ?? {}).includes('investigador');
+  const souInvestigador = arena.eu?.id ? arena.meuGrupo?.papeis?.[arena.eu.id] === 'investigador' : false;
+  const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes'
+    || (cena.taskSlug === 'boss-chamado' && (!cena.cartoes || souInvestigador || investigadorLivre));
 
   useEffect(() => { setResultados({}); setAvisos({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
   useEffect(() => { ultimaResposta.current = resposta; }, [resposta]);
@@ -154,7 +159,7 @@ export function LabScene({
       />
       {ganhoVisivel && <div key={ganhoVisivel.chave} className="ganho-xp">+{ganhoVisivel.xp} XP</div>}
       <p className="corpo-p"><Texto>{cena.objetivo}</Texto></p>
-      {cena.escopo === 'grupo' && souJogador && (
+      {cena.escopo === 'grupo' && souJogador && !cena.cartoes && (
         <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)', flexWrap: 'wrap', maxWidth: '100%' }}>
           <Icone nome="pasta" tamanho={16} />
           {/* o caminho completo passa de 500px: no celular ele quebra em vez de cortar a tela */}
@@ -244,7 +249,11 @@ export function LabScene({
         <div className="coluna">
           {passou ? (
             <div className="cartao"><Icone nome="cadeado" tamanho={18} /> Laboratório encerrado. Os itens que você fez continuam marcados ao lado.</div>
-          ) : !solto ? <Aguardando papel={papel} oque="o terminal" /> : (
+          ) : !solto ? <Aguardando papel={papel} oque={cena.cartoes ? 'os cartões' : 'o terminal'} /> : cena.cartoes ? (
+            souJogador
+              ? <CartoesDoChamado arena={arena} nomeDaCarta={NOME_DA_CARTA} aberto={arena.estado.fase === 'aberta'} />
+              : <div className="cartao">Os cartões de comando estão na tela de cada participante.</div>
+          ) : (
           <div id={souJogador ? 'slot-terminal' : undefined} className="term term-lab"
             style={{ display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#a7a7b0' }}>
             {!souJogador && 'o terminal está na tela de cada participante'}

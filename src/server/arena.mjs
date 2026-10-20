@@ -9,7 +9,7 @@
  * todas que terminam tira o sentido da corrida, e dar XP só para a primeira
  * desanima as outras oito no primeiro minuto.
  */
-export const PREMIOS_PADRAO = [300, 200, 140, 90];
+export const PREMIOS_PADRAO = [450, 300, 210, 140];
 
 import { conferir, desafioPublico, explicacaoDe } from './desafios-arena.mjs';
 
@@ -21,7 +21,7 @@ export function criarArena({ emitir, premiarEquipe, premiarPessoa, membrosDaEqui
     if (!rodada) return null;
     const base = { cenaId: rodada.cenaId, jogo: rodada.jogo, premios: rodada.premios };
     if (rodada.jogo === 'buzzer') {
-      return { ...base, fila: rodada.fila, vez: rodada.fila[0] ?? null, erradas: rodada.erradas, resolvido: rodada.resolvido };
+      return { ...base, fila: rodada.fila, vez: rodada.fila[0] ?? null, erradas: rodada.erradas, resolvido: rodada.resolvido, vencedor: rodada.vencedor ?? null };
     }
     // corrida, montagem e caça ao erro compartilham a ordem de chegada
     return {
@@ -122,6 +122,7 @@ export function criarArena({ emitir, premiarEquipe, premiarPessoa, membrosDaEqui
     if (acertou) {
       const xp = rodada.premios[0] ?? 300;
       rodada.resolvido = true;
+      rodada.vencedor = { equipe: atual.equipe, nick: atual.nick, xp };
       premiarEquipe(atual.equipe, xp);
       for (const id of membrosDaEquipe(atual.equipe)) premiarPessoa(id, xp, 'buzzer', rodada.cenaId);
       avisar();

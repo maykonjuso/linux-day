@@ -120,9 +120,10 @@ for (let i = 0; i < DECK.length; i++) {
     // No celular, laboratório, equipes, exercícios e jogos rolam de propósito:
     // o terminal e os painéis não cabem numa tela de 390px, e lá a pessoa rola
     // com o dedo sem estranhar. O que não pode rolar é o projetor e o notebook.
+    // A apresentação de cada pessoa tem a história inteira, que no celular rola.
     // O pódio também: com a turma em equipes ele empilha pessoas e equipes, e
     // isso só cabe no projetor (que continua sem poder rolar).
-    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene', 'Controles', 'Recap', 'Scoreboard'].includes(c.tipo);
+    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene', 'Controles', 'Recap', 'Scoreboard', 'Apresentacao'].includes(c.tipo);
     if (m.precisaRolar && !rolarTolerado) cortadas.push(`${c.id} (${nome}: precisa rolar)`);
     if (m.escala < (nome === 'celular' ? 0.62 : 0.72)) cortadas.push(`${c.id} (${nome}: encolheu para ${m.escala})`);
     if (!m.tituloVisivel) cortadas.push(`${c.id} (${nome}: título fora da tela)`);
@@ -181,7 +182,7 @@ await dormir(700);
 await hostPg.locator('select').first().selectOption({ label: 'módulo 0' });
 await dormir(500);
 
-const indice = async () => Number(((await hostPg.locator('.estado-faixa .chip', { hasText: /^cena / }).textContent()) ?? '').match(/\d+/)?.[0] ?? 0);
+const indice = async () => Number(((await hostPg.locator('button[data-menu*="/"]').textContent()) ?? '').match(/\d+/)?.[0] ?? 0);
 let travadas = 0;
 for (let n = 0; n < DECK.length + 40; n++) {
   const antes = await indice();

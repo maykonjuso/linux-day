@@ -7,6 +7,7 @@ import { Icone } from '../Icone';
 import { Ilustra } from '../Ilustra';
 import { Texto } from '../Texto';
 import { Cabecalho } from '../Cabecalho';
+import { Avatar } from '../Avatar';
 
 type CenaGrupos = Extract<Cena, { tipo: 'GroupScene' }>;
 
@@ -71,8 +72,8 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
                 {g.membros.length === 0 && <small style={{ color: 'var(--tinta-2)' }}>vazia, seja a primeira pessoa</small>}
                 {g.membros.map((m) => (
                   <span key={m.id} title={m.nick}
-                    style={{ fontSize: 20, filter: m.presenca === 'ativo' ? undefined : 'grayscale(1) opacity(0.5)' }}>
-                    {m.emoji}
+                    style={{ filter: m.presenca === 'ativo' ? undefined : 'grayscale(1) opacity(0.5)' }}>
+                    <Avatar pessoa={m} tamanho={24} />
                   </span>
                 ))}
               </div>

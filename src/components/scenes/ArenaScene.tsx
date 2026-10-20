@@ -517,10 +517,12 @@ function Buzzer({
         )}
       </div>
 
-      {rodada?.resolvido && (
-        <div className="cartao" style={{ borderColor: 'var(--ok)', display: 'flex', gap: 'var(--e2)', alignItems: 'center' }}>
-          <Ilustra nome="festa" tamanho={30} />
-          <strong>resolvido</strong>
+      {/* quem acertou, em letra grande em todas as telas: é o momento da rodada */}
+      {rodada?.resolvido && rodada.vencedor && (
+        <div className="vencedor-buzzer" data-eu={rodada.vencedor.equipe === minhaEquipe || undefined}>
+          <Ilustra nome="festa" tamanho={48} />
+          <strong className="nome-vencedor">{rodada.vencedor.nick}</strong>
+          <span>acertou pela equipe <strong style={{ textTransform: 'capitalize' }}>{rodada.vencedor.equipe}</strong> · +{rodada.vencedor.xp} XP para a equipe toda</span>
         </div>
       )}
     </div>

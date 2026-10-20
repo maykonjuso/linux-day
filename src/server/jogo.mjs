@@ -34,9 +34,18 @@ export const BADGES = {
   mentor: '3 ajudas validadas',
   root: 'nível 5',
   'relatorio-entregue': 'preencheu o feedback',
+  // entram no começo do chamado, pela carta que a pessoa pegou: quem perdeu
+  // os módulos anteriores começa o desafio final com a conquista do cargo
+  'carta-investigador': 'começou o chamado como Investigador: lê o log antes de mexer',
+  'carta-operador': 'começou o chamado como Operador: cuida dos processos',
+  'carta-mecanico': 'começou o chamado como Mecânico: conserta permissões',
+  'carta-relator': 'começou o chamado como Relator: documenta o conserto',
 };
 
 export const CAPACIDADE_DO_GRUPO = 10;
+
+/** a versão no endereço faz o navegador buscar a foto nova quando ela muda */
+export const enderecoDaFoto = (id, versao) => `/foto/${encodeURIComponent(id)}?v=${versao}`;
 
 /** nome e cor dos dez grupos (as cores viram a borda do card e do placar) */
 export const GRUPOS_PADRAO = [
@@ -85,12 +94,14 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
 
   function recarregarDoBanco() {
     const xps = dao.xpTotais();
+    const fotos = dao.versoesDasFotos();
     for (const r of dao.participantes()) {
       participantes.set(r.id, {
         id: r.id, nick: r.nick, emoji: r.emoji, conta: r.conta, grupo: r.grupo, papel: r.papel,
         tokens: r.tokens, xp: xps[r.id] ?? 0, nivel: nivelDe(xps[r.id] ?? 0).nivel,
         presenca: 'desconectado', livre: false, visto: r.visto_em,
         criterios: dao.criteriosDe(r.id), badges: dao.badgesDe(r.id),
+        foto: fotos[r.id] ? enderecoDaFoto(r.id, fotos[r.id]) : null,
       });
       if (r.grupo && grupos.has(r.grupo)) grupos.get(r.grupo).membros.add(r.id);
     }
@@ -106,7 +117,7 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
 
   function publico(p) {
     return {
-      id: p.id, nick: p.nick, emoji: p.emoji, xp: p.xp, tokens: p.tokens, nivel: p.nivel,
+      id: p.id, nick: p.nick, emoji: p.emoji, foto: p.foto ?? null, xp: p.xp, tokens: p.tokens, nivel: p.nivel,
       grupo: p.grupo, papel: p.papel, presenca: p.presenca, livre: p.livre,
       criterios: p.criterios, badges: p.badges, conta: p.conta,
       combo: combos.get(p.id)?.mult ?? 1,

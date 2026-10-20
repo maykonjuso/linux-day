@@ -98,7 +98,10 @@ async function subir() {
   });
 }
 async function derrubar() {
-  srv.kill('SIGTERM');
+  // o processo travado do boss vive fora do servidor: sem isto, fica gastando CPU
+// e o próximo teste encontra dois
+spawn('pkill', ['-f', '[a]rena-travado-']);
+srv.kill('SIGTERM');
   await esperar(600);
   srv.kill('SIGKILL');
 }

@@ -197,6 +197,9 @@ ok(volta.estado.cenaIndex === 4, 'e cai exatamente na cena em que a sala está')
 
 // ───────────────────────────────── fim ────────────────────────────────────
 [host, bia, ana2].forEach((s) => s.close());
+// o processo travado do boss vive fora do servidor: sem isto, fica gastando CPU
+// e o próximo teste encontra dois
+spawn('pkill', ['-f', '[a]rena-travado-']);
 srv.kill('SIGTERM');
 await esperar(600);
 srv.kill('SIGKILL');

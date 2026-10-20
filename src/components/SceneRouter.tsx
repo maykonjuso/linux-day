@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Arena } from '@/deck/useArena';
 import type { Cena, Papel } from '@/deck/types';
 import { Diagrama } from './Diagramas';
@@ -21,6 +21,8 @@ import { ReferenciasConteudo } from './ReferenciasConteudo';
 import { ITENS as CONTROLES } from './Tour';
 import { ListaComandos } from './ListaComandos';
 import { liberada, encerrada } from '@/deck/liberada';
+import { embaralhar } from '@/deck/embaralhar';
+import { QrCode } from './QrCode';
 import { PodioDaCena } from './Celebracao';
 
 /**
@@ -67,7 +69,7 @@ export function SceneRouter({
   function desenhar(cena: Cena) {
   switch (cena.tipo) {
     case 'ModuleCover': return <Capa cena={cena} />;
-    case 'Apresentacao': return <Apresentacao cena={cena} />;
+    case 'Apresentacao': return <Apresentacao cena={cena} passo={cena.id === arena.cena.id ? arena.estado.passo : 0} papel={papel} />;
     case 'Controles': return <Controles cena={cena} />;
     case 'MentalModel': return <Modelo cena={cena} />;
     case 'CommandAnatomy': return <Anatomia cena={cena} />;
@@ -124,7 +126,34 @@ function MarcaGithub({ tamanho = 18 }: { tamanho?: number }) {
   );
 }
 
-function Apresentacao({ cena }: { cena: C<'Apresentacao'> }) {
+function Apresentacao({ cena, passo, papel }: { cena: C<'Apresentacao'>; passo: number; papel: Papel }) {
+  // passo 0: todo mundo junto; passo N: a pessoa N sozinha
+  const pessoa = passo > 0 ? cena.pessoas[passo - 1] : null;
+  if (pessoa) {
+    return (
+      <div className="cena apresentacao-pessoa" data-modulo={cena.modulo} key={pessoa.github}>
+        <Cabecalho ilustra={ilustraDa(cena)} olho={`apresentação · ${passo} de ${cena.pessoas.length}`} titulo={pessoa.nome} />
+        <div className="perfil-apresentacao">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pessoa.foto} alt={`foto de ${pessoa.nome}`} width={220} height={220} className="foto-apresentacao" />
+          <div className="texto-apresentacao">
+            <strong className="cargo-apresentacao">{pessoa.cargo}</strong>
+            {pessoa.historia.map((h) => <p key={h} className="corpo-p"><Texto>{h}</Texto></p>)}
+            <span style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', color: 'var(--tinta-2)' }}>
+              <MarcaGithub /> @{pessoa.github}
+            </span>
+          </div>
+          <div className="linkedin-apresentacao">
+            <QrCode texto={pessoa.linkedin} tamanho={200} rotulo={`QR code do LinkedIn de ${pessoa.nome}`} />
+            {/* no celular o QR não serve para nada: o link é clicável */}
+            {papel === 'player'
+              ? <a href={pessoa.linkedin} target="_blank" rel="noreferrer" className="btn">abrir o LinkedIn</a>
+              : <small style={{ color: 'var(--tinta-2)' }}>LinkedIn</small>}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cena" data-modulo={cena.modulo}>
       <Cabecalho ilustra={ilustraDa(cena)} olho="apresentação" titulo={cena.titulo} />
@@ -135,9 +164,7 @@ function Apresentacao({ cena }: { cena: C<'Apresentacao'> }) {
             <img src={p.foto} alt={`foto de ${p.nome}`} width={160} height={160}
               style={{ width: 'clamp(110px, 13vw, 180px)', height: 'auto', aspectRatio: '1', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--tinta)' }} />
             <strong className="titulo" style={{ fontSize: 'var(--t3)' }}>{p.nome}</strong>
-            <span style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', color: 'var(--tinta-2)' }}>
-              <MarcaGithub /> @{p.github}
-            </span>
+            <span style={{ color: 'var(--tinta-2)', fontSize: 'var(--t5)' }}>{p.cargo}</span>
           </div>
         ))}
       </div>
@@ -317,6 +344,10 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
 
   const revelado = revelacao?.cenaId === cena.id;
   const total = Object.values(revelacao?.distribuicao ?? {}).reduce((s, n) => s + n, 0) || 1;
+  const respostas = Object.values(revelacao?.distribuicao ?? {}).reduce((s, n) => s + n, 0);
+  const acertos = revelacao?.correta ? revelacao.distribuicao?.[revelacao.correta] ?? 0 : 0;
+  // a mesma ordem em todas as telas (a semente é a cena), mas não a do autor
+  const alternativas = useMemo(() => embaralhar(cena.alternativas, cena.id), [cena.alternativas, cena.id]);
   const aberta = estado.fase === 'aberta' || estado.fase === 'encerrada';
   const daVez = !estado.cenaId || estado.cenaId === cena.id;
   const podeResponder = papel === 'player' && !escolha && aberta && daVez && !revelado;
@@ -338,9 +369,9 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
           </span>
         )}
         {contagem && !revelado && (
-          <span className="chip grande">
-            <Icone nome="pessoas" tamanho={18} /> {contagem.total} de {contagem.esperados} responderam
-            {faltam ? ` · faltam ${faltam}` : ' · todos!'}
+          // curto de propósito: o texto longo quebrava a linha e empurrava as opções
+          <span className="chip grande" title={`${contagem.total} de ${contagem.esperados} responderam${faltam ? `, faltam ${faltam}` : ''}`}>
+            <Icone nome="pessoas" tamanho={18} /> {contagem.total}/{contagem.esperados}
           </span>
         )}
       </div>
@@ -356,7 +387,7 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
       {papel === 'host' && estado.fase === 'idle' && <Aguardando papel={papel} oque="as opções" />}
 
       {mostrarOpcoes && <div className="alternativas kahoot">
-        {cena.alternativas.map((a, i) => {
+        {alternativas.map((a, i) => {
           const votos = revelacao?.distribuicao?.[a.id] ?? 0;
           return (
             <button
@@ -379,9 +410,9 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
               <span className="letra" aria-label={`alternativa ${String.fromCharCode(65 + i)}`}>{['▲', '◆', '●', '■'][i % 4]}</span>
               <span style={{ flex: 1 }}>{a.texto}</span>
               {revelado && (
-                <span style={{ display: 'grid', gap: 'var(--e05)', minWidth: 90 }}>
+                <span className="votos-alt">
+                  <strong className="numero-votos">{votos}</strong>
                   <span className="barra-votos" style={{ width: `${(votos / total) * 90}px` }} />
-                  <small style={{ color: 'var(--tinta-2)' }}>{votos}</small>
                 </span>
               )}
               {papel === 'host' && a.id === arena.gabaritos[cena.id]?.correta && (
@@ -392,13 +423,34 @@ function Quiz({ cena, arena, papel }: { cena: C<'QuizScene'>; arena: Arena; pape
         })}
       </div>}
 
+      {revelado && (
+        <div className="acertos-quiz" data-acao="acertos">
+          <strong>{acertos}</strong>
+          <span>de {respostas} {respostas === 1 ? 'pessoa acertou' : 'pessoas acertaram'}</span>
+        </div>
+      )}
+
       {/* o momento Kahoot de quem respondeu: acertou ou não, em letras grandes */}
       {revelado && papel === 'player' && (
         <div className="veredito" data-certo={escolha === revelacao?.correta} key={`v-${cena.id}`}>
           {escolha === revelacao?.correta
             ? <><Icone nome="feito" tamanho={28} /> Acertou!{arena.ganho ? ` +${arena.ganho.xp} XP` : ''}</>
             : escolha
-              ? <><Icone nome="erro" tamanho={28} /> Não foi dessa vez. A certa era a {['▲', '◆', '●', '■'][cena.alternativas.findIndex((a) => a.id === revelacao?.correta)]}</>
+              ? (() => {
+                  // a forma sozinha ("a certa era a ■") não dizia nada: vai a forma
+                  // na cor do botão e o texto da alternativa certa
+                  const i = alternativas.findIndex((a) => a.id === revelacao?.correta);
+                  return (
+                    <>
+                      <Icone nome="erro" tamanho={26} />
+                      <span>Não foi dessa vez. A certa era</span>
+                      <span className="certa-veredito">
+                        <span className="forma" data-cor={i % 4} aria-hidden>{['▲', '◆', '●', '■'][i % 4]}</span>
+                        <span>{alternativas[i]?.texto}</span>
+                      </span>
+                    </>
+                  );
+                })()
               : <><Icone nome="relogio" tamanho={28} /> Você não respondeu a tempo</>}
         </div>
       )}
@@ -430,7 +482,7 @@ function Widget({
 
   const concluir = () => {
     setFeito(true);
-    if (papel === 'player') arena.emit('widget:concluido', { cenaId: cena.id, xp: 60 });
+    if (papel === 'player') arena.emit('widget:concluido', { cenaId: cena.id });
   };
 
   // no projetor o widget não é jogável: o exercício está na tela de cada um

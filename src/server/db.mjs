@@ -65,6 +65,12 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS estado (chave TEXT PRIMARY KEY, valor TEXT NOT NULL);
+
+  -- a foto fica fora da linha da pessoa: o placar vai para todas as telas a
+  -- cada ponto, e não pode carregar 30 KB por pessoa junto
+  CREATE TABLE IF NOT EXISTS fotos (
+    participante_id TEXT PRIMARY KEY, mime TEXT NOT NULL, dados BLOB NOT NULL, versao INTEGER NOT NULL
+  );
 `);
 
 const q = {
@@ -90,6 +96,10 @@ const q = {
   grupos: db.prepare('SELECT * FROM grupos'),
   estadoSet: db.prepare('INSERT INTO estado (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor'),
   estadoGet: db.prepare('SELECT valor FROM estado WHERE chave = ?'),
+  fotoSet: db.prepare('INSERT INTO fotos (participante_id, mime, dados, versao) VALUES (?, ?, ?, ?) ON CONFLICT(participante_id) DO UPDATE SET mime = excluded.mime, dados = excluded.dados, versao = excluded.versao'),
+  fotoGet: db.prepare('SELECT mime, dados, versao FROM fotos WHERE participante_id = ?'),
+  fotoApagar: db.prepare('DELETE FROM fotos WHERE participante_id = ?'),
+  fotosVersoes: db.prepare('SELECT participante_id id, versao FROM fotos'),
 };
 
 export const dao = {
@@ -115,6 +125,10 @@ export const dao = {
   salvarGrupo(g) { q.grupoUpsert.run(g.nome, g.cor, g.capacidade); },
   grupos: () => q.grupos.all(),
   setEstado(chave, valor) { q.estadoSet.run(chave, JSON.stringify(valor)); },
+  salvarFoto(id, mime, dados) { const versao = Date.now(); q.fotoSet.run(id, mime, dados, versao); return versao; },
+  foto: (id) => q.fotoGet.get(id),
+  apagarFoto(id) { q.fotoApagar.run(id); },
+  versoesDasFotos: () => Object.fromEntries(q.fotosVersoes.all().map((r) => [r.id, r.versao])),
   getEstado(chave) {
     const r = q.estadoGet.get(chave);
     return r ? JSON.parse(r.valor) : null;

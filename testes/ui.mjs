@@ -91,7 +91,14 @@ const projetor = await abrir('/screen');
 await dormir(400);
 
 // ──────────────────── passar slide: cena e passos ─────────────────────────
-const cenaDoHost = async () => (await host.locator('.estado-faixa .chip', { hasText: /^cena / }).textContent()) ?? '';
+// o número da cena fica no botão do menu de detalhes ("12/54")
+const cenaDoHost = async () => (await host.locator('button[data-menu*="/"]').textContent()) ?? '';
+/** os grupos da barra do painel viraram menus: abre o menu antes de clicar no botão de dentro */
+const abrirMenu = async (nome) => {
+  const b = host.locator(`button[data-menu="${nome}"]`);
+  if ((await b.getAttribute('aria-expanded')) !== 'true') await b.click();
+  await dormir(150);
+};
 const cenaDoAluno = async () => (await aluno.locator('.titulo').first().textContent()) ?? '';
 
 const antes = await cenaDoHost();
@@ -116,6 +123,7 @@ ok((await host.locator('.toast', { hasText: /sem equipe/ }).count()) > 0, 'e o p
 await host.locator('select').first().selectOption({ label: 'módulo 2' });
 await dormir(600);
 ok((await cenaDoHost()) === naEscolha, 'pular de módulo com alguém sem equipe também NÃO muda a cena');
+await abrirMenu('sala');
 await host.locator('button[title*="quem ainda está sem"]').click();
 await dormir(800);
 ok((await aluno.locator('[data-aviso="sem-equipe"]').count()) === 0, '"completar equipes" põe a pessoa numa equipe');
@@ -167,7 +175,14 @@ const primeiraHabilitada = await alternativas.first().isEnabled();
 ok(primeiraHabilitada, 'e elas já podem ser clicadas');
 
 const xpAntes = await xpDaAna();
-await alternativas.nth(1).click();   // a correta do m0-q1 é a B
+// as alternativas são embaralhadas, mas na mesma ordem em todas as telas: o
+// painel marca a certa com ✓, e o mesmo índice é a certa na tela do aluno
+const textosHost = await host.locator('.alt').allTextContents();
+const textosAluno = await alternativas.allTextContents();
+const limpar = (t) => t.replace(/[✓▲◆●■]/g, '').trim();
+ok(textosHost.map(limpar).join('|') === textosAluno.map(limpar).join('|'), 'painel e participante veem as alternativas na mesma ordem');
+const certa = textosHost.findIndex((t) => t.includes('✓'));
+await alternativas.nth(certa).click();
 await dormir(250);
 ok(!(await alternativas.first().isEnabled()), 'depois de responder, as alternativas travam');
 
@@ -177,7 +192,7 @@ const revelouSozinho = await aluno.locator('.alt[data-estado="certa"]')
   .waitFor({ timeout: 6000 }).then(() => true).catch(() => false);
 ok(revelouSozinho, 'quando todos respondem, a resposta é revelada sozinha (igual ao Kahoot)');
 ok(await aluno.locator('.alt[data-estado="certa"]').count() === 1, 'a alternativa correta é destacada na revelação');
-ok((await host.locator('.estado-faixa .chip', { hasText: /responderam/ }).count()) > 0, 'o painel mostra quantos já responderam');
+ok((await host.locator('.estado-faixa [data-chip="respostas"]').count()) > 0, 'o painel mostra quantos já responderam');
 const xpDepois = await xpDaAna();
 ok(xpAntes !== xpDepois, 'o XP do participante muda com o acerto', `(${xpAntes} → ${xpDepois})`);
 ok((await projetor.locator('.barra-votos').count()) > 0, 'o projetor mostra a distribuição de respostas');
@@ -186,11 +201,11 @@ ok((await projetor.locator('.barra-votos').count()) > 0, 'o projetor mostra a di
 await host.locator('select').first().selectOption({ label: 'módulo 3' });
 await dormir(400);
 for (let i = 0; i < 12; i++) {
-  if ((await host.locator('.estado-faixa .chip', { hasText: /exercício na tela/ }).count()) > 0) break;
+  if ((await host.locator('.estado-faixa .chip', { hasText: /exercício/ }).count()) > 0) break;
   await host.locator('button[title*="avançar"]').click();
   await dormir(250);
 }
-ok((await host.locator('.estado-faixa .chip', { hasText: /exercício na tela/ }).count()) > 0, 'cheguei na cena de widget');
+ok((await host.locator('.estado-faixa .chip', { hasText: /exercício/ }).count()) > 0, 'cheguei na cena de widget');
 await dormir(300);
 ok((await aluno.locator('button', { hasText: /^[rwx]$/ }).count()) === 0, 'o exercício só aparece depois de liberado');
 await host.locator('button[title*="avançar"]').click();   // liberar exercício
@@ -207,11 +222,11 @@ ok(numeroAntes !== numeroDepois, 'clicar num cadeado muda o rwx e o número ao v
 await host.locator('select').first().selectOption({ label: 'módulo 2' });
 await dormir(400);
 for (let i = 0; i < 14; i++) {
-  if ((await host.locator('.estado-faixa .chip', { hasText: /laboratório/ }).count()) > 0) break;
+  if ((await host.locator('.estado-faixa .chip', { hasText: /^lab/ }).count()) > 0) break;
   await host.locator('button[title*="avançar"]').click();
   await dormir(250);
 }
-ok((await host.locator('.estado-faixa .chip', { hasText: /laboratório/ }).count()) > 0, 'cheguei na cena de lab');
+ok((await host.locator('.estado-faixa .chip', { hasText: /^lab/ }).count()) > 0, 'cheguei na cena de lab');
 await dormir(500);
 ok((await aluno.locator('#slot-terminal').count()) === 0, 'o terminal só aparece depois de o apresentador liberar');
 await host.locator('button[title*="avançar"]').click();   // liberar terminal
@@ -278,9 +293,11 @@ await dormir(3000);
 ok((await aluno.locator('.item-check[data-ok="true"]').count()) === 6, 'depois dos comandos, os 6 critérios acendem sozinhos', `(${await aluno.locator('.item-check[data-ok="true"]').count()})`);
 
 // ──────────────────────── botões do apresentador ──────────────────────────
+await abrirMenu('sala');
 await host.locator('button[title*="grade pessoas"]').click();
 await dormir(900);
 ok(await host.locator('table').isVisible(), 'o botão "grade" abre a grade pessoas × critérios');
+await abrirMenu('sala');
 await host.locator('button[title*="grade pessoas"]').click();
 await dormir(400);
 
@@ -301,22 +318,27 @@ await host.locator('.estado-faixa button', { hasText: 'ana' }).first().click();
 await dormir(400);
 ok(!((await host.locator('.estado-faixa').textContent()) ?? '').includes('ana'), 'e o apresentador limpa a fila com um clique');
 
+await abrirMenu('jogo');
 await host.fill('input[placeholder="recado para a sala"]', 'teste de recado');
 await host.keyboard.press('Enter');
 await dormir(600);
 ok(await aluno.locator('.toast', { hasText: 'teste de recado' }).isVisible(), 'o recado do apresentador aparece na tela de todos');
 
+await abrirMenu('jogo');
 await host.locator('select').nth(1).selectOption('resgate');
 await dormir(800);
 ok(await host.locator('.toast').isVisible(), 'o seletor de evento ao vivo dispara e confirma');
 
+await abrirMenu('sala');
 const pausa = host.locator('button[title*="congela"]');
 await pausa.click();
 await dormir(500);
 ok(await aluno.locator('.chip', { hasText: /pausado/ }).isVisible(), 'a pausa global aparece na tela do participante');
+await abrirMenu('sala');
 await pausa.click();
 await dormir(300);
 
+await abrirMenu('cena');
 const gabarito = host.locator('button[title*="aplica a solução"]');
 if (await gabarito.count()) {
   await gabarito.click();
@@ -326,6 +348,7 @@ if (await gabarito.count()) {
 }
 
 // dois toasts seguidos: o segundo não pode ser apagado pelo timer do primeiro
+await abrirMenu('jogo');
 await host.fill('input[placeholder="recado para a sala"]', 'primeiro');
 await host.keyboard.press('Enter');
 await dormir(400);
@@ -336,6 +359,7 @@ ok((await aluno.locator('.toast').first().textContent())?.includes('segundo'),
   'dois avisos seguidos: o segundo sobrevive ao timer do primeiro');
 
 // ───────────────────── grupos, cartas e extras ────────────────────────────
+await abrirMenu('sala');
 await host.locator('button[title*="distribui todos"]').click();
 await dormir(900);
 // a escolha de equipe é no começo do workshop (módulo 0); no módulo 6 ficam
@@ -380,9 +404,25 @@ if (await carta.count()) {
 }
 ok((await aluno.locator('input[placeholder="mensagem para a equipe"]').count()) > 0, 'a cena das cartas tem o chat da equipe');
 
+// ── equipe pela barra de baixo ──
+const botaoDaEquipe = aluno.locator('.controles button[title^="sua equipe"]');
+ok((await botaoDaEquipe.count()) === 1, 'a barra mostra a equipe da pessoa');
+await botaoDaEquipe.click();
+await dormir(200);
+const minhaNoMenu = aluno.locator('.painel-controles button[title="esta é a sua equipe"]');
+ok((await minhaNoMenu.count()) === 1 && (await minhaNoMenu.isDisabled()), 'a própria equipe aparece travada (clicar não tira a pessoa da equipe)');
+const antesDaTroca = await minhaNoMenu.getAttribute('data-equipe');
+await aluno.locator('.painel-controles button[title^="entrar na equipe"]').first().click();
+await dormir(700);
+const depoisDaTroca = (await aluno.locator('.controles button[title^="sua equipe"]').getAttribute('title'))?.replace('sua equipe: ', '').replace('. Clique para trocar', '');
+ok(!!depoisDaTroca && depoisDaTroca !== antesDaTroca, 'trocar de equipe pela barra funciona', `(${antesDaTroca} → ${depoisDaTroca})`);
+
 // ── temas: slide claro/escuro e cores do terminal ──
 const temaDoHtml = () => aluno.evaluate(() => document.documentElement.dataset.tema);
 const temaInicial = await temaDoHtml();
+// no participante, tema e cores ficam no menu "você" da barra de baixo
+const abrirMenuDoAluno = async () => { await aluno.locator('button[data-menu="você"]').click(); await dormir(200); };
+await abrirMenuDoAluno();
 await aluno.locator('button[title*="slide claro e escuro"]').click();
 await dormir(500);
 ok((await temaDoHtml()) !== temaInicial, 'o botão de tema troca o slide entre claro e escuro', `(${temaInicial} → ${await temaDoHtml()})`);
@@ -390,6 +430,7 @@ await aluno.reload({ waitUntil: 'domcontentloaded' });
 await dormir(1800);
 ok((await temaDoHtml()) !== temaInicial, 'e a escolha sobrevive ao recarregar');
 
+await abrirMenuDoAluno();
 await aluno.locator('button[title*="cores do terminal"]').click();
 await dormir(500);
 const temas = await aluno.locator('button[title*="tema"], button[title*="abre no nível"]').count();
@@ -400,6 +441,7 @@ await dormir(600);
 ok((await aluno.locator('.xterm').count()) > 0, 'escolher um tema não quebra o terminal');
 
 // ── tela de pessoas do apresentador ──
+await abrirMenu('sala');
 await host.locator('button[title*="pessoas na sala"]').click();
 await dormir(900);
 ok((await host.locator('button[title="expulsar da sala"]').count()) > 0, 'a tela de Pessoas lista quem está na sala com ação de expulsar');

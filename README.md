@@ -34,18 +34,49 @@ O servidor imprime as URLs no boot:
 |---|---|
 | participante | `http://<seu-ip>:3000` (é o QR code) |
 | projetor | `http://localhost:3000/screen` |
-| apresentador | `http://localhost:3000/host` com PIN `1991` (troque com `PIN_HOST=...`) |
+| apresentador | `http://localhost:3000/host` com PIN `1991`, **só no computador do servidor** |
+| endereço | `http://localhost:3000/ip`: o endereço da turma em letra grande, com QR code, para projetar |
 | extras | `/cheatsheet` (imprime em A4) · `/regras` · `/me` (resumo e certificado) |
+
+O painel do apresentador só abre no computador que roda o servidor: o PIN está
+neste README, e qualquer aluno na rede abriria. Para abrir de outro aparelho,
+suba com `ARENA_HOST_REMOTO=1` **e** um PIN próprio em `PIN_HOST`. Tentativas de
+PIN são limitadas a 5 por minuto por aparelho.
+
+O servidor precisa do **Node 22.18 ou mais novo** (o `node:sqlite` e a leitura
+do deck em TypeScript sem build).
 
 Para zerar XP, grupos e ambientes entre ensaios: `npm run limpar`.
 
 ### Controles do apresentador
 
-Os controles estão agrupados por função na faixa de baixo: **slides** (voltar,
-avançar, ir para um módulo), **cena** (abrir, gabarito, preparar boss),
-**sala** (pausar, todos ao vivo, grade, sortear grupos) e **jogo** (eventos e
-recado). A faixa da direita mostra o estado: cena, fase, cronômetro, quantos já
-responderam, quantos estão ativos e quem travou.
+A faixa de baixo cabe numa linha só: **voltar, avançar e ir para** ficam à
+mostra, e os outros grupos abrem para cima como menus: **cena** (liberar,
+gabarito, preparar boss), **sala** (pausar, todos ao vivo, grade, pessoas,
+sortear e completar equipes) e **jogo** (eventos, eventos automáticos e
+recado). À direita ficam chips curtos (fase, cronômetro, `👥 3/20` de quem já
+respondeu, travados, pedidos de ajuda); o texto completo de cada um está no
+`title`. O número da cena, o relógio do plano e quantos estão ativos ficam no
+menu da ponta direita.
+
+**Ninguém passa da escolha de equipe sem equipe.** Avançar (ou pular com o "ir
+para") por uma cena de equipes ou de cartas com alguém **ativo** sem equipe é
+recusado pelo servidor, e o painel diz quem falta. "Completar equipes" coloca só
+essas pessoas nas equipes com menos gente, sem refazer o sorteio da sala.
+
+### Eventos ao vivo e a roleta
+
+Pelo menu **jogo**: XP dobrado, relâmpago (XP triplo por 1 min), chuva de
+tokens, resgate, resgate de equipe, sabotagem e a **roleta**. Com **eventos
+automáticos** ligados, o servidor sorteia um a cada 6 a 10 minutos, só quando
+ele cabe (nunca no meio de uma pergunta aberta, nem sabotagem antes do M3).
+
+Na roleta, uma pessoa a cada 20 é sorteada para girar, uma de cada vez, e a
+roleta aparece em todas as telas ao mesmo tempo (quem não está na vez pode
+minimizar). As fatias dependem do XP de quem gira: quem tem menos vê fatias que
+pagam mais (300, 200 ou 120 XP). Par ou ímpar e pedra-papel-tesoura são
+**duelos**: quem gira escolhe o adversário, cada um joga na própria tela e a
+sala assiste. "Perder" na roleta é perder um token: XP nunca diminui.
 
 Atalhos: `→` ou espaço avança · `←` volta · `A` abre a cena · `P` pausa ·
 `V` traz todos ao vivo · `G` abre a grade.
@@ -78,6 +109,28 @@ não fica na barra: ele aparece no pódio, quando o apresentador mostra. Tem tam
 vimos, lista por situação e glossário), **me perdi** (avisa o monitor, sem
 custo), o ícone de informação (explica cada item da tela) e o terminal.
 
+Na barra de baixo também ficam a **equipe** (escolher ou trocar a qualquer
+momento, respeitando equipe cheia, limite de trocas e equipes trancadas) e o
+menu **você**: nome, bicho ou **foto** (PNG, JPG ou WebP de até 2 MB, cortada e
+reduzida a 256 px no navegador), tema do slide e cores do terminal.
+
+### O chamado (módulo 6)
+
+Abrir o chamado prepara o servidor quebrado de cada equipe sozinho, e nenhum
+critério passa antes disso. O chamado é jogado com **cartões de comando**, sem
+terminal: cada cargo só envia os próprios cartões (carta sem dono fica aberta
+para a equipe), há cartões que parecem resolver e não resolvem, e a saída de
+tudo o que a equipe envia aparece para a equipe inteira. Quem tem carta começa
+com a conquista do cargo.
+
+### Travas do computador principal
+
+No modo local o terminal de cada aluno roda com o **seu** usuário. Por isso
+`sudo`, `apt`, `su`, `brew`, `shutdown`, `systemctl` e afins respondem por
+atalhos do workshop: `sudo apt install -y <pacote do lab>` "instala" um atalho
+na casa do aluno, e o resto é recusado. É quebra-molas, não muralha
+(`/usr/bin/sudo` passa por cima): no evento, use a VM (`ARENA_MODO=usuarios`).
+
 ### Quando outro computador não abre
 
 ```bash
@@ -93,7 +146,7 @@ roteiro de teste: se o `ping` do outro computador falha, o problema é a rede
 ### Jogos de equipe
 
 Quatro jogos curtos de equipe contra equipe, todos decididos no servidor e
-premiados por posição (300/200/140/90 XP):
+premiados por posição (450/300/210/140 XP):
 
 - **Corrida de comandos**: a mesma tarefa no terminal, vale a ordem de chegada.
 - **Montagem relâmpago**: montar a linha de comando com as peças na ordem certa.
@@ -151,7 +204,10 @@ hora e o olho percebe o desalinho sem saber dizer onde está.
 ### Testes
 
 ```bash
-npm run teste           # 38 verificações no servidor (socket, XP, checkers)
+npm run teste           # o fluxo inteiro no servidor (socket, XP, checkers)
+npm run teste:novidades # regras puras: perguntas, foto, rede, travas, cartões, roleta, eventos
+npm run teste:equipes   # equipe obrigatória e cartas que sobrevivem ao reinício
+npm run teste:chamado   # o chamado jogado com cartões, a roleta e os eventos, no servidor
 npm run teste:ui        # navegador clicando na interface inteira
 npm run teste:tempo     # o deck cabe em 120 min, todo comando tem explicação, referências apontam para trás
 npm run teste:widgets   # os exercícios do deck jogados até o fim, um por um
