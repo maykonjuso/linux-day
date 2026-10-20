@@ -197,32 +197,46 @@ export const LABS = {
     seed: 'boss.sh',
     solve: 'boss.sh',
     dicas: [
-      'O log está na pasta `log`, dentro da pasta da equipe: `grep FATAL log/relatorio.log`.',
-      'Abra o `htop`: o processo travado fica no topo, com a CPU perto de 100%. O PID é a 1ª coluna. Saia com q e rode `kill` + o PID.',
+      'O cartão `grep FATAL log/relatorio.log` mostra a linha do erro: o Investigador cola o texto depois de FATAL.',
+      'O cartão do `ps` lista primeiro quem mais gasta CPU. O PID é a 2ª coluna, e é ele que vai no cartão do `kill`.',
     ],
     criterios: [
       { id: 'b-c1', xp: 150, papel: 'investigador', tipo: 'resposta',
         descricao: 'Investigador: qual é a mensagem de erro do log?', check: `
+          # sem a marca, o chamado não foi preparado: um processo que nunca
+          # existiu contava como "morto" e o critério passava sozinho
+          [ -f "$DIR_GRUPO/.semeado" ] || cai "o chamado ainda está sendo preparado"
           esperado="$(grep -m1 FATAL "$DIR_GRUPO/log/relatorio.log" | sed 's/.*FATAL //')"
           echo "$RESPOSTA" | grep -qiF "$esperado" || cai "não é essa mensagem. Tente de novo"` },
       { id: 'b-c2', xp: 150, papel: 'operador',
         descricao: 'Operador: o processo travado foi morto', check: `
+          # sem a marca, o chamado não foi preparado: um processo que nunca
+          # existiu contava como "morto" e o critério passava sozinho
+          [ -f "$DIR_GRUPO/.semeado" ] || cai "o chamado ainda está sendo preparado"
           pgrep -f "arena-travado-$GRUPO" >/dev/null && cai "ele ainda está vivo — ache o PID e use kill"
           exit 0` },
       { id: 'b-c3', xp: 150, papel: 'mecanico',
         descricao: 'Mecânico: backup.sh executável e executado', check: `
+          # sem a marca, o chamado não foi preparado: um processo que nunca
+          # existiu contava como "morto" e o critério passava sozinho
+          [ -f "$DIR_GRUPO/.semeado" ] || cai "o chamado ainda está sendo preparado"
           f="$DIR_GRUPO/backup.sh"
           [ -f "$f" ] || cai "não achei o backup.sh no diretório do grupo"
           [ -x "$f" ] || cai "ele existe mas não roda: ls -l mostra que falta o x — chmod +x"
           [ -f "$DIR_GRUPO/backup.ok" ] || cai "agora rode: ./backup.sh"` },
       { id: 'b-c4', xp: 250, papel: 'relator',
         descricao: 'Relator: laudo.txt com grupo, contagem de ERROR e o PID morto', check: `
+          # sem a marca, o chamado não foi preparado: um processo que nunca
+          # existiu contava como "morto" e o critério passava sozinho
+          [ -f "$DIR_GRUPO/.semeado" ] || cai "o chamado ainda está sendo preparado"
           l="$DIR_GRUPO/laudo.txt"
           [ -f "$l" ] || cai "crie o laudo.txt no diretório do grupo"
           grep -qi "$GRUPO" "$l" || cai "o laudo precisa ter o nome da equipe ($GRUPO)"
           n="$(grep -c ERROR "$DIR_GRUPO/log/relatorio.log")"
           grep -q "$n" "$l" || cai "o laudo precisa da quantidade de linhas ERROR do log: grep -c ERROR log/relatorio.log"
-          grep -qE '[0-9]{2,}' "$l" || cai "o laudo precisa do PID do processo que vocês mataram"` },
+          # a contagem de ERROR já tem dois dígitos: sem descontá-la, o laudo
+          # passava sem o PID
+          grep -oE '[0-9]{2,}' "$l" | grep -vxF "$n" | grep -q . || cai "o laudo precisa do PID do processo que vocês mataram"` },
     ],
   },
 };

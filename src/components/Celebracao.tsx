@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Arena } from '@/deck/useArena';
 import { Icone } from './Icone';
+import { Avatar } from './Avatar';
 import { Ilustra } from './Ilustra';
 
 /**
@@ -46,7 +47,7 @@ function Numero({ valor, atraso = 0 }: { valor: number; atraso?: number }) {
 }
 
 // ─────────────────────────────────── pódio ──────────────────────────────────
-interface Linha { chave: string; nome: string; avatar: string; xp: number; ganho: number; cor?: string; eu: boolean }
+interface Linha { chave: string; nome: string; avatar: string; foto?: string | null; xp: number; ganho: number; cor?: string; eu: boolean }
 
 function linhasDo(arena: Arena, escopo: 'individual' | 'grupo', cenaId: string): Linha[] {
   const base = baseDa(arena, cenaId);
@@ -59,8 +60,10 @@ function linhasDo(arena: Arena, escopo: 'individual' | 'grupo', cenaId: string):
       eu: g.nome === arena.eu?.grupo,
     })).sort((a, b) => b.xp - a.xp);
   }
-  return arena.placar.individual.map((p) => ({
-    chave: p.id, nome: p.nick, avatar: p.emoji, xp: p.xp,
+  // quem saiu da sala não aparece no ranking (o XP continua guardado e volta
+  // com a pessoa); a própria pessoa sempre se vê
+  return arena.placar.individual.filter((p) => p.presenca !== 'desconectado' || p.id === arena.eu?.id).map((p) => ({
+    chave: p.id, nome: p.nick, avatar: p.emoji, foto: p.foto, xp: p.xp,
     ganho: Math.max(0, p.xp - (base?.ind[p.id] ?? p.xp)),
     eu: p.id === arena.eu?.id,
   }));
@@ -109,7 +112,7 @@ export function Podio({
                 style={{ ['--atraso' as string]: `${atraso}ms` }}>
                 <div className="quem">
                   {pos === 0 && <span className="coroa"><Ilustra nome="trofeu" tamanho={40} /></span>}
-                  <span className="avatar" style={l.cor ? { background: l.cor, color: '#fff' } : undefined}>{l.avatar}</span>
+                  <span className="avatar" style={l.cor ? { background: l.cor, color: '#fff' } : l.foto ? { padding: 0, overflow: 'hidden' } : undefined}>{l.foto ? <Avatar pessoa={{ emoji: l.avatar, foto: l.foto }} tamanho={64} /> : l.avatar}</span>
                   <strong className="nome">{l.nome}{l.eu ? ' (você)' : ''}</strong>
                   <span className="pontos"><Numero valor={l.xp} atraso={atraso + 300} /> XP</span>
                   {l.ganho > 0 && <span className="ganho">+{l.ganho} nesta rodada</span>}
@@ -128,7 +131,7 @@ export function Podio({
             // os 5 seguintes entram antes do pódio, do 8º para o 4º
             <li key={l.chave} data-eu={l.eu} style={{ ['--atraso' as string]: `${inicio + (suspense ? (4 - i) * 120 : i * 90 + (compacto ? 0 : 700))}ms` }}>
               <span className="posicao">{(compacto ? 1 : 4) + i}º</span>
-              <span className="nome"><span className="avatar-p" style={l.cor ? { background: l.cor, color: '#fff' } : undefined}>{l.avatar}</span> {l.nome}</span>
+              <span className="nome"><span className="avatar-p" style={l.cor ? { background: l.cor, color: '#fff' } : undefined}>{l.foto ? <Avatar pessoa={{ emoji: l.avatar, foto: l.foto }} tamanho={22} /> : l.avatar}</span> {l.nome}</span>
               {l.ganho > 0 && <span className="ganho">+{l.ganho}</span>}
               <span className="pontos"><Numero valor={l.xp} /> XP</span>
             </li>
@@ -208,6 +211,26 @@ const EVENTOS: Record<string, { titulo: string; icone: string; sala: string; voc
     sala: 'Alguém tirou a permissão de executar do deploy.sh de todo mundo. Quem já tinha o script funcionando, agora vê "Permission denied".',
     voce: () => 'Para você: rode ./deploy.sh. Se der Permission denied, conserte com chmod +x ~/deploy.sh (você aprendeu isso no módulo 3).',
   },
+  relampago: {
+    titulo: 'Relâmpago!', icone: 'foguete',
+    sala: 'Durante 1 minuto, todo XP ganho vale o triplo. Corre!',
+    voce: () => 'Para você: o próximo acerto conta 3×. Termine o item que está quase pronto.',
+  },
+  'chuva-de-tokens': {
+    titulo: 'Chuva de tokens!', icone: 'token',
+    sala: 'Todo mundo que está na sala ganhou 1 token. Token paga dica nos laboratórios.',
+    voce: (contemplado) => contemplado ? 'Para você: +1 token na conta.' : 'Para você: só ganha quem está ativo. Clique em "estou aqui" se a tela perguntar.',
+  },
+  'resgate-de-equipe': {
+    titulo: 'Resgate de equipe!', icone: 'pessoas',
+    sala: 'A equipe com menos XP ganhou 60 XP para cada pessoa. O placar das equipes ficou mais apertado.',
+    voce: (contemplado) => contemplado ? 'Para você: sua equipe foi resgatada, +60 XP!' : 'Para você: nada muda, mas a equipe de trás chegou mais perto.',
+  },
+  roleta: {
+    titulo: 'Roleta!', icone: 'alvo',
+    sala: 'Uma pessoa a cada 20 foi sorteada para girar a roleta. Quem tem menos XP vê fatias que pagam mais.',
+    voce: (contemplado) => contemplado ? 'Para você: você foi sorteado! Espere a sua vez de girar.' : 'Para você: fique de olho. Quem girar pode te chamar para um duelo.',
+  },
   resgate: {
     titulo: 'Resgate!', icone: 'premio',
     sala: 'As 5 pessoas com menos XP ganharam 80 XP de presente, para ninguém ficar para trás.',
@@ -220,8 +243,10 @@ export function CartaoEvento({ arena }: { arena: Arena }) {
   useEffect(() => {
     const s = arena.socket;
     if (!s) return;
-    const aoEvento = ({ tipo, contemplados = [] }: { tipo: string; contemplados?: string[] }) =>
-      setAberto({ tipo, contemplados, chave: Date.now() });
+    // a roleta se anuncia sozinha (ela mesma aparece na tela): o cartão ficava por cima dela
+    const aoEvento = ({ tipo, contemplados = [] }: { tipo: string; contemplados?: string[] }) => {
+      if (tipo !== 'roleta') setAberto({ tipo, contemplados, chave: Date.now() });
+    };
     s.on('evento', aoEvento);
     return () => { s.off('evento', aoEvento); };
   }, [arena.socket]);

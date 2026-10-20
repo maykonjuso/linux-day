@@ -47,6 +47,7 @@ export const COMANDOS: Record<string, { faz: string; exemplo?: string }> = {
   'chmod 644': { faz: 'todos leem, só o dono escreve', exemplo: 'chmod 644 relatorio.txt' },
   './deploy.sh': { faz: 'executa o script desta pasta', exemplo: './deploy.sh' },
   './script.sh': { faz: 'executa um script desta pasta', exemplo: './deploy.sh' },
+  './backup.sh': { faz: 'executa o script de backup desta pasta (precisa do x)', exemplo: './backup.sh' },
   'sudo': { faz: 'roda o comando como administrador', exemplo: 'sudo apt update' },
 
   // busca e pipes

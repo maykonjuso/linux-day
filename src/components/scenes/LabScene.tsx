@@ -12,8 +12,15 @@ import { ReferenciasConteudo } from '../ReferenciasConteudo';
 import { Aguardando } from '../SceneRouter';
 import { ListaComandos } from '../ListaComandos';
 import { liberada, encerrada } from '@/deck/liberada';
+import { DECK } from '@/deck/content';
+import { CartoesDoChamado } from './CartoesDoChamado';
 
 type CenaLab = Extract<Cena, { tipo: 'LabScene' }>;
+
+/** nome de cada carta de função, como aparece na cena das cartas */
+const NOME_DA_CARTA: Record<string, string> = Object.fromEntries(
+  DECK.flatMap((c) => (c.tipo === 'GroupScene' ? c.papeis ?? [] : [])).map((p) => [p.id, p.nome]),
+);
 
 /**
  * A cena de lab. Não é uma tela separada: é um slide, e o terminal vive dentro
@@ -57,7 +64,11 @@ export function LabScene({
   /** no chamado, o caminho da pasta da equipe (o servidor sabe onde ela fica) */
   const pastaDaEquipe = cena.escopo === 'grupo' && arena.eu?.grupo && arena.labs[cena.taskSlug]?.pasta
     ? `${arena.labs[cena.taskSlug].pasta}${arena.eu.grupo}` : null;
-  const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes' || cena.taskSlug === 'boss-chamado';
+  // no chamado, o campo de resposta é do Investigador (ou de todos, se a carta estiver livre)
+  const investigadorLivre = !Object.values(arena.meuGrupo?.papeis ?? {}).includes('investigador');
+  const souInvestigador = arena.eu?.id ? arena.meuGrupo?.papeis?.[arena.eu.id] === 'investigador' : false;
+  const precisaResposta = cena.criterios.length === 1 || cena.taskSlug === 'm4-pipes'
+    || (cena.taskSlug === 'boss-chamado' && (!cena.cartoes || souInvestigador || investigadorLivre));
 
   useEffect(() => { setResultados({}); setAvisos({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
   useEffect(() => { ultimaResposta.current = resposta; }, [resposta]);
@@ -124,6 +135,18 @@ export function LabScene({
   const tempo = arena.estado.restante;
   const papeis = arena.meuGrupo?.papeis ?? {};
 
+  /**
+   * No chamado, cada item é de uma carta. A carta sai do deck (e não da
+   * resposta do servidor, como antes), então o dono aparece desde o primeiro
+   * segundo e para todo mundo, inclusive para quem está sem carta.
+   */
+  const cartaDe = (papelId?: string) => {
+    if (!papelId) return null;
+    const donoId = Object.entries(papeis).find(([, p]) => p === papelId)?.[0];
+    const dono = arena.meuGrupo?.membros.find((m) => m.id === donoId) ?? null;
+    return { nome: NOME_DA_CARTA[papelId] ?? papelId, dono, minha: !!donoId && donoId === arena.eu?.id };
+  };
+
   return (
     <div className="cena" data-modulo={cena.modulo} data-denso="true" data-altura-fixa="true">
       <Cabecalho
@@ -136,11 +159,12 @@ export function LabScene({
       />
       {ganhoVisivel && <div key={ganhoVisivel.chave} className="ganho-xp">+{ganhoVisivel.xp} XP</div>}
       <p className="corpo-p"><Texto>{cena.objetivo}</Texto></p>
-      {cena.escopo === 'grupo' && souJogador && (
-        <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)' }}>
+      {cena.escopo === 'grupo' && souJogador && !cena.cartoes && (
+        <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)', flexWrap: 'wrap', maxWidth: '100%' }}>
           <Icone nome="pasta" tamanho={16} />
+          {/* o caminho completo passa de 500px: no celular ele quebra em vez de cortar a tela */}
           {pastaDaEquipe
-            ? <>pasta da equipe: <code className="kbd">cd {pastaDaEquipe}</code></>
+            ? <>pasta da equipe: <code className="kbd" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>cd {pastaDaEquipe}</code></>
             : 'entre numa equipe para ver a pasta de vocês'}
         </div>
       )}
@@ -161,15 +185,25 @@ export function LabScene({
             {cena.criterios.map((c, i) => {
               const r = resultados[c.id];
               const ok = r?.passou || arena.eu?.criterios?.includes(c.id);
-              const meuPapel = arena.eu?.id ? papeis[arena.eu.id] : null;
-              const bloqueado = !!(r?.papel && meuPapel && r.papel !== meuPapel);
+              const carta = cena.escopo === 'grupo' ? cartaDe(c.papel) : null;
+              // só fecha quem tem a carta; carta sem dono fica aberta para a equipe
+              const deOutro = !!(carta?.dono && !carta.minha);
               return (
-                <div key={c.id} className="item-check" data-ok={!!ok} data-novo={recentes.includes(c.id)}>
+                <div key={c.id} className="item-check" data-ok={!!ok} data-novo={recentes.includes(c.id)}
+                  data-carta={c.papel} data-minha={carta?.minha || undefined}
+                  style={carta?.minha && !ok ? { borderColor: 'var(--acento)', borderWidth: 2 } : undefined}>
                   <span className="marca">
                     {String(i + 1).padStart(2, '0')} <span className="caixa-marca">{ok ? '✓' : ''}</span>
                   </span>
 
                   <span className="texto-item">
+                    {carta && (
+                      <span className="carta-do-item" style={{ fontSize: '0.84em', color: carta.minha ? 'var(--acento)' : 'var(--tinta-2)' }}>
+                        <strong>{carta.nome}</strong>
+                        {' · '}
+                        {carta.minha ? 'sua carta' : carta.dono ? `${carta.dono.emoji} ${carta.dono.nick}` : 'carta livre: qualquer um da equipe entrega'}
+                      </span>
+                    )}
                     <span><Texto>{c.descricao}</Texto></span>
                     {!ok && avisos[c.id] && (
                       <span className="pista">
@@ -177,9 +211,9 @@ export function LabScene({
                         <span>{avisos[c.id]}</span>
                       </span>
                     )}
-                    {bloqueado && (
+                    {deOutro && !ok && souJogador && (
                       <span style={{ fontSize: '0.84em', color: 'var(--tinta-2)' }}>
-                        quem fecha este item é a carta <strong>{r?.papel}</strong>
+                        você pode ajudar, mas quem entrega este item é {carta?.dono?.nick}
                       </span>
                     )}
                   </span>
@@ -215,7 +249,11 @@ export function LabScene({
         <div className="coluna">
           {passou ? (
             <div className="cartao"><Icone nome="cadeado" tamanho={18} /> Laboratório encerrado. Os itens que você fez continuam marcados ao lado.</div>
-          ) : !solto ? <Aguardando papel={papel} oque="o terminal" /> : (
+          ) : !solto ? <Aguardando papel={papel} oque={cena.cartoes ? 'os cartões' : 'o terminal'} /> : cena.cartoes ? (
+            souJogador
+              ? <CartoesDoChamado arena={arena} nomeDaCarta={NOME_DA_CARTA} aberto={arena.estado.fase === 'aberta'} />
+              : <div className="cartao">Os cartões de comando estão na tela de cada participante.</div>
+          ) : (
           <div id={souJogador ? 'slot-terminal' : undefined} className="term term-lab"
             style={{ display: souJogador ? 'block' : 'grid', placeItems: 'center', color: '#a7a7b0' }}>
             {!souJogador && 'o terminal está na tela de cada participante'}

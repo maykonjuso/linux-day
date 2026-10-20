@@ -50,6 +50,9 @@ await pg.goto(URL);
 await pg.fill('input[placeholder="seu nome"]', 'ana');
 await pg.getByRole('button', { name: /^entrar$/ }).click();
 await dormir(1500);
+// sem equipe a apresentação não passa da escolha (testes/equipes.mjs)
+await new Promise((r) => host.emit('host:grupo:completar', null, r));
+await dormir(400);
 
 // o XP não aparece mais na barra do participante (só no pódio): lemos do
 // placar que o servidor manda para todo mundo
@@ -176,6 +179,9 @@ await dormir(300);
 ok((await consultaAberta()) === 0, 'e Esc fecha');
 
 // botão de consultar na barra
+// consultar e "me perdi" ficam no menu "ajuda" da barra de baixo
+await pg.locator('button[data-menu="ajuda"]').click();
+await dormir(200);
 await pg.locator('button[title*="comandos, glossário"]').click();
 await dormir(400);
 ok((await consultaAberta()) > 0, 'o botão consultar também abre');
@@ -197,6 +203,8 @@ ok(pediuAjuda, 'o botão de pedir ajuda chega no painel do apresentador');
 // me perdi (pulso anônimo)
 let pulso = false;
 host.on('pulso', () => { pulso = true; });
+await pg.locator('button[data-menu="ajuda"]').click();
+await dormir(200);
 await pg.locator('button[title*="avisa o monitor"]').click();
 await dormir(400);
 ok(pulso, 'o botão "me perdi" chega no painel, sem custar nada');
@@ -211,6 +219,8 @@ ok(await xp() === xpAntesReset, 'resetar não tira XP');
 // terminal na gaveta, fora do lab
 await irPara('m1-arvore');
 await dormir(400);
+await pg.locator('button[data-menu="você"]').click();   // o terminal avulso fica no menu "você"
+await dormir(200);
 await pg.locator('button[title*="abrir o terminal"]').click();
 await dormir(600);
 ok(await pg.locator('.xterm').isVisible(), 'a gaveta do terminal abre fora das cenas de lab');

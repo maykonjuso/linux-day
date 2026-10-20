@@ -14,6 +14,7 @@ import { execFile } from 'node:child_process';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { atalhosDeGuarda } from './guarda.mjs';
 
 const exec = promisify(execFile);
 
@@ -205,6 +206,9 @@ function prepararAtalhosLocais(conta, home) {
   escrever('whoami', `#!/bin/sh\necho ${conta}\n`);
   escrever('id', `#!/bin/sh\nif [ "$1" = "-u" ]; then echo 1000; else echo "uid=1000(${conta}) gid=1000(${conta}) groups=1000(${conta}),27(sudo)"; fi\n`);
   escrever('groups', `#!/bin/sh\necho "${conta} sudo"\n`);
+  // no modo local o shell é o usuário do apresentador: sudo, apt e afins
+  // respondem por aqui, e não pelo sistema (ver src/server/guarda.mjs)
+  if (MODO === 'local') for (const [nome, corpo] of Object.entries(atalhosDeGuarda())) escrever(nome, corpo);
 }
 
 async function rodarScriptDeArquivo(pasta, nome, conta, env) {
@@ -268,6 +272,17 @@ export async function rodarCheck(conta, script, env = {}) {
   } catch (e) {
     const texto = String(e.stdout || e.stderr || e.message).trim();
     return { passou: false, mensagem: texto.split('\n').filter(Boolean).pop() || 'não passou ainda' };
+  }
+}
+
+/** Roda um comando e devolve a saída inteira (saída e erro juntos, cortada em 2 KB). */
+export async function rodarComando(conta, script, env = {}) {
+  const cortar = (t) => (t.length > 2048 ? `${t.slice(0, 2048)}\n…` : t);
+  try {
+    const { stdout, stderr } = await comoUsuario(conta, script, env);
+    return { ok: true, saida: cortar(`${stdout}${stderr}`.trim()) };
+  } catch (e) {
+    return { ok: false, saida: cortar(`${e.stdout ?? ''}${e.stderr ?? ''}`.trim() || (e.killed ? 'demorou demais' : 'o comando falhou')) };
   }
 }
 

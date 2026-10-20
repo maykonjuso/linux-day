@@ -5,6 +5,7 @@ import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
 import { useTema } from '@/deck/useTema';
 import { CartaoEvento } from '@/components/Celebracao';
+import { Roleta } from '@/components/Roleta';
 
 /**
  * A tela do projetor: só conteúdo.
@@ -43,6 +44,7 @@ export default function Screen() {
 
       {aviso && <div className="toast">📣 {aviso}</div>}
       <CartaoEvento arena={arena} />
+      <Roleta arena={arena} papel="screen" />
 
       {estado.pausado && (
         <div style={{

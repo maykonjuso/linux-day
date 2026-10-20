@@ -7,6 +7,9 @@ import { Encaixe } from '@/components/Encaixe';
 import { TerminalHost } from '@/components/TerminalHost';
 import { Consulta } from '@/components/Consulta';
 import { Icone } from '@/components/Icone';
+import { MenuControles } from '@/components/MenuControles';
+import { Roleta } from '@/components/Roleta';
+import { Avatar } from '@/components/Avatar';
 import { Ilustra } from '@/components/Ilustra';
 import { Tour } from '@/components/Tour';
 import { Perfil } from '@/components/Perfil';
@@ -17,6 +20,9 @@ import { DECK } from '@/deck/content';
 import { CartaoEvento, CartaoConquista, Confete } from '@/components/Celebracao';
 
 import { AVATARES, AVATAR_PADRAO, usuarioDoNick } from '@/deck/avatares';
+
+/** a cena em que a turma escolhe a equipe (a primeira GroupScene do deck) */
+const ESCOLHA_DE_EQUIPE = DECK.findIndex((c) => c.tipo === 'GroupScene' && c.modo === 'equipes');
 
 /**
  * A tela do participante. É o deck, e é a única URL dele nas 2 horas: o quiz,
@@ -200,7 +206,8 @@ export default function Player() {
    */
   // só depois de o apresentador liberar: antes disso a turma lê o enunciado
   const emLab = livre === null && estado.fase !== 'idle' && (
-    cenaVista.tipo === 'LabScene' ||
+    // o chamado é jogado com cartões, sem terminal
+    (cenaVista.tipo === 'LabScene' && !cenaVista.cartoes) ||
     (cenaVista.tipo === 'ArenaScene' && cenaVista.jogo === 'corrida')
   );
 
@@ -240,22 +247,32 @@ export default function Player() {
         </button>
       )}
 
-      {/* controles em grupos: identidade · navegação · ajuda · estado */}
+      {/* chegou depois da escolha de equipe: sem equipe a apresentação não
+          avança, então o caminho de volta para escolher fica na cara */}
+      {livre === null && !eu.grupo && ESCOLHA_DE_EQUIPE >= 0 && estado.cenaIndex > ESCOLHA_DE_EQUIPE && (
+        <button className="btn primario" data-acao="escolher-equipe"
+          onClick={() => setLivre(ESCOLHA_DE_EQUIPE)}
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
+          <Icone nome="pessoas" tamanho={16} /> você está sem equipe: escolher agora
+        </button>
+      )}
+
+      {/* uma linha só: identidade, tokens e navegação à mostra; ajuda e tela
+          em menus que abrem para cima */}
       <div className="controles">
-        <div className="bloco-controle">
-          <span style={{ fontSize: 18 }}>{eu.emoji}</span>
-          <strong style={{ fontSize: 14 }}>{eu.nick}</strong>
+        <div className="bloco-controle" title={nivel.prompt.replace('{nick}', usuarioDoNick(eu.nick))}>
+          <Avatar pessoa={eu} tamanho={22} />
+          <strong style={{ fontSize: 14, marginLeft: 'var(--e1)' }}>{eu.nick}</strong>
         </div>
 
         {/* sem placar aqui de propósito: a posição de cada um só aparece no
             pódio, quando o apresentador mostra (como no Kahoot). Fica só o
             saldo de tokens, que a pessoa precisa para decidir pedir dica. */}
         <div className="bloco-controle" title="tokens: moedas para comprar dicas nos laboratórios">
-          <span className="btn-icone"><Icone nome="token" tamanho={15} /> {eu.tokens} tokens</span>
+          <span className="btn-icone"><Icone nome="token" tamanho={15} /> {eu.tokens}<span className="texto"> tokens</span></span>
         </div>
 
         <div className="bloco-controle">
-          <span className="rotulo">slides</span>
           <button className="btn-icone" title="olhar o slide anterior"
             disabled={indiceAtual <= 0}
             onClick={() => setLivre((l) => Math.max(0, (l ?? estado.cenaIndex) - 1))}>
@@ -263,45 +280,69 @@ export default function Player() {
           </button>
           {livre !== null && (
             <button className="btn-icone destaque" onClick={() => setLivre(null)}>
-              <Icone nome="tocar" tamanho={16} /><span className="texto">voltar ao vivo</span>
+              <Icone nome="tocar" tamanho={16} /><span className="texto">ao vivo</span>
             </button>
           )}
         </div>
 
-        <div className="bloco-controle">
-          <span className="rotulo">ajuda</span>
+        {/*
+          A equipe também se escolhe daqui, a qualquer momento: quem chegou
+          atrasado, saiu sem querer ou caiu numa equipe cheia não precisa
+          esperar o slide de equipes voltar. A própria equipe não é clicável
+          (no cartão da cena, clicar nela é sair, e sair seguraria a sala).
+        */}
+        <MenuControles rotulo={eu.grupo ?? 'equipe'} icone="pessoas" destaque={eu.grupo ? null : '!'}
+          titulo={eu.grupo ? `sua equipe: ${eu.grupo}. Clique para trocar` : 'você está sem equipe: escolha a sua'}>
+          {arena.equipesTrancadas && <div className="info-menu">As equipes estão trancadas durante o chamado.</div>}
+          {[...arena.placar.grupos].sort((a, b) => a.ordem - b.ordem).map((g) => {
+            const minha = g.nome === eu.grupo;
+            const cheia = !minha && g.membros.length >= g.capacidade;
+            return (
+              <button key={g.nome} className="btn-icone" data-equipe={g.nome}
+                disabled={minha || cheia || arena.equipesTrancadas}
+                title={minha ? 'esta é a sua equipe' : cheia ? 'equipe cheia' : arena.equipesTrancadas ? 'equipes trancadas' : `entrar na equipe ${g.nome}`}
+                onClick={() => arena.emit('grupo:entrar', g.nome)}>
+                <span aria-hidden style={{ width: 12, height: 12, borderRadius: 99, background: g.cor, flex: 'none' }} />
+                <span className="texto" style={{ textTransform: 'capitalize' }}>{g.nome}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--tinta-2)' }}>
+                  {minha ? 'sua equipe' : cheia ? 'cheia' : `${g.membros.length}/${g.capacidade}`}
+                </span>
+              </button>
+            );
+          })}
+        </MenuControles>
+
+        <MenuControles rotulo="ajuda" icone="ajuda">
           <button className="btn-icone" onClick={() => setConsulta(true)} title="comandos, glossário e o que já vimos">
-            <Icone nome="consultar" tamanho={16} /><span className="texto">consultar</span>
+            <Icone nome="consultar" tamanho={16} /><span className="texto">consultar comandos</span>
           </button>
           <button className="btn-icone" onClick={() => arena.emit('pulso', 'perdi')} title="avisa o monitor, sem custo nenhum">
             <Icone nome="duvida" tamanho={16} /><span className="texto">me perdi</span>
           </button>
           <button className="btn-icone" onClick={() => setTour(true)} title="o que é cada coisa desta tela">
-            <Icone nome="info" tamanho={16} />
+            <Icone nome="info" tamanho={16} /><span className="texto">o que é cada coisa</span>
           </button>
-          <button className="btn-icone" onClick={() => setPerfil(true)} title="trocar seu nome, seu bicho ou sair">
-            <Icone nome="ajustes" tamanho={16} />
-          </button>
-        </div>
+        </MenuControles>
 
-        <div className="bloco-controle">
-          <span className="rotulo">tema</span>
+        <MenuControles rotulo="você" icone="ajustes" titulo="seu nome, sua foto, as cores e o terminal">
+          <div className="info-menu">seu prompt: <code>{nivel.prompt.replace('{nick}', usuarioDoNick(eu.nick))}</code></div>
+          <button className="btn-icone" onClick={() => setPerfil(true)} title="trocar seu nome, seu avatar ou sair">
+            <Icone nome="nome" tamanho={16} /><span className="texto">nome, avatar e foto</span>
+          </button>
           <button className="btn-icone" onClick={() => trocar()} title="alternar entre slide claro e escuro">
-            <Icone nome={tema === 'claro' ? 'cadeado' : 'estrela'} tamanho={16} />
-            <span className="texto">{tema === 'claro' ? 'claro' : 'escuro'}</span>
+            <Icone nome="olho" tamanho={16} /><span className="texto">slide {tema === 'claro' ? 'claro' : 'escuro'}</span>
           </button>
           <button className="btn-icone" onClick={() => setEscolhendoTema((v) => !v)} title="trocar as cores do terminal">
-            <Icone nome="terminal" tamanho={16} /><span className="texto">cores</span>
+            <Icone nome="terminal" tamanho={16} /><span className="texto">cores do terminal</span>
           </button>
           {!emLab && (
             <button className="btn-icone" onClick={() => setGaveta((g) => !g)} title="abrir o terminal fora do laboratório">
-              <Icone nome="terminal" tamanho={16} /><span className="texto">terminal</span>
+              <Icone nome="shell" tamanho={16} /><span className="texto">abrir o terminal</span>
             </button>
           )}
-        </div>
+        </MenuControles>
 
         <div className="estado-faixa">
-          <span style={{ fontFamily: 'var(--mono)' }}>{nivel.prompt.replace('{nick}', usuarioDoNick(eu.nick))}</span>
           {estado.pausado && <span className="chip forte"><Icone nome="pausar" tamanho={14} /> pausado</span>}
           <span className="chip">
             {!conectado ? '🔴 reconectando' : livre === null ? '🟢 ao vivo' : '🟡 olhando sozinho'}
@@ -396,6 +437,7 @@ export default function Player() {
       <CartaoConquista arena={arena} />
       {aviso && <div className="toast">📣 {aviso}</div>}
       <CartaoEvento arena={arena} />
+      <Roleta arena={arena} papel="player" />
       {arena.avisoTerminal && (
         <div className="toast" style={{ background: 'var(--atencao)', color: 'var(--papel)', borderColor: 'var(--atencao)', maxWidth: '90vw', textAlign: 'center' }}>
           Seu terminal foi reiniciado porque {arena.avisoTerminal}. Seus arquivos e seu XP continuam lá:
@@ -409,11 +451,10 @@ export default function Player() {
           <div className="nivel-cartao">
             <Ilustra nome="trofeu" tamanho={64} />
             <div className="olho">subiu de nível</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'clamp(26px, 4vw, 56px)', fontWeight: 700 }}>
-              {nivelDe(eu.xp).prompt.replace('{nick}', usuarioDoNick(eu.nick))}
-            </div>
+            {/* o nome da pessoa, e não o prompt inteiro (nome@servidor:/etc$):
+                no meio de um jogo o que ela precisa ler é que foi ela */}
+            <div style={{ fontSize: 'clamp(32px, 5vw, 64px)', fontWeight: 800 }}>{eu.nick}</div>
             <div className="chip forte grande" style={{ marginTop: 'var(--e2)' }}>{arena.subiuNivel.patente}</div>
-            <p className="apoio" style={{ marginTop: 'var(--e2)' }}>esse é o seu novo prompt no terminal</p>
           </div>
         </div>
       )}

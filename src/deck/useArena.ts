@@ -6,9 +6,35 @@ import { DECK } from './content';
 import type { EstadoEvento, Papel, Participante } from './types';
 
 export interface GrupoPublico {
-  nome: string; cor: string; capacidade: number; media: number; xp: number;
+  nome: string; cor: string; capacidade: number; media: number; xp: number; ordem: number;
   papeis: Record<string, string>; membros: Participante[];
 }
+/** a roleta: quem gira agora, em que etapa, e quem ainda vai girar */
+export interface PessoaDaRoleta { id: string; nick: string; emoji: string; foto: string | null }
+export interface EstadoRoleta {
+  atual: {
+    id: string; faixa: 'baixo' | 'medio' | 'alto'; valor: number;
+    fatias: { id: string; rotulo: string; icone: string }[];
+    fase: 'girar' | 'escolher' | 'indicar' | 'julgar' | 'fim';
+    fatia: string | null; alvo?: string; dinamica?: string;
+    escolhas?: Record<string, string>;
+    resultado?: { texto: string; vencedor?: string; empate?: boolean };
+    pessoa: PessoaDaRoleta | null; alvoPessoa: PessoaDaRoleta | null;
+  } | null;
+  fila: PessoaDaRoleta[];
+}
+
+/** um cartão de comando do chamado, como o navegador recebe (sem o script) */
+export interface CartaoPublico {
+  id: string; papel: string; comando: string;
+  campo: { nome: string; tipo: 'pid' | 'texto'; dica: string } | null;
+}
+/** um cartão enviado por alguém da equipe, com o que ele devolveu */
+export interface Jogada {
+  nick: string; emoji: string; papel: string; comando: string; em: number;
+  ok: boolean; saida?: string; armadilha?: string;
+}
+
 export interface Placar {
   individual: Participante[]; grupos: GrupoPublico[];
   /** XP no começo da cena da vez (o servidor guarda), para o "+X nesta rodada" */
@@ -25,6 +51,7 @@ export interface EstadoArena {
   fila?: { equipe: string; nick: string }[];
   erradas?: string[];
   resolvido?: boolean;
+  vencedor?: { equipe: string; nick: string; xp: number } | null;
   desafio?: {
     jogo: string; enunciado: string; contexto?: string | null;
     pecas?: { id: string; rotulo: string }[]; tamanho?: number;
@@ -77,6 +104,10 @@ export function useArena(papel: Papel) {
   const [gabaritos, setGabaritos] = useState<Record<string, { correta: string; segundos: number; xpBase: number }>>({});
   /** quantas dicas cada lab tem (vem do servidor) */
   const [labs, setLabs] = useState<Record<string, { dicas: number; pasta?: string | null }>>({});
+  const [cartoes, setCartoes] = useState<CartaoPublico[]>([]);
+  const [roleta, setRoleta] = useState<EstadoRoleta | null>(null);
+  const [equipesTrancadas, setEquipesTrancadas] = useState(false);
+  const [jogadas, setJogadas] = useState<Jogada[]>([]);
   /** ninguém mexeu há muito tempo: a tela pergunta se a pessoa ainda está aí */
   const [ocioso, setOcioso] = useState(false);
   const ultimaInteracao = useRef(Date.now());
@@ -141,6 +172,10 @@ export function useArena(papel: Papel) {
     s.on('criterios', (lista: string[]) => setEu((p) => (p ? { ...p, criterios: lista } : p)));
     s.on('badges', (lista: string[]) => setEu((p) => (p ? { ...p, badges: lista } : p)));
     s.on('labs', (info: Record<string, { dicas: number; pasta?: string | null }>) => setLabs(info));
+    s.on('chamado:cartoes', (lista: CartaoPublico[]) => setCartoes(lista));
+    s.on('roleta', (r: EstadoRoleta | null) => setRoleta(r));
+    s.on('equipes', ({ trancadas }: { trancadas: boolean }) => setEquipesTrancadas(!!trancadas));
+    s.on('chamado:jogada', (j: Jogada) => setJogadas((js) => [...js.slice(-39), j]));
     s.on('expulso', ({ motivo }: { motivo: string }) => {
       localStorage.removeItem(CHAVE);
       setEu(null);
@@ -243,6 +278,15 @@ export function useArena(papel: Papel) {
       });
     }), []);
 
+  /** envia a foto já reduzida (src/deck/foto.ts), ou `null` para voltar ao bicho */
+  const enviarFoto = useCallback((dataUrl: string | null) =>
+    new Promise<{ ok: boolean; erro?: string }>((resolver) => {
+      socketRef.current?.emit('perfil:foto', dataUrl, (r: { ok?: boolean; foto?: string | null; erro?: string }) => {
+        if (r?.ok) setEu((p) => (p ? { ...p, foto: r.foto ?? null } : p));
+        resolver({ ok: !!r?.ok, erro: r?.erro });
+      });
+    }), []);
+
   /**
    * Sair. Guardamos quem era numa chave separada para a tela de entrada poder
    * oferecer "voltar como ana": o XP continua gravado no servidor, e voltar
@@ -276,6 +320,12 @@ export function useArena(papel: Papel) {
   }, []);
 
   const cena = useMemo(() => DECK[Math.min(estado.cenaIndex, DECK.length - 1)], [estado.cenaIndex]);
+  const enviarCartao = useCallback((cartaoId: string, valor?: string) =>
+    new Promise<{ ok?: boolean; erro?: string; jogada?: Jogada }>((r) => socketRef.current?.emit('chamado:cartao', { cartaoId, valor }, r)), []);
+  const carregarJogadas = useCallback(() => {
+    socketRef.current?.emit('chamado:historico', null, (lista: Jogada[]) => setJogadas(lista ?? []));
+  }, []);
+
   const meuGrupo = useMemo(() => placar.grupos.find((g) => g.nome === eu?.grupo) ?? null, [placar.grupos, eu?.grupo]);
 
   return {
@@ -289,7 +339,8 @@ export function useArena(papel: Papel) {
     }>((r) => {
       socketRef.current?.emit('arena:tentar', { resposta }, r);
     }),
-    entrar, renomear, sair, verificar, pedirDica, resetarAmbiente, estouAqui,
+    cartoes, jogadas, enviarCartao, carregarJogadas, roleta, equipesTrancadas,
+    entrar, renomear, enviarFoto, sair, verificar, pedirDica, resetarAmbiente, estouAqui,
     emit: (ev: string, ...args: unknown[]) => socketRef.current?.emit(ev, ...args),
   };
 }

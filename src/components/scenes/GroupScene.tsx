@@ -7,6 +7,7 @@ import { Icone } from '../Icone';
 import { Ilustra } from '../Ilustra';
 import { Texto } from '../Texto';
 import { Cabecalho } from '../Cabecalho';
+import { Avatar } from '../Avatar';
 
 type CenaGrupos = Extract<Cena, { tipo: 'GroupScene' }>;
 
@@ -44,8 +45,10 @@ export function GroupScene({ cena, arena, papel }: { cena: CenaGrupos; arena: Ar
 function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean; meu: string | null }) {
   return (
     <>
+      {/* ordem fixa: o placar vem ordenado por XP, e o check-in já dá XP, então
+          os cartões trocavam de lugar enquanto a turma clicava */}
       <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 'var(--e2)' }}>
-        {arena.placar.grupos.map((g) => {
+        {[...arena.placar.grupos].sort((a, b) => a.ordem - b.ordem).map((g) => {
           const souDaqui = meu === g.nome;
           const cheia = g.membros.length >= g.capacidade && !souDaqui;
           return (
@@ -69,8 +72,8 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
                 {g.membros.length === 0 && <small style={{ color: 'var(--tinta-2)' }}>vazia, seja a primeira pessoa</small>}
                 {g.membros.map((m) => (
                   <span key={m.id} title={m.nick}
-                    style={{ fontSize: 20, filter: m.presenca === 'ativo' ? undefined : 'grayscale(1) opacity(0.5)' }}>
-                    {m.emoji}
+                    style={{ filter: m.presenca === 'ativo' ? undefined : 'grayscale(1) opacity(0.5)' }}>
+                    <Avatar pessoa={m} tamanho={24} />
                   </span>
                 ))}
               </div>
@@ -85,9 +88,27 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
       </div>
 
       {souJogador && !meu && (
-        <div className="chip"><Icone nome="duvida" tamanho={14} /> escolha uma equipe para participar do chamado</div>
+        <div className="chip forte" data-aviso="sem-equipe">
+          <Icone nome="duvida" tamanho={14} /> escolha uma equipe: a apresentação só continua quando todo mundo tiver a sua
+        </div>
       )}
+      {!souJogador && <Pendentes arena={arena} />}
     </>
+  );
+}
+
+/** projetor e painel: quem ainda falta escolher (só quem está ativo segura a sala) */
+function Pendentes({ arena }: { arena: Arena }) {
+  const faltam = arena.placar.individual.filter((p) => p.presenca === 'ativo' && !p.grupo);
+  if (!faltam.length) {
+    return <div className="chip"><Icone nome="checklist" tamanho={14} /> todo mundo já tem equipe</div>;
+  }
+  return (
+    <div className="chip forte" data-aviso="sem-equipe">
+      <Icone nome="pessoas" tamanho={14} />
+      {faltam.length === 1 ? 'falta 1 pessoa' : `faltam ${faltam.length} pessoas`} escolher equipe:{' '}
+      {faltam.slice(0, 6).map((p) => `${p.emoji} ${p.nick}`).join(', ')}{faltam.length > 6 ? '…' : ''}
+    </div>
   );
 }
 

@@ -40,7 +40,9 @@ export const ARMADILHAS = [
 
 export const ECONOMIA = [
   { fonte: 'Quiz (história + relâmpago)', detalhe: '40 XP por acerto + até 30 por velocidade', total: '910' },
-  { fonte: 'Widgets (9 exercícios no slide)', detalhe: '60 XP cada', total: '540' },
+  { fonte: 'Widgets (9 exercícios no slide)', detalhe: '90 XP cada', total: '810' },
+  { fonte: 'Jogos de equipe', detalhe: 'corrida e caça ao erro: 450/300/210/140 por posição; passa ou repassa: 300', total: '~1.500' },
+  { fonte: 'Roleta', detalhe: '300 XP para quem tem menos XP, 200 no meio, 120 para quem tem mais', total: 'sorteio' },
   { fonte: 'Labs no terminal (M1 a M5)', detalhe: 'XP por critério, com pontos parciais', total: '1.220' },
   { fonte: 'Boss "O Chamado" (grupo)', detalhe: '4 defeitos, 1 por carta de função', total: '700' },
   { fonte: 'Extras', detalhe: 'check-in, predições, diagnósticos, mentoria, desafios bônus', total: '~300' },

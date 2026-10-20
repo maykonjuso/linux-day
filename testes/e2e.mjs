@@ -65,6 +65,10 @@ ok(ra.eu.tokens === 3, 'começam com 3 tokens');
 console.log('▸ esperando o seed do ambiente…');
 await esperar(2500);
 
+// sem equipe a apresentação não passa da escolha (testes/equipes.mjs)
+await pedir(ana, 'grupo:entrar', 'azul');
+await pedir(bia, 'grupo:entrar', 'azul');
+
 // ──────────────────────────────── quiz ────────────────────────────────────
 host.emit('host:ir', { cenaIndex: 4, cenaId: 'm0-q1', passo: 0, fase: 'idle' });
 await esperar(200);
@@ -193,6 +197,9 @@ ok(volta.estado.cenaIndex === 4, 'e cai exatamente na cena em que a sala está')
 
 // ───────────────────────────────── fim ────────────────────────────────────
 [host, bia, ana2].forEach((s) => s.close());
+// o processo travado do boss vive fora do servidor: sem isto, fica gastando CPU
+// e o próximo teste encontra dois
+spawn('pkill', ['-f', '[a]rena-travado-']);
 srv.kill('SIGTERM');
 await esperar(600);
 srv.kill('SIGKILL');

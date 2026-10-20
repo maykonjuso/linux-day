@@ -80,10 +80,15 @@ export interface CenaCapa extends CenaBase {
   xpDoModulo: number;
 }
 
-/** Quem está apresentando: nome e GitHub, sem cargo. */
+/**
+ * Quem está apresentando. O passo 0 mostra todo mundo junto; o passo N mostra
+ * a pessoa N sozinha, com a história e o QR code do LinkedIn. Telefone e
+ * e-mail ficam de fora de propósito: o slide é projetado e abre no celular de
+ * toda a turma.
+ */
 export interface CenaApresentacao extends CenaBase {
   tipo: 'Apresentacao';
-  pessoas: { nome: string; github: string; foto: string }[];
+  pessoas: { nome: string; github: string; foto: string; cargo: string; linkedin: string; historia: string[] }[];
 }
 
 /** Como usar a tela: cada controle, onde fica e o que faz. */
@@ -144,7 +149,10 @@ export interface CenaLab extends CenaBase {
   /** casa com a chave em src/server/labs.mjs (os checkers) */
   taskSlug: string;
   objetivo: string;
-  criterios: { id: string; descricao: string; xp: number }[];
+  /** o chamado: sem terminal, cada cargo joga com os próprios cartões de comando */
+  cartoes?: boolean;
+  /** `papel`: no chamado, a carta de função que entrega o critério */
+  criterios: { id: string; descricao: string; xp: number; papel?: string }[];
   comandosDoModulo: string[];
   segundos: number;
   escopo: 'individual' | 'grupo';
@@ -231,6 +239,8 @@ export interface EstadoEvento {
   passo: number;
   fase: FaseCena;
   pausado: boolean;
+  /** o servidor sorteia eventos sozinho (src/server/eventos.mjs) */
+  eventosAuto?: boolean;
   /** segundos restantes quando a cena tem timer, ou null */
   restante: number | null;
 }
@@ -239,6 +249,8 @@ export interface Participante {
   id: string;
   nick: string;
   emoji: string;
+  /** endereço da foto enviada (/foto/<id>?v=…), ou null para usar o emoji */
+  foto?: string | null;
   xp: number;
   tokens: number;
   nivel: number;

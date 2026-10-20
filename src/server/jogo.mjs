@@ -6,6 +6,7 @@
  *   2. Nenhum critério pontua duas vezes (idempotência no banco).
  */
 import { dao } from './db.mjs';
+import { remontarCartas } from './equipes.mjs';
 
 export const NIVEIS = [
   { nivel: 1, xp: 0, patente: 'Visitante', prompt: 'visitante@linuxday:~$' },
@@ -33,9 +34,18 @@ export const BADGES = {
   mentor: '3 ajudas validadas',
   root: 'nível 5',
   'relatorio-entregue': 'preencheu o feedback',
+  // entram no começo do chamado, pela carta que a pessoa pegou: quem perdeu
+  // os módulos anteriores começa o desafio final com a conquista do cargo
+  'carta-investigador': 'começou o chamado como Investigador: lê o log antes de mexer',
+  'carta-operador': 'começou o chamado como Operador: cuida dos processos',
+  'carta-mecanico': 'começou o chamado como Mecânico: conserta permissões',
+  'carta-relator': 'começou o chamado como Relator: documenta o conserto',
 };
 
 export const CAPACIDADE_DO_GRUPO = 10;
+
+/** a versão no endereço faz o navegador buscar a foto nova quando ela muda */
+export const enderecoDaFoto = (id, versao) => `/foto/${encodeURIComponent(id)}?v=${versao}`;
 
 /** nome e cor dos dez grupos (as cores viram a borda do card e do placar) */
 export const GRUPOS_PADRAO = [
@@ -55,7 +65,7 @@ export function nivelDe(xp) {
   return NIVEIS.reduce((a, n) => (xp >= n.xp ? n : a), NIVEIS[0]);
 }
 
-export function criarJogo({ emitir, emitirPara }) {
+export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
   const participantes = new Map();   // id -> estado completo
   const grupos = new Map();
   const combos = new Map();          // id -> { mult, seguidos }
@@ -84,20 +94,30 @@ export function criarJogo({ emitir, emitirPara }) {
 
   function recarregarDoBanco() {
     const xps = dao.xpTotais();
+    const fotos = dao.versoesDasFotos();
     for (const r of dao.participantes()) {
       participantes.set(r.id, {
         id: r.id, nick: r.nick, emoji: r.emoji, conta: r.conta, grupo: r.grupo, papel: r.papel,
         tokens: r.tokens, xp: xps[r.id] ?? 0, nivel: nivelDe(xps[r.id] ?? 0).nivel,
         presenca: 'desconectado', livre: false, visto: r.visto_em,
         criterios: dao.criteriosDe(r.id), badges: dao.badgesDe(r.id),
+        foto: fotos[r.id] ? enderecoDaFoto(r.id, fotos[r.id]) : null,
       });
       if (r.grupo && grupos.has(r.grupo)) grupos.get(r.grupo).membros.add(r.id);
+    }
+    const doBanco = [...participantes.values()].filter((p) => p.grupo && grupos.has(p.grupo));
+    const { porEquipe, soltos } = remontarCartas(doBanco, cartasValidas);
+    for (const [nome, mapa] of porEquipe) grupos.get(nome).papeis = mapa;
+    for (const id of soltos) {
+      const p = participantes.get(id);
+      p.papel = null;
+      dao.salvarParticipante(p);
     }
   }
 
   function publico(p) {
     return {
-      id: p.id, nick: p.nick, emoji: p.emoji, xp: p.xp, tokens: p.tokens, nivel: p.nivel,
+      id: p.id, nick: p.nick, emoji: p.emoji, foto: p.foto ?? null, xp: p.xp, tokens: p.tokens, nivel: p.nivel,
       grupo: p.grupo, papel: p.papel, presenca: p.presenca, livre: p.livre,
       criterios: p.criterios, badges: p.badges, conta: p.conta,
       combo: combos.get(p.id)?.mult ?? 1,
@@ -117,11 +137,12 @@ export function criarJogo({ emitir, emitirPara }) {
    */
   function placar() {
     const individual = [...participantes.values()].map(publico).sort((a, b) => b.xp - a.xp);
-    const porGrupo = [...grupos.values()].map((g) => {
+    const porGrupo = [...grupos.values()].map((g, ordem) => {
       const membros = [...g.membros].map((id) => participantes.get(id)).filter(Boolean);
       const media = membros.length ? Math.round(membros.reduce((s, m) => s + m.xp, 0) / membros.length) : 0;
       return {
-        nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis,
+        // a tela de escolha usa a ordem fixa; o placar continua ordenado por XP
+        nome: g.nome, cor: g.cor, capacidade: g.capacidade, papeis: g.papeis, ordem,
         xp: xpDaEquipe(g.nome), media, membros: membros.map(publico),
       };
     }).sort((a, b) => b.xp - a.xp || b.media - a.media);

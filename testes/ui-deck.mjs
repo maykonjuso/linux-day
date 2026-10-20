@@ -62,6 +62,9 @@ for (const [nome, rota, tamanho] of [
   telas[nome] = pg;
 }
 await dormir(1200);
+// sem equipe a apresentação não passa da escolha (testes/equipes.mjs)
+await new Promise((r) => host.emit('host:grupo:completar', null, r));
+await dormir(400);
 
 /** a cena cabe na tela, ou rola? (cortar é o que não pode) */
 /**
@@ -117,7 +120,10 @@ for (let i = 0; i < DECK.length; i++) {
     // No celular, laboratório, equipes, exercícios e jogos rolam de propósito:
     // o terminal e os painéis não cabem numa tela de 390px, e lá a pessoa rola
     // com o dedo sem estranhar. O que não pode rolar é o projetor e o notebook.
-    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene', 'Controles', 'Recap'].includes(c.tipo);
+    // A apresentação de cada pessoa tem a história inteira, que no celular rola.
+    // O pódio também: com a turma em equipes ele empilha pessoas e equipes, e
+    // isso só cabe no projetor (que continua sem poder rolar).
+    const rolarTolerado = nome === 'celular' && ['LabScene', 'GroupScene', 'WidgetScene', 'ArenaScene', 'Controles', 'Recap', 'Scoreboard', 'Apresentacao'].includes(c.tipo);
     if (m.precisaRolar && !rolarTolerado) cortadas.push(`${c.id} (${nome}: precisa rolar)`);
     if (m.escala < (nome === 'celular' ? 0.62 : 0.72)) cortadas.push(`${c.id} (${nome}: encolheu para ${m.escala})`);
     if (!m.tituloVisivel) cortadas.push(`${c.id} (${nome}: título fora da tela)`);
@@ -153,7 +159,10 @@ for (let i = 0; i < DECK.length; i++) {
     cortadas.push(`${c.id}: cena sem ilustração`);
   }
 
-  const tParticipante = (await telas.participante.locator('.cena .titulo, .cena .olho').first().textContent())?.trim();
+  // no chamado o participante vê o nome da própria equipe no cabeçalho, e o
+  // projetor (que é de todas) não: essa diferença é de propósito
+  const tParticipante = (await telas.participante.locator('.cena .titulo, .cena .olho').first().textContent())?.trim()
+    .replace(/^(chamado em equipe) · [^·]+?(?= ·|$)/, '$1');
   const tProjetor = (await telas.projetor.locator('.cena .titulo, .cena .olho').first().textContent())?.trim();
   if (tParticipante !== tProjetor) divergentes.push(`${c.id} ("${tParticipante}" × "${tProjetor}")`);
 }
@@ -173,7 +182,7 @@ await dormir(700);
 await hostPg.locator('select').first().selectOption({ label: 'módulo 0' });
 await dormir(500);
 
-const indice = async () => Number(((await hostPg.locator('.estado-faixa .chip', { hasText: /^cena / }).textContent()) ?? '').match(/\d+/)?.[0] ?? 0);
+const indice = async () => Number(((await hostPg.locator('button[data-menu*="/"]').textContent()) ?? '').match(/\d+/)?.[0] ?? 0);
 let travadas = 0;
 for (let n = 0; n < DECK.length + 40; n++) {
   const antes = await indice();

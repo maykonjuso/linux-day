@@ -9,12 +9,17 @@
  * auditório, não a exceção.
  */
 import { createServer } from 'node:http';
-import { networkInterfaces } from 'node:os';
 import next from 'next';
 import { Server } from 'socket.io';
 
 import { dao } from './src/server/db.mjs';
-import { criarJogo, nivelDe, CAPACIDADE_DO_GRUPO } from './src/server/jogo.mjs';
+import { criarJogo, nivelDe, CAPACIDADE_DO_GRUPO, enderecoDaFoto } from './src/server/jogo.mjs';
+import { validarFoto } from './src/server/fotos.mjs';
+import { descreverRede, enderecosDaRede } from './src/server/rede.mjs';
+import { podeSerApresentador, criarLimitador } from './src/server/guarda.mjs';
+import { prepararCartao, CARTOES } from './src/server/chamado.mjs';
+import { criarRoleta } from './src/server/roleta.mjs';
+import { EVENTOS, sortearEvento, proximoIntervalo } from './src/server/eventos.mjs';
 import { criarFila } from './src/server/fila.mjs';
 import { LABS, labDe, scriptDoCheck } from './src/server/labs.mjs';
 import * as amb from './src/server/ambiente.mjs';
@@ -23,14 +28,42 @@ import { vistoriar, TETOS } from './src/server/vigia.mjs';
 import { usuarioDoNick } from './src/server/nomes.mjs';
 import { GABARITOS, gabaritoDe } from './src/server/gabaritos.mjs';
 import { criarArena } from './src/server/arena.mjs';
+import { bloqueioDoAvanco, semEquipe, distribuirSemEquipe, cartasDoDeck } from './src/server/equipes.mjs';
+// o Node 22.18+ lê TypeScript sem build (remove os tipos); o deck é o mesmo do navegador
+import { DECK } from './src/deck/content.ts';
+
+const CARTAS_VALIDAS = new Set(cartasDoDeck(DECK).map((c) => c.id));
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = Number(process.env.PORT ?? 3000);
 const PIN_HOST = process.env.PIN_HOST ?? '1991';
+const HOST_REMOTO = process.env.ARENA_HOST_REMOTO === '1';
+const tentarPin = criarLimitador({ limite: 5, janelaMs: 60_000 });
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
-const server = createServer((req, res) => handle(req, res));
+const server = createServer((req, res) => {
+  // a foto de cada pessoa sai daqui, e não do placar (ver src/server/fotos.mjs)
+  // a página /ip pergunta em que endereço o servidor está (só o servidor sabe)
+  if (req.url === '/api/rede') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(descreverRede({ porta: port })));
+    return;
+  }
+  const foto = /^\/foto\/([^/?]+)/.exec(req.url ?? '');
+  if (foto) {
+    const r = dao.foto(decodeURIComponent(foto[1]));
+    if (!r) { res.writeHead(404).end(); return; }
+    res.writeHead(200, {
+      'Content-Type': r.mime, 'Cache-Control': 'public, max-age=31536000, immutable',
+      // a imagem nunca é interpretada como outra coisa
+      'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'",
+    });
+    res.end(Buffer.from(r.dados));
+    return;
+  }
+  return handle(req, res);
+});
 const io = new Server(server, { path: '/rt', cors: { origin: '*' }, maxHttpBufferSize: 1e6 });
 
 const fila = criarFila(Number(process.env.ARENA_CHECKERS ?? 6));
@@ -50,6 +83,7 @@ const codigoDe = (id) => String(id).slice(0, 4).toUpperCase();
 const jogo = criarJogo({
   emitir: (ev, dados) => io.emit(ev, dados),
   emitirPara: (id, ev, dados) => io.to(`p:${id}`).emit(ev, dados),
+  cartasValidas: CARTAS_VALIDAS,
 });
 jogo.recarregarDoBanco();
 
@@ -101,6 +135,76 @@ let equipesTrancadas = false;
 /** quantas vezes cada pessoa já trocou de equipe (limite baixo de propósito) */
 const trocasDeEquipe = new Map();
 const LIMITE_DE_TROCAS = Number(process.env.ARENA_MAX_TROCAS ?? 3);
+const XP_DO_WIDGET = 90;
+
+/** em que conta o processo travado de cada equipe nasceu (o kill roda nela) */
+const contaDoBoss = new Map();
+
+/** o chamado está aberto agora? (é o único momento em que cartão roda) */
+const CENA_DO_CHAMADO = DECK.find((c) => c.tipo === 'LabScene' && c.cartoes)?.id ?? null;
+const chamadoAberto = () => estado.cenaId === CENA_DO_CHAMADO && estado.fase === 'aberta';
+
+/**
+ * Prepara o chamado (os quatro defeitos) na pasta de cada equipe. `so` limita
+ * às equipes ainda não preparadas nesta sessão: é o que a abertura do chamado
+ * usa, para não desfazer o progresso de quem já começou se o apresentador
+ * reabrir a cena. O botão "preparar boss" refaz em todas.
+ */
+async function semearChamado({ soNovas = false } = {}) {
+  let n = 0;
+  for (const g of jogo.grupos.values()) {
+    if (!g.membros.size || (soNovas && contaDoBoss.has(g.nome))) continue;
+    // O processo travado nasce na conta do Operador. Com hidepid=2 cada
+    // pessoa só enxerga os próprios processos: semeado na conta de outro
+    // membro, o Operador não via nem conseguia matar, e o checker (que roda
+    // como quem verifica) achava que ele já estava morto.
+    const operador = Object.entries(g.papeis).find(([, p]) => p === 'operador')?.[0];
+    const conta = jogo.participantes.get(operador ?? [...g.membros][0])?.conta;
+    if (!conta) continue;
+    contaDoBoss.set(g.nome, conta);
+    const r = await amb.semear(conta, 'boss.sh', { GRUPO: g.nome, DIR_GRUPO: amb.dirDoGrupo(g.nome) });
+    if (r.ok) n++; else { contaDoBoss.delete(g.nome); console.warn('[boss]', g.nome, r.saida); }
+    g.jogadas = [];
+  }
+  return n;
+}
+
+/**
+ * Começo do chamado: cada pessoa com carta ganha a conquista do cargo e um
+ * token. Quem faltou aos módulos anteriores começa o desafio final com algo
+ * na mão, e o token paga a primeira dica.
+ */
+function iniciarChamado() {
+  // a equipe que ainda não tem o servidor quebrado ganha um agora: sem isso o
+  // chamado abria sem defeito nenhum e os critérios passavam sozinhos
+  semearChamado({ soNovas: true });
+  for (const g of jogo.grupos.values()) {
+    for (const [id, papel] of Object.entries(g.papeis)) {
+      if (!jogo.participantes.has(id)) continue;
+      const antes = dao.badgesDe(id).includes(`carta-${papel}`);
+      jogo.darBadge(id, `carta-${papel}`);
+      if (!antes) jogo.mexerTokens(id, 1, `carta-${papel}`);
+    }
+  }
+  emitirPlacar();
+}
+
+/**
+ * Coloca a pessoa numa equipe por decisão do apresentador (sortear, completar).
+ * Muda também a sala de socket: sem isso o chat da equipe nova não chegava a
+ * quem foi sorteado, e o da antiga continuava chegando.
+ */
+function colocarNaEquipe(id, nome) {
+  const p = jogo.participantes.get(id);
+  if (!p) return;
+  for (const g of jogo.grupos.values()) { g.membros.delete(id); delete g.papeis[id]; }
+  if (p.grupo) io.in(`p:${id}`).socketsLeave(`g:${p.grupo}`);
+  jogo.grupos.get(nome).membros.add(id);
+  p.grupo = nome; p.papel = null;
+  dao.salvarParticipante(p);
+  io.in(`p:${id}`).socketsJoin(`g:${nome}`);
+  io.to(`p:${id}`).emit('grupo', nome);
+}
 
 function pararTimer() { if (timer) clearInterval(timer); timer = null; }
 function iniciarTimer(segundos) {
@@ -163,6 +267,135 @@ async function avaliar(dono, conta, taskSlug, extra = {}) {
   return resultados;
 }
 
+// ─────────────────────────────── eventos ─────────────────────────────────────
+const ativosDaSala = () => [...jogo.participantes.values()].filter((p) => p.presenca === 'ativo');
+const membrosDaEquipeDe = (id) => {
+  const g = jogo.participantes.get(id)?.grupo;
+  return g ? [...(jogo.grupos.get(g)?.membros ?? [])] : [];
+};
+const INDICE_DO_M3 = DECK.findIndex((c) => c.tipo === 'LabScene' && c.taskSlug === 'm3-permissoes');
+
+/** quanto dura cada evento de multiplicador */
+const MULTIPLICADORES = { 'xp-dobrado': { mult: 2, segundos: 180 }, relampago: { mult: 3, segundos: 60 } };
+
+/**
+ * Dispara um evento. Serve ao painel e ao sorteio automático.
+ * `contemplados` vai junto para cada tela dizer o que mudou para ELA.
+ */
+function executarEvento(tipo) {
+  if (!EVENTOS[tipo]) return { erro: 'evento desconhecido' };
+  let contemplados = [];
+  let segundos = null;
+  if (MULTIPLICADORES[tipo]) {
+    if (jogo.multiplicadorGlobal !== 1) return { erro: 'já tem um multiplicador valendo' };
+    ({ segundos } = MULTIPLICADORES[tipo]);
+    jogo.multiplicadorGlobal = MULTIPLICADORES[tipo].mult;
+    setTimeout(() => { jogo.multiplicadorGlobal = 1; io.emit('evento:fim', { tipo }); }, segundos * 1000);
+  }
+  if (tipo === 'sabotagem') {
+    for (const p of jogo.participantes.values()) {
+      if (p.conta) fila.adicionar(() => amb.rodarCheck(p.conta, 'chmod -x "$HOME/deploy.sh" 2>/dev/null; exit 0', {}));
+    }
+  }
+  if (tipo === 'resgate') {
+    // todo mundo, inclusive quem saiu: o XP fica guardado e volta com a pessoa
+    const atrasados = [...jogo.participantes.values()].sort((a, b) => a.xp - b.xp).slice(0, 5);
+    for (const p of atrasados) jogo.premiar(p.id, 80, 'resgate', 'evento');
+    contemplados = atrasados.map((p) => p.id);
+  }
+  if (tipo === 'resgate-de-equipe') {
+    const ultima = jogo.placar().grupos.filter((g) => g.membros.length).sort((a, b) => a.xp - b.xp || a.media - b.media)[0];
+    if (ultima) {
+      jogo.premiarEquipe(ultima.nome, 60);
+      for (const m of ultima.membros) jogo.premiar(m.id, 60, 'resgate-de-equipe', 'evento');
+      contemplados = ultima.membros.map((m) => m.id);
+    }
+  }
+  if (tipo === 'chuva-de-tokens') {
+    for (const p of ativosDaSala()) jogo.mexerTokens(p.id, 1, 'chuva-de-tokens');
+    contemplados = ativosDaSala().map((p) => p.id);
+  }
+  if (tipo === 'roleta') {
+    const r = roleta.iniciar(ativosDaSala());
+    if (r.erro) return r;
+    contemplados = r.sorteados;
+    // a roleta aparece na hora, em todas as telas ao mesmo tempo
+    passoDaRoleta(() => roleta.proximo(ativosDaSala()));
+  }
+  emitirPlacar();
+  io.emit('evento', { tipo, segundos, contemplados });
+  return { ok: true, tipo, contemplados };
+}
+
+// ─────────────────────────────── roleta ──────────────────────────────────────
+const roleta = criarRoleta();
+let esperaDaRoleta = null;
+
+function estadoDaRoleta() {
+  const { fila: proximos, atual } = roleta.publico();
+  const quem = (id) => {
+    const p = jogo.participantes.get(id);
+    return p ? { id, nick: p.nick, emoji: p.emoji, foto: p.foto ?? null } : null;
+  };
+  return atual || proximos.length ? {
+    atual: atual ? {
+      ...atual, pessoa: quem(atual.id), alvoPessoa: atual.alvo ? quem(atual.alvo) : null,
+      // no duelo, cada lado só sabe que o outro já escolheu, não o quê
+      escolhas: atual.escolhas && atual.fase !== 'fim' ? Object.fromEntries(Object.keys(atual.escolhas).map((k) => [k, 'escolheu'])) : atual.escolhas,
+    } : null,
+    fila: proximos.map(quem).filter(Boolean),
+  } : null;
+}
+const emitirRoleta = () => io.emit('roleta', estadoDaRoleta());
+
+/**
+ * Aplica um passo da roleta (girar, escolher, indicar, julgar) e cuida do
+ * relógio: quem some tem 30 s antes de o servidor agir por ela, e depois do
+ * resultado a próxima pessoa é chamada sozinha.
+ */
+function passoDaRoleta(passo) {
+  const r = passo();
+  if (r?.erro) return r;
+  for (const pr of r?.premios ?? []) jogo.premiar(pr.id, pr.xp, 'roleta', 'roleta');
+  for (const t of r?.tokens ?? []) jogo.mexerTokens(t.id, t.delta, 'roleta');
+  if (r?.premios?.length || r?.tokens?.length) emitirPlacar();
+  emitirRoleta();
+
+  clearTimeout(esperaDaRoleta);
+  const atual = roleta.atual;
+  if (atual?.fase === 'fim') {
+    // tempo de a sala ler o resultado (e de a roleta terminar de girar)
+    esperaDaRoleta = setTimeout(() => passoDaRoleta(() => roleta.proximo(ativosDaSala())), 9000);
+  } else if (atual && atual.fase !== 'julgar') {
+    esperaDaRoleta = setTimeout(() => passoDaRoleta(() => roleta.agirPorEla(ativosDaSala())), 30_000);
+  }
+  return { ok: true, ...(r ?? {}) };
+}
+
+// ─────────────────────────── eventos automáticos ─────────────────────────────
+let esperaDoEvento = null;
+function agendarEventoAutomatico() {
+  clearTimeout(esperaDoEvento);
+  if (!estado.eventosAuto) return;
+  esperaDoEvento = setTimeout(() => {
+    const cena = DECK[estado.cenaIndex];
+    const tipo = sortearEvento({
+      pausado: estado.pausado, fase: estado.fase, tipoDaCena: cena?.tipo,
+      multiplicador: jogo.multiplicadorGlobal,
+      passouDoM3: INDICE_DO_M3 >= 0 && estado.cenaIndex > INDICE_DO_M3,
+      ativos: ativosDaSala().length,
+      equipesComGente: [...jogo.grupos.values()].filter((g) => g.membros.size).length,
+      roletaAtiva: !!(roleta.atual || roleta.fila.length),
+    });
+    if (tipo) {
+      executarEvento(tipo);
+      io.to('host').emit('aviso', `evento automático: ${EVENTOS[tipo].rotulo}`);
+    }
+    agendarEventoAutomatico();
+  }, proximoIntervalo());
+}
+agendarEventoAutomatico();
+
 // ──────────────────────────────── sockets ───────────────────────────────────
 io.on('connection', (socket) => {
   let eu = null;
@@ -182,11 +415,16 @@ io.on('connection', (socket) => {
   socket.emit('placar', { ...jogo.placar(), base: baseDaCena });
   // a pasta do chamado vai junto para o enunciado poder dizer o caminho exato
   // (muda entre o modo local e a VM, então não pode ficar escrita no deck)
+  // os cartões do chamado sem o script e sem dizer qual é armadilha
+  socket.emit('chamado:cartoes', CARTOES.map(({ id, papel, comando, campo }) => ({ id, papel, comando, campo: campo ?? null })));
   socket.emit('labs', Object.fromEntries(Object.entries(LABS).map(([k, l]) => [k, {
     dicas: l.dicas?.length ?? 0,
     pasta: l.seed === 'boss.sh' ? amb.dirDoGrupo('') : null,
   }])));
   socket.emit('arena', arena.estadoPublico());
+  // quem chega no meio do chamado precisa saber que as equipes estão trancadas
+  socket.emit('equipes', { trancadas: equipesTrancadas });
+  socket.emit('roleta', estadoDaRoleta());
 
   /**
    * Dois "Ana" na sala viram dois `ana@linuxday` e dois nomes iguais no placar:
@@ -294,6 +532,21 @@ io.on('connection', (socket) => {
     if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   });
   socket.on('livre', (v) => { if (eu) { eu.livre = !!v; emitirPresenca(); } });
+
+  /** enviar a própria foto (data URL já reduzida no navegador), ou `null` para tirar */
+  socket.on('perfil:foto', (dataUrl, ack) => {
+    if (!eu) return ack?.({ erro: 'entre primeiro' });
+    if (dataUrl === null) {
+      dao.apagarFoto(eu.id);
+      eu.foto = null;
+    } else {
+      const v = validarFoto(dataUrl);
+      if (v.erro) return ack?.({ erro: v.erro });
+      eu.foto = enderecoDaFoto(eu.id, dao.salvarFoto(eu.id, v.mime, v.dados));
+    }
+    ack?.({ ok: true, foto: eu.foto });
+    emitirPlacar(); emitirPresenca();
+  });
 
   // ─────────────────────────────── terminal ─────────────────────────────────
   socket.on('term:abrir', ({ cols, rows } = {}) => {
@@ -441,11 +694,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('widget:concluido', ({ cenaId, xp = 60 }) => {
+  // o XP do exercício é do servidor: antes ele vinha do navegador (até 100),
+  // e qualquer um mandava o máximo
+  socket.on('widget:concluido', ({ cenaId }) => {
     if (!eu) return;
     const chave = `w:${cenaId}:${eu.id}`;
     if (!dao.registrarResposta(chave, `w:${cenaId}`, eu.id, 'ok', estado.restante ?? 0)) return;
-    jogo.premiar(eu.id, Math.min(xp, 100), 'widget', cenaId);
+    jogo.premiar(eu.id, XP_DO_WIDGET, 'widget', cenaId);
     if (cenaId === 'm1-fuga-widget') jogo.darBadge(eu.id, 'escapista');
     emitirPlacar();
   });
@@ -508,7 +763,10 @@ io.on('connection', (socket) => {
     const g = jogo.grupos.get(nome);
     if (g && g.membros.size < g.capacidade) {
       g.membros.add(eu.id); eu.grupo = nome; eu.papel = null; socket.join(`g:${nome}`);
-    } else eu.grupo = null;
+    } else {
+      eu.grupo = null;
+      socket.emit('aviso', `a equipe ${nome} está cheia: escolha outra`);
+    }
     dao.salvarParticipante(eu);
     socket.emit('grupo', eu.grupo);   // sem o eco, a própria tela não atualiza
     emitirPlacar(); emitirPresenca();
@@ -528,6 +786,8 @@ io.on('connection', (socket) => {
     if (!eu?.grupo) return;
     const g = jogo.grupos.get(eu.grupo);
     if (!g) return;
+
+    if (papel && !CARTAS_VALIDAS.has(papel)) return socket.emit('papel', eu.papel ?? null);
 
     if (!papel) {                       // largou
       delete g.papeis[eu.id];
@@ -601,6 +861,34 @@ io.on('connection', (socket) => {
     io.to(`g:${eu.grupo}`).emit('grupo:chat', msg);
   });
 
+  /**
+   * Um cartão de comando do chamado. Só roda o que a pessoa pode enviar (o
+   * cargo dela ou um cargo sem dono) e só com o chamado aberto. A saída vai
+   * para a equipe inteira: é assim que o Relator fica sabendo o PID que o
+   * Operador encerrou.
+   */
+  socket.on('chamado:cartao', async ({ cartaoId, valor } = {}, ack) => {
+    if (!eu?.grupo) return ack?.({ erro: 'entre numa equipe primeiro' });
+    if (!chamadoAberto()) return ack?.({ erro: 'o chamado não está aberto agora' });
+    const g = jogo.grupos.get(eu.grupo);
+    const p = prepararCartao({ cartaoId, valor, meuPapel: eu.papel, papeisDaEquipe: g.papeis });
+    if (p.erro) return ack?.({ erro: p.erro });
+
+    const jogada = { nick: eu.nick, emoji: eu.emoji, papel: p.cartao.papel, comando: p.exibir ?? p.cartao.comando, em: Date.now() };
+    if (p.armadilha) {
+      Object.assign(jogada, { ok: false, armadilha: p.armadilha });
+    } else {
+      // o processo travado é da conta em que nasceu: só nela o kill alcança
+      const conta = p.cartao.papel === 'operador' ? contaDoBoss.get(eu.grupo) ?? eu.conta : eu.conta;
+      const r = await fila.adicionar(() => amb.rodarComando(conta, p.script, { ...p.env, GRUPO: eu.grupo, DIR_GRUPO: amb.dirDoGrupo(eu.grupo) }));
+      Object.assign(jogada, { ok: r.ok, saida: r.saida });
+    }
+    g.jogadas = [...(g.jogadas ?? []), jogada].slice(-40);
+    io.to(`g:${eu.grupo}`).emit('chamado:jogada', jogada);
+    ack?.({ ok: true, jogada });
+  });
+  socket.on('chamado:historico', (_, ack) => ack?.(eu?.grupo ? jogo.grupos.get(eu.grupo)?.jogadas ?? [] : []));
+
   /** buzzer: a primeira equipe que aperta ganha a vez de responder */
   socket.on('arena:buzz', (_, ack) => {
     if (!eu?.grupo) return ack?.({ erro: 'entre numa equipe primeiro' });
@@ -644,6 +932,12 @@ io.on('connection', (socket) => {
 
   // ───────────────────────────────── host ──────────────────────────────────
   socket.on('host:entrar', (pin, ack) => {
+    // o painel controla a sala inteira e aplica gabaritos: por padrão, só no
+    // computador do servidor (ver src/server/guarda.mjs)
+    const endereco = socket.handshake.address;
+    const recusa = podeSerApresentador({ endereco, remotoLiberado: HOST_REMOTO, pinDefinido: !!process.env.PIN_HOST });
+    if (recusa) { console.warn('[host] recusado de', endereco, '-', recusa); return ack?.(false); }
+    if (!tentarPin(endereco)) return ack?.(false);
     host = pin === PIN_HOST;
     if (host) {
       socket.join('host');
@@ -653,7 +947,15 @@ io.on('connection', (socket) => {
     ack?.(host);
   });
 
-  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }) => {
+  socket.on('host:ir', soHost(({ cenaIndex, cenaId = null, passo = 0, fase = 'idle', segundos = null, arena: jogoDaArena = null, premios = null }, ack) => {
+    // a trava fica aqui, e não só no botão do painel: o "ir para…", o teclado
+    // e qualquer outro caminho passam por este evento
+    const bloqueio = bloqueioDoAvanco({ deck: DECK, de: estado.cenaIndex, para: cenaIndex, participantes: jogo.participantes.values() });
+    if (bloqueio) {
+      for (const p of bloqueio.pendentes) io.to(`p:${p.id}`).emit('aviso', 'escolha uma equipe: a apresentação está esperando por você');
+      socket.emit('host:bloqueado', bloqueio);
+      return ack?.({ bloqueado: bloqueio });
+    }
     const maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, cenaIndex);
     // voltar para a mesma cena não refaz a foto (senão o ganho da rodada some)
     if (cenaId && baseDaCena?.cenaId !== cenaId) { fotografarCena(cenaId); emitirPlacar(); }
@@ -663,6 +965,7 @@ io.on('connection', (socket) => {
     const gab = cenaId ? gabaritoDe(cenaId) : null;
     quizAtual = gab ? { cenaId, ...gab } : null;
     if (segundos && fase === 'aberta') iniciarTimer(segundos);
+    if (cenaId === CENA_DO_CHAMADO && fase === 'aberta') iniciarChamado();
 
     // o chamado começou: tranca as equipes sozinho
     if (cenaId && LABS[cenaId]?.escopo === 'grupo') { /* nunca cai aqui: labs são por slug */ }
@@ -674,6 +977,7 @@ io.on('connection', (socket) => {
     salvarEstado();
     io.emit('estado', estado);
     if (cenaId) io.emit('respostas', contagemDeRespostas(cenaId));
+    ack?.({ ok: true });
   }));
   socket.on('host:passo', soHost((d) => { estado.passo = Math.max(0, estado.passo + d); salvarEstado(); io.emit('estado', estado); }));
   socket.on('host:fase', soHost(({ fase, segundos = null, cenaId = null, arena: jogoDaArena = null, premios = null }) => {
@@ -684,6 +988,7 @@ io.on('connection', (socket) => {
     if (jogoDaArena && fase === 'aberta') arena.abrir(estado.cenaId, jogoDaArena, premios ?? undefined);
     if (fase === 'aberta' && segundos) iniciarTimer(segundos);
     else { pararTimer(); if (fase === 'idle') estado.restante = null; }
+    if (fase === 'aberta' && estado.cenaId === CENA_DO_CHAMADO) iniciarChamado();
     salvarEstado();
     io.emit('estado', estado);
     if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
@@ -712,26 +1017,25 @@ io.on('connection', (socket) => {
     ack?.({ aplicados: n });
   }));
 
-  socket.on('host:evento', soHost(async ({ tipo, segundos = 180 }) => {
-    let contemplados = [];
-    if (tipo === 'xp-dobrado') {
-      jogo.multiplicadorGlobal = 2;
-      setTimeout(() => { jogo.multiplicadorGlobal = 1; io.emit('evento:fim', { tipo }); }, segundos * 1000);
-    }
-    if (tipo === 'sabotagem') {
-      for (const p of jogo.participantes.values()) {
-        if (p.conta) fila.adicionar(() => amb.rodarCheck(p.conta, 'chmod -x "$HOME/deploy.sh" 2>/dev/null; exit 0', {}));
-      }
-    }
-    if (tipo === 'resgate') {
-      const atrasados = [...jogo.participantes.values()].sort((a, b) => a.xp - b.xp).slice(0, 5);
-      for (const p of atrasados) jogo.premiar(p.id, 80, 'resgate', 'evento');
-      contemplados = atrasados.map((p) => p.id);
-      emitirPlacar();
-    }
-    // quem foi contemplado vai junto: cada tela diz o que mudou para ELA
-    io.emit('evento', { tipo, segundos, contemplados });
+  // o resultado é calculado ANTES do ack: `ack?.(executar())` nem chama a
+  // função quando não há ack, e o evento disparado sem callback não rodava
+  socket.on('host:evento', soHost(({ tipo }, ack) => { const r = executarEvento(tipo); ack?.(r); }));
+
+  /** liga ou desliga o sorteio automático de eventos */
+  socket.on('host:eventos:auto', soHost((ligado, ack) => {
+    estado.eventosAuto = !!ligado;
+    salvarEstado();
+    agendarEventoAutomatico();
+    io.emit('estado', estado);
+    ack?.({ ligado: estado.eventosAuto });
   }));
+
+  // ── roleta: só a pessoa da vez gira, escolhe e indica; o apresentador julga ──
+  socket.on('roleta:girar', (_, ack) => { const r = passoDaRoleta(() => roleta.girar(eu?.id)); ack?.(r); });
+  socket.on('roleta:escolher', (escolha, ack) => { const r = passoDaRoleta(() => roleta.escolher(eu?.id, escolha)); ack?.(r); });
+  socket.on('roleta:indicar', (alvo, ack) => { const r = passoDaRoleta(() => roleta.indicar(eu?.id, alvo, ativosDaSala())); ack?.(r); });
+  socket.on('host:roleta:julgar', soHost((cumpriu, ack) => { const r = passoDaRoleta(() => roleta.julgar(!!cumpriu, membrosDaEquipeDe)); ack?.(r); }));
+  socket.on('host:roleta:cancelar', soHost((_, ack) => { roleta.cancelar(); emitirRoleta(); ack?.({ ok: true }); }));
 
   /**
    * Expulsar. A pessoa sai da sala na hora: a sessão de terminal morre, ela
@@ -810,32 +1114,23 @@ io.on('connection', (socket) => {
     const ids = [...jogo.participantes.keys()].sort(() => Math.random() - 0.5);
     const nomes = [...jogo.grupos.keys()];
     for (const g of jogo.grupos.values()) { g.membros.clear(); g.papeis = {}; }
-    ids.forEach((id, i) => {
-      const nome = nomes[i % nomes.length];
-      jogo.grupos.get(nome).membros.add(id);
-      const p = jogo.participantes.get(id);
-      p.grupo = nome; p.papel = null; dao.salvarParticipante(p);
-      io.to(`p:${id}`).emit('grupo', nome);
-    });
+    ids.forEach((id, i) => colocarNaEquipe(id, nomes[i % nomes.length]));
     emitirPlacar(); emitirPresenca();
   }));
-  socket.on('host:boss:semear', soHost(async (_, ack) => {
-    let n = 0;
-    for (const g of jogo.grupos.values()) {
-      if (!g.membros.size) continue;
-      // O processo travado nasce na conta do Operador. Com hidepid=2 cada
-      // pessoa só enxerga os próprios processos: semeado na conta de outro
-      // membro, o Operador não via nem conseguia matar, e o checker (que roda
-      // como quem verifica) achava que ele já estava morto.
-      const operador = Object.entries(g.papeis).find(([, p]) => p === 'operador')?.[0];
-      const conta = jogo.participantes.get(operador ?? [...g.membros][0])?.conta;
-      if (!conta) continue;
-      const r = await amb.semear(conta, 'boss.sh', { GRUPO: g.nome, DIR_GRUPO: amb.dirDoGrupo(g.nome) });
-      if (r.ok) n++; else console.warn('[boss]', g.nome, r.saida);
-    }
-    ack?.({ semeados: n });
-  }));
 
+  /**
+   * Põe na equipe só quem está sem. É a saída para a trava do avançar sem
+   * desfazer a escolha de quem já escolheu (o sortear redistribui todo mundo).
+   * Vale mesmo com as equipes trancadas: trancar impede trocar, não chegar.
+   */
+  socket.on('host:grupo:completar', soHost((_, ack) => {
+    const ids = semEquipe(jogo.participantes.values()).map((p) => p.id);
+    const pares = distribuirSemEquipe(jogo.grupos.values(), ids);
+    for (const [id, nome] of pares) colocarNaEquipe(id, nome);
+    emitirPlacar(); emitirPresenca();
+    ack?.({ colocados: pares.length, sobraram: ids.length - pares.length });
+  }));
+  socket.on('host:boss:semear', soHost(async (_, ack) => { const semeados = await semearChamado(); ack?.({ semeados }); }));
   /**
    * Fechou o navegador: a sessão de apresentação dela encerra na hora (sai da
    * contagem, não trava mais a sala). O XP, os critérios e o grupo ficam
@@ -890,16 +1185,10 @@ setInterval(() => {
   }
 }, 15_000);
 
-function ipLocal() {
-  for (const ifaces of Object.values(networkInterfaces())) {
-    for (const i of ifaces ?? []) if (i.family === 'IPv4' && !i.internal) return i.address;
-  }
-  return 'localhost';
-}
 
 app.prepare().then(() => {
   server.listen(port, '0.0.0.0', () => {
-    const ip = ipLocal();
+    const ip = enderecosDaRede()[0]?.ip ?? 'localhost';
     const l = (t) => console.log('  │ ' + t.padEnd(56) + '│');
     console.log('\n  ┌' + '─'.repeat(57) + '┐');
     l('Linux Day Arena');
@@ -907,6 +1196,7 @@ app.prepare().then(() => {
     l(`participantes   http://${ip}:${port}`);
     l(`projetor        http://localhost:${port}/screen`);
     l(`apresentador    http://localhost:${port}/host   (PIN ${PIN_HOST})`);
+    l(`endereço + QR   http://localhost:${port}/ip`);
     l('');
     l(`modo do lab: ${amb.MODO}${amb.MODO === 'local' ? '  (desenvolvimento)' : '  (contas reais)'}`);
     console.log('  └' + '─'.repeat(57) + '┘\n');

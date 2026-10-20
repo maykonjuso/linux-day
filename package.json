@@ -12,7 +12,7 @@
     "provision": "sudo bash infra/provision.sh",
     "teste": "node testes/e2e.mjs",
     "teste:ui": "node testes/ui.mjs",
-    "teste:tudo": "npm run teste:tempo && npm run teste && npm run teste:justica && npm run teste:terminal && npm run teste:ui && npm run teste:widgets && npm run teste:deck",
+    "teste:tudo": "npm run teste:tempo && npm run teste:novidades && npm run teste && npm run teste:equipes && npm run teste:chamado && npm run teste:justica && npm run teste:terminal && npm run teste:ui && npm run teste:widgets && npm run teste:deck",
     "teste:widgets": "node testes/ui-widgets.mjs",
     "teste:deck": "node testes/ui-deck.mjs",
     "start:rapido": "NODE_ENV=production node server.mjs",
@@ -21,7 +21,10 @@
     "ilustracoes": "node scripts/extrair-ilustracoes.mjs",
     "teste:terminal": "node testes/terminal.mjs",
     "teste:justica": "node testes/justica.mjs",
-    "teste:tempo": "node testes/tempo.mjs"
+    "teste:tempo": "node testes/tempo.mjs",
+    "teste:equipes": "node testes/equipes.mjs",
+    "teste:novidades": "node testes/novidades.mjs",
+    "teste:chamado": "node testes/chamado-e-roleta.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -29,6 +32,7 @@
     "lucide-react": "^1.59.0",
     "next": "^15.1.0",
     "node-pty": "^1.1.0",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-kawaii": "^1.6.0",
@@ -38,6 +42,7 @@
   "devDependencies": {
     "@svgmoji/noto": "^3.2.0",
     "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "playwright": "^1.64.1",

@@ -31,11 +31,30 @@ export const DECK: Cena[] = [
     xpDoModulo: 2800,
   },
   {
-    id: 'apresentacao', ilustra: 'aperto-de-mao', tipo: 'Apresentacao', modulo: 0, passos: 1, minutos: 1,
+    // um passo com os dois juntos e depois um passo para cada pessoa
+    id: 'apresentacao', ilustra: 'aperto-de-mao', tipo: 'Apresentacao', modulo: 0, passos: 3, minutos: 3,
     titulo: 'Quem está com vocês hoje',
     pessoas: [
-      { nome: 'Ian Costa', github: 'iancostag', foto: '/equipe/iancostag.jpg' },
-      { nome: 'Maykon Soares', github: 'maykonjuso', foto: '/equipe/maykonjuso.jpg' },
+      {
+        nome: 'Ian Costa Guimarães', github: 'iancostag', foto: '/equipe/iancostag.jpg',
+        cargo: 'Pesquisador no ITRAC · Engenharia de Software na UnB',
+        linkedin: 'https://www.linkedin.com/in/iancostaguimaraes',
+        historia: [
+          'Começou pelo **back-end**: nos projetos AGIS e MeuCapilar escrevia a regra de negócio e modelava os bancos, em PostgreSQL e MongoDB, tudo empacotado em Docker.',
+          'Cuidando de onde o dado mora, descobriu a **engenharia de dados**, e não largou mais.',
+          'Como pesquisador no ITRAC, da UnB, mapeou gargalos de **serviços públicos** da Secretaria do Patrimônio da União. Hoje faz a residência em IA e Engenharia de Dados do Instituto Eldorado com a Softex.',
+        ],
+      },
+      {
+        nome: 'Maykon Soares', github: 'maykonjuso', foto: '/equipe/maykonjuso.jpg',
+        cargo: 'Desenvolvedor Full-Stack no Sicoob',
+        linkedin: 'https://www.linkedin.com/in/maykon13',
+        historia: [
+          'Antes do código veio a química: é **técnico em Química** pelo IFB. Depois se formou em Engenharia de Software na UnB, onde foi monitor de Métodos de Desenvolvimento de Software para mais de 30 alunos.',
+          'Entrou no Sicoob como **estagiário do datacenter**, e o código daquele estágio continua em produção.',
+          'Hoje cuida do job que reinicia o DataStage em **mais de 20 servidores** e de uma plataforma que prevê incidentes em 140 bancos DB2. Faz MBA em Análise de Sistemas na UnB.',
+        ],
+      },
     ],
   },
   {
@@ -136,7 +155,7 @@ export const DECK: Cena[] = [
     pergunta: 'Que outra ferramenta famosa, que vocês usam para guardar versões de código, o Linus Torvalds criou?',
     enunciado: 'A equipe que **apertar primeiro** responde em voz alta. Acertou, leva o XP para todo mundo da equipe. Errou, a vez passa para a próxima da fila.',
     segundos: 60,
-    premios: [200],
+    premios: [300],
     referencias: [{ id: 'm0-onde', titulo: 'Onde o Linux está' }],
   },
 
@@ -261,7 +280,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm2-lab', ilustra: 'pasta-aberta', tipo: 'LabScene', modulo: 2, passos: 1, minutos: 7,
+    id: 'm2-lab', ilustra: 'pasta-aberta', tipo: 'LabScene', modulo: 2, passos: 1, minutos: 6.5,
     titulo: 'Mão na massa · arrumando a bagunça',
     taskSlug: 'm2-bagunca',
     objetivo: 'Entre na pasta com `cd ~/bagunca` e veja os arquivos soltos com `ls`. Faça os itens da lista, todos **dentro de** `~/bagunca`. Cada item fica verde sozinho quando estiver certo. Deixe o `README.md` por último: um `mv *.md` levaria ele junto.',
@@ -358,7 +377,7 @@ export const DECK: Cena[] = [
     pergunta: 'Qual é o comando completo para apagar a pasta fotos, com tudo o que tem dentro?',
     enunciado: 'A equipe que **apertar primeiro** fala o comando em voz alta. Errou, a vez passa. Dica: é um comando e uma letra a mais.',
     segundos: 60,
-    premios: [200],
+    premios: [300],
     referencias: [{ id: 'm2-demo', titulo: 'Criar, copiar, mover, editar, apagar (rm -r)' }],
   },
 
@@ -414,7 +433,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'm4-lab', ilustra: 'detetive', tipo: 'LabScene', modulo: 4, passos: 1, minutos: 7.5,
+    id: 'm4-lab', ilustra: 'detetive', tipo: 'LabScene', modulo: 4, passos: 1, minutos: 7,
     titulo: 'Mão na massa · caçando no log',
     taskSlug: 'm4-pipes',
     objetivo: 'Tudo acontece no arquivo `~/app.log`. Para os itens 1 e 2, descubra a resposta no terminal, **cole no campo "Achou a resposta?"** e envie, uma pergunta de cada vez. O item 3 é feito só no terminal.',
@@ -439,13 +458,13 @@ export const DECK: Cena[] = [
 
   // ═════════════════════════ JOGO DE EQUIPE: CORRIDA ════════════════════════
   {
-    id: 'arena-corrida', ilustra: 'foguete', tipo: 'ArenaScene', modulo: 4, passos: 1, minutos: 3.5,
+    id: 'arena-corrida', ilustra: 'foguete', tipo: 'ArenaScene', modulo: 4, passos: 1, minutos: 3,
     jogo: 'corrida',
     titulo: 'Corrida de equipes',
     enunciado: 'Cada pessoa faz no **próprio terminal**, e conta quem da equipe terminar primeiro. Tarefa: criar a pasta `~/corrida` e, dentro dela, um arquivo com **o nome da sua equipe** (exemplo: `azul.txt`) contendo a palavra `pronto`. A chegada é conferida sozinha.',
     segundos: 120,
     taskSlug: 'corrida-1',
-    premios: [300, 200, 140, 90],
+    premios: [450, 300, 210, 140],
     referencias: [
       { id: 'm2-demo', titulo: 'Criar pasta e arquivo (mkdir, echo >)' },
       { id: 'm4-encadear', titulo: 'Dois comandos numa linha (&&)' },
@@ -515,12 +534,12 @@ export const DECK: Cena[] = [
 
   // ═══════════════════════ JOGO DE EQUIPE: CAÇA AO ERRO ═════════════════════
   {
-    id: 'arena-caca-erro', ilustra: 'lupa', tipo: 'ArenaScene', modulo: 5, passos: 1, minutos: 3.5,
+    id: 'arena-caca-erro', ilustra: 'lupa', tipo: 'ArenaScene', modulo: 5, passos: 1, minutos: 3,
     jogo: 'caca-erro',
     titulo: 'Caça ao erro',
     enunciado: 'Oito comandos e **três deles dão erro**. Leiam primeiro o que existe na pasta (está logo acima dos comandos). Em equipe, cliquem nos três errados e enviem. A equipe mais rápida leva mais XP, e errar só custa tempo.',
     segundos: 120,
-    premios: [280, 190, 130, 80],
+    premios: [420, 290, 200, 120],
     referencias: [
       { id: 'm1-demo', titulo: 'Maiúscula importa (cat)' },
       { id: 'm2-demo', titulo: 'Apagar pasta (rm -r)' },
@@ -549,19 +568,19 @@ export const DECK: Cena[] = [
   {
     id: 'm6-boss', ilustra: 'ferramenta', tipo: 'LabScene', modulo: 6, passos: 1, minutos: 11,
     titulo: 'Boss · o relatório da madrugada não rodou',
-    taskSlug: 'boss-chamado',
-    objetivo: 'Tudo está na **pasta da equipe** (o caminho aparece logo abaixo; entre com `cd`). Lá tem a pasta `log`, o script `backup.sh` e o lugar do `laudo.txt`. **Nada aqui é novo**: cada item usa um comando que vocês já fizeram hoje.',
+    taskSlug: 'boss-chamado', cartoes: true,
+    objetivo: 'Cada cargo tem os **seus cartões de comando**, e só quem tem a carta envia os dela. Tem cartão que investiga, cartão que conserta e cartão que **parece resolver mas causa outro problema**. Tudo o que a equipe envia aparece para a equipe inteira.',
     criterios: [
-      { id: 'b-c1', descricao: 'Investigador: colar no campo a mensagem da linha `FATAL` do log (o texto depois de FATAL)', xp: 150 },
-      { id: 'b-c2', descricao: 'Operador: abrir o `htop`, achar o processo que mais gasta CPU (o PID está na 1ª coluna), sair com q e encerrar com `kill` + o PID', xp: 150 },
-      { id: 'b-c3', descricao: 'Mecânico: deixar o `backup.sh` executável e rodar ele (`./backup.sh`)', xp: 150 },
-      { id: 'b-c4', descricao: 'Relator: criar `laudo.txt` na pasta da equipe com o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
+      { id: 'b-c1', papel: 'investigador', descricao: 'Colar no campo a mensagem da linha `FATAL` do log (o texto depois de FATAL)', xp: 150 },
+      { id: 'b-c2', papel: 'operador', descricao: 'Achar no `ps` o processo que mais gasta CPU (o PID está na 2ª coluna) e encerrar com `kill` + o PID', xp: 150 },
+      { id: 'b-c3', papel: 'mecanico', descricao: 'Deixar o `backup.sh` executável e rodar ele (`./backup.sh`)', xp: 150 },
+      { id: 'b-c4', papel: 'relator', descricao: 'Criar `laudo.txt` na pasta da equipe com o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
     ],
-    comandosDoModulo: ['cd', 'ls -l', 'grep', 'grep -c', 'htop', 'kill', 'chmod +x', './deploy.sh', 'echo >'],
+    comandosDoModulo: ['ls -l', 'grep', 'grep -c', 'ps aux', 'kill', 'chmod +x', './backup.sh', 'echo >'],
     segundos: 540, escopo: 'grupo',
     referencias: [
       { id: 'm4-demo', titulo: 'Investigador e Relator: grep e grep -c' },
-      { id: 'm5-demo', titulo: 'Operador: htop e kill' },
+      { id: 'm5-demo', titulo: 'Operador: ps e kill' },
       { id: 'm3-demo', titulo: 'Mecânico: chmod +x e ./' },
       { id: 'm2-demo', titulo: 'Relator: criar arquivo (echo >)' },
     ],

@@ -7,6 +7,8 @@ import { Encaixe } from '@/components/Encaixe';
 import { useTema } from '@/deck/useTema';
 import { DECK, INICIO_DOS_MODULOS, MINUTOS_TOTAIS, minutosAte } from '@/deck/content';
 import { Icone } from '@/components/Icone';
+import { MenuControles } from '@/components/MenuControles';
+import { Roleta } from '@/components/Roleta';
 import { PainelPessoas, type PessoaDaSala } from '@/components/PainelPessoas';
 
 const ROTULO_DA_CENA: Record<string, string> = {
@@ -22,6 +24,25 @@ const ROTULO_DA_CENA: Record<string, string> = {
 const LIBERAR: Record<string, string> = {
   QuizScene: 'liberar opções', WidgetScene: 'liberar exercício', LabScene: 'liberar terminal', ArenaScene: 'liberar jogo',
 };
+
+/** os mesmos de src/server/eventos.mjs (o servidor recusa o que não cabe no momento) */
+const EVENTOS_DO_PAINEL: [string, string][] = [
+  ['roleta', 'roleta: 1 pessoa a cada 20 gira e joga'],
+  ['xp-dobrado', 'XP dobrado: todo XP vale 2× por 3 min'],
+  ['relampago', 'relâmpago: XP triplo por 1 min'],
+  ['chuva-de-tokens', 'chuva de tokens: +1 token para quem está na sala'],
+  ['resgate', 'resgate: +80 XP para os 5 com menos XP'],
+  ['resgate-de-equipe', 'resgate de equipe: +60 XP para a equipe com menos XP'],
+  ['sabotagem', 'sabotagem: tira o x do deploy.sh de todos (depois do módulo 3)'],
+];
+
+/** as versões curtas, para a barra; as longas vão no title */
+const ROTULO_CURTO: Record<string, string> = {
+  ArenaScene: 'jogo', Apresentacao: 'apresentação', Controles: 'controles', ModuleCover: 'capa',
+  MentalModel: 'diagrama', CommandAnatomy: 'comando', TerminalDemo: 'demo', WillGoWrong: 'erros',
+  QuizScene: 'pergunta', WidgetScene: 'exercício', LabScene: 'lab', GroupScene: 'grupos', Scoreboard: 'placar', Recap: 'fecho',
+};
+const FASE_CURTA: Record<string, string> = { idle: 'enunciado', aberta: 'aberta', encerrada: 'esgotado', revelada: 'pódio' };
 
 const FASE_EM_PORTUGUES: Record<string, string> = {
   idle: 'só o enunciado', aberta: 'aberta para a turma', encerrada: 'tempo esgotado', revelada: 'pódio / resposta',
@@ -50,6 +71,8 @@ export default function Host() {
   const { estado, cena, presenca, emit, placar } = arena;
   const [pin, setPin] = useState('');
   const [ok, setOk] = useState(false);
+  const [recusado, setRecusado] = useState(false);
+  const entrarNoPainel = () => emit('host:entrar', pin, (r: boolean) => { setOk(r); setRecusado(!r); });
   const [ajudas, setAjudas] = useState<{ nick: string; em: number }[]>([]);
   const [pulsos, setPulsos] = useState(0);
   const [grade, setGrade] = useState<Grade | null>(null);
@@ -179,7 +202,13 @@ export default function Host() {
     const aoVigiar = ({ nick, motivo }: { nick: string; motivo: string }) => avisar(`terminal de ${nick} reiniciado: ${motivo}`);
     s.on('vigia', aoVigiar);
 
-    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); s.off('vigia', aoVigiar); };
+    // o servidor recusou o avanço: alguém ativo ainda está sem equipe
+    const aoBloquear = ({ pendentes }: { pendentes: { nick: string }[] }) => avisar(
+      `${pendentes.length === 1 ? '1 pessoa está' : `${pendentes.length} pessoas estão`} sem equipe (${pendentes.slice(0, 4).map((p) => p.nick).join(', ')}${pendentes.length > 4 ? '…' : ''}). Peça para escolherem ou use "completar equipes".`,
+    );
+    s.on('host:bloqueado', aoBloquear);
+
+    return () => { s.off('ajuda', aoPedirAjuda); s.off('pulso', aoSePerder); s.off('vigia', aoVigiar); s.off('host:bloqueado', aoBloquear); };
   }, [ok, arena.socket, avisar]);
 
   /** a grade é atualizada por tempo, e isso não deve mexer nos ouvintes */
@@ -219,14 +248,21 @@ export default function Host() {
           <div className="olho">painel do apresentador</div>
           <input className="btn" style={{ textAlign: 'left' }} placeholder="PIN" value={pin} type="password"
             onChange={(e) => setPin(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') emit('host:entrar', pin, (r: boolean) => setOk(r)); }} />
-          <button className="btn primario" onClick={() => emit('host:entrar', pin, (r: boolean) => setOk(r))}>entrar</button>
+            onKeyDown={(e) => { if (e.key === 'Enter') entrarNoPainel(); }} />
+          <button className="btn primario" onClick={entrarNoPainel}>entrar</button>
+          {recusado && (
+            <small role="alert" style={{ color: 'var(--erro)' }}>
+              PIN errado, ou este computador não pode abrir o painel. O painel abre no computador que roda o
+              servidor; pela rede, só com ARENA_HOST_REMOTO=1 e um PIN_HOST próprio.
+            </small>
+          )}
         </div>
       </div>
     );
   }
 
   const ativos = presenca.filter((p) => p.presenca === 'ativo').length;
+  const semEquipe = presenca.filter((p) => p.presenca === 'ativo' && !p.grupo).length;
   const travados = grade?.pessoas.filter((p) => p.travado) ?? [];
   const criteriosDaCena = taskSlug ? grade?.labs?.[taskSlug] ?? [] : [];
   const concluiramPrincipal = taskSlug && criteriosDaCena.length
@@ -317,8 +353,7 @@ export default function Host() {
           </select>
         </div>
 
-        <div className="bloco-controle">
-          <span className="rotulo">cena</span>
+        <MenuControles rotulo="cena" icone="tocar">
           <button className="btn-icone" onClick={abrir} title="libera as opções / o exercício / o terminal e começa o tempo (A)">
             <Icone nome="tocar" tamanho={17} /><span className="texto">liberar</span>
           </button>
@@ -340,10 +375,9 @@ export default function Host() {
               <Icone nome="ferramenta" tamanho={17} /><span className="texto">preparar boss</span>
             </button>
           )}
-        </div>
+        </MenuControles>
 
-        <div className="bloco-controle">
-          <span className="rotulo">sala</span>
+        <MenuControles rotulo="sala" icone="pessoas" destaque={semEquipe || null}>
           <button className="btn-icone" onClick={() => emit('host:pausar', !estado.pausado)} title="congela os cronômetros (P)">
             <Icone nome={estado.pausado ? 'tocar' : 'pausar'} tamanho={17} />
             <span className="texto">{estado.pausado ? 'retomar' : 'pausar'}</span>
@@ -369,57 +403,64 @@ export default function Host() {
           <button className="btn-icone" onClick={() => { emit('host:grupo:sortear'); avisar('grupos sorteados'); }} title="distribui todos em grupos">
             <Icone nome="caixa" tamanho={17} /><span className="texto">sortear grupos</span>
           </button>
-        </div>
+          <button className="btn-icone" title="põe nas equipes com menos gente só quem ainda está sem; quem já escolheu fica onde está"
+            onClick={() => emit('host:grupo:completar', null, (r: { colocados: number; sobraram: number }) =>
+              avisar(r.sobraram ? `${r.colocados} colocados, ${r.sobraram} sem vaga` : `${r.colocados} ${r.colocados === 1 ? 'pessoa colocada' : 'pessoas colocadas'} numa equipe`))}>
+            <Icone nome="pessoas" tamanho={17} /><span className="texto">completar equipes{semEquipe ? ` (${semEquipe})` : ''}</span>
+          </button>
+        </MenuControles>
 
-        <div className="bloco-controle">
-          <span className="rotulo">jogo</span>
+        <MenuControles rotulo="jogo" icone="premio">
           <select className="btn-icone" value="" title="eventos para mexer com a energia da sala"
-            onChange={(e) => { if (e.target.value) { emit('host:evento', { tipo: e.target.value }); avisar(`evento: ${e.target.value.replace(/-/g, ' ')}`); e.currentTarget.blur(); } }}>
-            <option value="">evento…</option>
-            <option value="xp-dobrado">XP dobrado: todo XP vale 2× por 3 min</option>
-            <option value="sabotagem">sabotagem: tira o x do deploy.sh de todos (depois do módulo 3)</option>
-            <option value="resgate">resgate: +80 XP para os 5 com menos XP</option>
+            onChange={(e) => {
+              const tipo = e.target.value;
+              if (!tipo) return;
+              emit('host:evento', { tipo }, (r: { erro?: string }) => avisar(r?.erro ? `evento recusado: ${r.erro}` : `evento: ${tipo.replace(/-/g, ' ')}`));
+              e.currentTarget.blur();
+            }}>
+            <option value="">disparar evento…</option>
+            {EVENTOS_DO_PAINEL.map(([id, rotulo]) => <option key={id} value={id}>{rotulo}</option>)}
           </select>
+          <button className="btn-icone" title="sorteia um evento sozinho a cada 6 a 10 minutos, só nos momentos em que ele cabe"
+            onClick={() => emit('host:eventos:auto', !estado.eventosAuto, (r: { ligado: boolean }) => avisar(r.ligado ? 'eventos automáticos ligados' : 'eventos automáticos desligados'))}>
+            <Icone nome={estado.eventosAuto ? 'pausar' : 'tocar'} tamanho={17} />
+            <span className="texto">eventos automáticos: {estado.eventosAuto ? 'ligados' : 'desligados'}</span>
+          </button>
           <button className="btn-icone" onClick={() => trocar()} title="alternar claro e escuro nesta tela">
             <Icone nome="olho" tamanho={17} /><span className="texto">{tema === 'claro' ? 'claro' : 'escuro'}</span>
           </button>
           <input className="btn-icone" style={{ width: 150, border: '1px solid var(--borda)' }} placeholder="recado para a sala" value={recado}
             onChange={(e) => setRecado(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && recado.trim()) { emit('host:aviso', recado.trim()); setRecado(''); avisar('recado enviado'); } }} />
-        </div>
+        </MenuControles>
 
         <div className="estado-faixa">
-          <span className="chip">cena {estado.cenaIndex + 1}/{DECK.length}</span>
-          <button className="chip" title={`planejado até esta cena: ${planejado} min de ${Math.round(MINUTOS_TOTAIS)}. Clique para zerar o relógio.`}
-            onClick={zerarRelogio}
-            style={{ cursor: 'pointer', borderColor: atraso > 3 ? 'var(--erro)' : undefined, color: atraso > 3 ? 'var(--erro)' : undefined }}>
-            <Icone nome="tempo" tamanho={14} />
-            {inicio ? `${decorrido} min · plano ${planejado}${atraso > 1 ? ` · ${atraso} atrasado` : atraso < -1 ? ` · ${-atraso} adiantado` : ''}` : `plano: ${Math.round(MINUTOS_TOTAIS)} min`}
-          </button>
-          <span className="chip" title="o que está na tela e em que estado">
-            {ROTULO_DA_CENA[cena.tipo] ?? cena.tipo}
-            {cena.passos > 1 && ` · passo ${estado.passo + 1} de ${cena.passos}`}
-            {FASE_EM_PORTUGUES[estado.fase] ? ` · ${FASE_EM_PORTUGUES[estado.fase]}` : ''}
+          {/*
+            Chips curtos, com o texto inteiro no title. Por extenso ("pergunta ·
+            pódio / resposta", "0/2 responderam · faltam 2") eles esticavam a
+            barra e apertavam a área do slide onde ficam as opções do quiz.
+          */}
+          <span className="chip" data-chip="fase"
+            title={`${ROTULO_DA_CENA[cena.tipo] ?? cena.tipo}${cena.passos > 1 ? ` · passo ${estado.passo + 1} de ${cena.passos}` : ''} · ${FASE_EM_PORTUGUES[estado.fase] ?? estado.fase}`}>
+            {ROTULO_CURTO[cena.tipo] ?? cena.tipo}{cena.passos > 1 ? ` ${estado.passo + 1}/${cena.passos}` : ''}
+            {LIBERAR[cena.tipo] || cena.tipo === 'GroupScene' ? ` · ${FASE_CURTA[estado.fase] ?? estado.fase}` : ''}
           </span>
-          {estado.restante !== null && <span className="chip forte"><Icone nome="relogio" tamanho={14} /> {estado.restante}s</span>}
+          {estado.restante !== null && <span className="chip forte" title="tempo que falta"><Icone nome="relogio" tamanho={14} /> {estado.restante}s</span>}
           {cena.tipo === 'QuizScene' && arena.respostas?.cenaId === cena.id && (
-            <span className="chip forte">
-              {arena.respostas.total}/{arena.respostas.esperados} responderam
-              {arena.respostas.total < arena.respostas.esperados ? ` · faltam ${arena.respostas.esperados - arena.respostas.total}` : ' · todos!'}
+            <span className="chip forte" data-chip="respostas"
+              title={`${arena.respostas.total} de ${arena.respostas.esperados} responderam${arena.respostas.total < arena.respostas.esperados ? `, faltam ${arena.respostas.esperados - arena.respostas.total}` : ''}`}>
+              <Icone nome="pessoas" tamanho={14} /> {arena.respostas.total}/{arena.respostas.esperados}
             </span>
           )}
-          <span className="chip"><Icone nome="pessoas" tamanho={14} /> {ativos}/{presenca.length} ativos</span>
           {concluiramPrincipal !== null && (
-            <span className="chip forte" title="regra dos 70%: só avance quando passar disso">{concluiramPrincipal}% no 1º critério</span>
+            <span className="chip forte" title="regra dos 70%: quantos já fecharam o 1º critério. Só avance quando passar disso">{concluiramPrincipal}%</span>
           )}
-          {travados.length > 0 && <span className="chip forte">🚩 {travados.length} travados</span>}
+          {travados.length > 0 && <span className="chip forte" title={`${travados.length} pessoas travadas`}>🚩 {travados.length}</span>}
           {ajudas.length > 0 && (
-            <button className="chip forte" title="clique para limpar a fila de ajuda"
+            <button className="chip forte" title={`pediram ajuda: ${ajudas.map((p) => p.nick).join(', ')}. Clique para limpar`}
               onClick={() => setAjudas([])}
               style={{ cursor: 'pointer', border: '1px solid var(--acento)' }}>
-              <Icone nome="ajuda" tamanho={14} />
-              {ajudas.slice(-3).map((p) => p.nick).join(', ')}
-              {ajudas.length > 3 && ` +${ajudas.length - 3}`}
+              <Icone nome="ajuda" tamanho={14} /> {ajudas[ajudas.length - 1].nick}{ajudas.length > 1 && ` +${ajudas.length - 1}`}
             </button>
           )}
           {pulsos > 0 && (
@@ -428,10 +469,24 @@ export default function Host() {
               😵 {pulsos}
             </button>
           )}
-          {grade && <span className="chip" title="terminais abertos · fila de verificações · modo do lab">{grade.sessoes}🖥 {grade.fila}⏳ {grade.modo}</span>}
         </div>
+
+        {/* o que se consulta de vez em quando: cena, relógio, quantos ativos, terminais */}
+        <MenuControles rotulo={`${estado.cenaIndex + 1}/${DECK.length}`} icone="tempo" lado="direita"
+          titulo="cena, relógio do plano, pessoas ativas e terminais" destaque={atraso > 3 ? `+${atraso}` : null}>
+          <span className="chip">cena {estado.cenaIndex + 1}/{DECK.length}</span>
+          <button className="chip" title={`planejado até esta cena: ${planejado} min de ${Math.round(MINUTOS_TOTAIS)}. Clique para zerar o relógio.`}
+            onClick={zerarRelogio}
+            style={{ cursor: 'pointer', borderColor: atraso > 3 ? 'var(--erro)' : undefined, color: atraso > 3 ? 'var(--erro)' : undefined }}>
+            <Icone nome="tempo" tamanho={14} />
+            {inicio ? `${decorrido} min · plano ${planejado}${atraso > 1 ? ` · ${atraso} atrasado` : atraso < -1 ? ` · ${-atraso} adiantado` : ''}` : `plano: ${Math.round(MINUTOS_TOTAIS)} min`}
+          </button>
+          <span className="chip"><Icone nome="pessoas" tamanho={14} /> {ativos}/{presenca.length} ativos</span>
+          {grade && <span className="chip" title="terminais abertos · fila de verificações · modo do lab">{grade.sessoes}🖥 {grade.fila}⏳ {grade.modo}</span>}
+        </MenuControles>
       </div>
 
+      <Roleta arena={arena} papel="host" />
       {nota && <div className="toast">{nota}</div>}
     </div>
   );
