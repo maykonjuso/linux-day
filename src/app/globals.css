@@ -1150,7 +1150,13 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
 
 /* apresentação de uma pessoa: foto, história e o QR do LinkedIn lado a lado */
 .perfil-apresentacao {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--e4); align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--e4);
+  align-items: center;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
   animation: entra-pessoa 380ms var(--ease) both;
 }
 .foto-apresentacao {
@@ -1328,7 +1334,7 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
 
 /* ── ilustrações e fotos nos slides ────────────────────────────────────────── */
 .slide-figura {
-  margin: var(--e2) 0;
+  margin: var(--e1) 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1338,8 +1344,8 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
      Animar a figura separado causava piscada ao avançar passos na mesma cena. */
 }
 .slide-figura img {
-  max-width: min(100%, 640px);
-  max-height: clamp(140px, 30vh, 320px);
+  max-width: min(100%, 780px);
+  max-height: clamp(140px, 28vh, 260px);
   object-fit: contain;
   border-radius: var(--r-m);
   border: 1px solid var(--borda);
