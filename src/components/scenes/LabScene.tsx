@@ -280,29 +280,22 @@ export function LabScene({
             <div className="caixa-resposta" data-preenchida={!!resposta.trim()}>
               <div className="linha">
                 <Ilustra nome="bandeira" tamanho={20} />
-                <strong style={{ fontSize: 'var(--t5)' }}>Achou a resposta? Cole aqui</strong>
+                <strong style={{ fontSize: 'var(--t5)' }}>Achou a resposta? Cole aqui e pressione Enter</strong>
               </div>
-              <div className="linha">
-                <input
-                    autoComplete="off" spellCheck={false} size={8}
-                    placeholder="cole ou digite aqui"
-                    value={resposta}
-                    onChange={(e) => {
-                      setResposta(e.target.value);
-                      ultimaRespostaManual.current = e.target.value;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && resposta.trim()) {
-                        ultimaRespostaManual.current = resposta;
-                        verificar();
-                      }
-                    }} />
-                  <button className="btn primario" data-acao="enviar-resposta"
-                    disabled={!resposta.trim() || ocupado}
-                    onClick={() => { ultimaRespostaManual.current = resposta; verificar(); }}>
-                    <Icone nome="proximo" tamanho={18} /> enviar
-                  </button>
-              </div>
+              <input
+                autoComplete="off" spellCheck={false}
+                placeholder="cole ou digite aqui e pressione Enter"
+                value={resposta}
+                onChange={(e) => {
+                  setResposta(e.target.value);
+                  ultimaRespostaManual.current = e.target.value;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && resposta.trim()) {
+                    ultimaRespostaManual.current = resposta;
+                    verificar();
+                  }
+                }} />
               <small className="apoio">Pode tentar quantas vezes quiser: errar não tira XP.</small>
             </div>
           )}

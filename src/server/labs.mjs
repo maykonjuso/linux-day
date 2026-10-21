@@ -151,7 +151,12 @@ export const LABS = {
       { id: 'm5-c1', xp: 80, descricao: 'Instalar o programa que está em ~/.pacote', check: `
           pkg="$(cat "$HOME/.pacote" 2>/dev/null)"
           [ -n "$pkg" ] || cai "ambiente sem seed — chame um monitor"
-          command -v "$pkg" >/dev/null 2>&1 || dpkg -s "$pkg" >/dev/null 2>&1 \
+          # No modo local o sudo simulado instala um stub em ~/.arena/bin/<pkg>.
+          # Verificamos esse local PRIMEIRO: garante que o aluno executou o comando,
+          # independente do pacote já estar no PATH do sistema (jq, tree, etc.).
+          # No modo VM (usuarios) o stub não existe, então caímos no dpkg -s.
+          [ -x "$HOME/.arena/bin/$pkg" ] && exit 0
+          dpkg -s "$pkg" >/dev/null 2>&1 \
             || cai "o seu pacote é '$pkg' — sudo apt install -y $pkg"` },
       // adesivo: passa enquanto a app está no ar. Depois que a pessoa mata (c3),
       // este critério continua verde porque já foi premiado — ver `avaliar()`.
