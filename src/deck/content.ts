@@ -465,7 +465,6 @@ export const DECK: Cena[] = [
     titulo: 'Procurando no log, peça por peça',
     imagem: '/slides/m4-esteira-pipes.png',
     legendaImagem: 'Pipeline: encadeamento de comandos com | (pipe) refinando dados brutos até a resposta',
-    imagemSoNoFinal: true,
     linhas: [
       { comando: 'wc -l app.log', saida: '50652 app.log', traducao: '`wc -l` **conta as linhas**. São mais de 50 mil: ninguém lê isso no olho.' },
       { comando: 'grep WARN app.log | head -2', saida: '2026-10-19T08:57:00 WARN 10.0.0.9 fila crescendo\n2026-10-19T08:34:00 WARN 192.168.0.14 fila crescendo', destaque: 'WARN', traducao: '`grep` mostra só as linhas que **contêm a palavra**. `head -2` corta nas 2 primeiras.' },
@@ -555,7 +554,6 @@ export const DECK: Cena[] = [
     titulo: 'Instalar, rodar, encerrar',
     imagem: '/slides/m5-processo-pid.png',
     legendaImagem: 'Processos no Linux: segundo plano (&), identificador único (PID) e encerramento com kill',
-    imagemSoNoFinal: true,
     linhas: [
       { comando: 'sudo apt install -y htop', saida: 'Setting up htop ...', traducao: '`sudo` = como administrador. `apt install` baixa o programa da **loja oficial** da distro. `-y` responde "sim" para tudo.' },
       { comando: 'htop', saida: '  PID USER   CPU%  COMMAND\n 4821 aluno   0.3  node app.js', destaque: '4821', traducao: 'Mostra o que está rodando. Olhe só **PID, CPU% e o nome**. Sai com q.' },
