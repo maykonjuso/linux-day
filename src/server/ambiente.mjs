@@ -18,6 +18,11 @@ import { atalhosDeGuarda } from './guarda.mjs';
 
 const exec = promisify(execFile);
 
+function acharExecutavel(nome, candidatos = []) {
+  const doAmbiente = String(process.env.PATH ?? '').split(':').filter(Boolean).map((p) => resolve(p, nome));
+  return [...candidatos, ...doAmbiente].find((p) => existsSync(p)) ?? null;
+}
+
 export const MODO = process.env.ARENA_MODO ?? 'local';
 export const PREFIXO = process.env.ARENA_PREFIXO ?? 'aluno';
 const RAIZ = resolve(process.env.ARENA_CASAS ?? './data/casas');
@@ -169,31 +174,46 @@ export function shellDe(conta, nomeVisivel = conta) {
   prepararAtalhosLocais(nomeVisivel, home);
   const rc = escreverBashrc(home, nomeVisivel);
   // No modo local, aliases não são uma fronteira de segurança: caminhos
-  // absolutos os contornam. Bubblewrap entrega ao PTY apenas /usr (somente
-  // leitura), dispositivos mínimos, /tmp efêmero e a casa desta pessoa. As
-  // casas dos colegas e o computador do apresentador nem existem nesse mount
-  // namespace. Se o sandbox não estiver disponível, falhamos fechado.
-  const bwrap = '/usr/bin/bwrap';
-  if (!existsSync(bwrap)) {
-    throw new Error('modo local requer /usr/bin/bwrap; use a VM com ARENA_MODO=usuarios');
-  }
+  // absolutos os contornam. Usamos o isolador nativo de cada plataforma e
+  // falhamos fechado quando nenhum estiver disponível.
   const shell = comandoComTravas(`exec bash --noprofile --rcfile ${JSON.stringify(rc)} -i`);
-  return {
-    arquivo: bwrap,
-    args: [
-      '--die-with-parent', '--unshare-user', '--unshare-pid', '--unshare-uts', '--unshare-ipc',
-      '--ro-bind', '/usr', '/usr',
-      '--symlink', 'usr/bin', '/bin', '--symlink', 'usr/lib', '/lib',
-      '--symlink', 'usr/lib64', '/lib64',
-      '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/home',
-      '--bind', home, home, '--chdir', home,
-      '--setenv', 'HOME', home, '--setenv', 'USER', conta, '--setenv', 'LOGNAME', conta,
-      '--setenv', 'PATH', `${resolve(home, '.arena/bin')}:/usr/bin:/bin`,
-      'bash', '--noprofile', '--norc', '-c', shell,
-    ],
-    cwd: '/', home,
-    caminhoExtra: resolve(home, '.arena/bin'),
-  };
+  if (process.platform === 'linux') {
+    const bwrap = acharExecutavel('bwrap', ['/usr/bin/bwrap', '/bin/bwrap']);
+    if (!bwrap) throw new Error('modo local no Linux requer o pacote bubblewrap (comando bwrap)');
+    return {
+      arquivo: bwrap,
+      args: [
+        '--die-with-parent', '--unshare-user', '--unshare-pid', '--unshare-uts', '--unshare-ipc',
+        '--ro-bind', '/usr', '/usr',
+        '--symlink', 'usr/bin', '/bin', '--symlink', 'usr/lib', '/lib',
+        '--symlink', 'usr/lib64', '/lib64',
+        '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/home',
+        '--bind', home, home, '--chdir', home,
+        '--setenv', 'HOME', home, '--setenv', 'USER', conta, '--setenv', 'LOGNAME', conta,
+        '--setenv', 'PATH', `${resolve(home, '.arena/bin')}:/usr/bin:/bin`,
+        'bash', '--noprofile', '--norc', '-c', shell,
+      ],
+      cwd: '/', home, caminhoExtra: resolve(home, '.arena/bin'),
+    };
+  }
+  if (process.platform === 'darwin') {
+    const sandbox = acharExecutavel('sandbox-exec', ['/usr/bin/sandbox-exec']);
+    if (!sandbox) throw new Error('o sandbox nativo do macOS não está disponível');
+    const seguro = (p) => p.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    const perfil = `(version 1)
+(deny default)
+(import "system.sb")
+(allow process-fork process-exec)
+(allow signal (target same-sandbox))
+(allow file-read* (subpath "/System") (subpath "/Library") (subpath "/usr") (subpath "/bin") (subpath "/private/etc") (subpath "/dev") (subpath "${seguro(home)}"))
+(allow file-write* (subpath "${seguro(home)}") (subpath "/private/tmp") (subpath "/tmp") (subpath "/dev"))`;
+    return {
+      arquivo: sandbox,
+      args: ['-p', perfil, '/bin/bash', '--noprofile', '--norc', '-c', shell],
+      cwd: home, home, caminhoExtra: resolve(home, '.arena/bin'),
+    };
+  }
+  throw new Error(`modo local seguro ainda não é suportado em ${process.platform}`);
 }
 
 /**

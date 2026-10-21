@@ -125,12 +125,12 @@ com a conquista do cargo.
 
 ### Travas do computador principal
 
-No modo local em Linux, cada terminal roda dentro de um sandbox Bubblewrap:
-enxerga somente `/usr` em leitura, um `/tmp` efêmero e a própria casa. As
-casas dos colegas, os arquivos do apresentador e as variáveis secretas do
-servidor não entram no terminal. Se Bubblewrap não estiver disponível, o
-terminal falha fechado. No macOS e no evento, use a VM
-(`ARENA_MODO=usuarios`), que entrega uma conta Linux distinta a cada pessoa.
+No modo local, cada terminal roda dentro do isolador da plataforma: Bubblewrap
+no Linux e Sandbox no macOS. Ele acessa os programas do sistema, um diretório
+temporário e apenas a própria casa; as casas dos colegas, os arquivos do
+apresentador e as variáveis secretas do servidor ficam de fora. Se o isolador
+não estiver disponível, o terminal falha fechado. No evento, a VM com
+`ARENA_MODO=usuarios` acrescenta uma conta Linux distinta para cada pessoa.
 
 ### Quando outro computador não abre
 
