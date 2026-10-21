@@ -244,7 +244,6 @@ export const DECK: Cena[] = [
     titulo: 'Olhando em volta',
     imagem: '/slides/m1-arvore-navegacao.png',
     legendaImagem: 'Navegação no Linux: árvore de diretórios, onde estou (pwd) e atalhos (~, ., ..)',
-    imagemSoNoFinal: true,
     linhas: [
       { comando: 'pwd', saida: '/home/aluno', traducao: '**Onde eu estou.** Perdido? Comece sempre por aqui.' },
       { comando: 'ls', saida: 'app  app.log  bagunca  docs  projetos  relatorio.txt', traducao: '**O que tem aqui**: pastas e arquivos da pasta atual.' },
@@ -318,7 +317,6 @@ export const DECK: Cena[] = [
     titulo: 'Criar, copiar, mover, editar, apagar',
     imagem: '/slides/m2-cuidado-rm.png',
     legendaImagem: 'Atenção: no Linux o rm apaga imediatamente, sem lixeira e sem confirmação',
-    imagemSoNoFinal: true,
     linhas: [
       { comando: 'mkdir -p projeto/src && ls projeto', saida: 'src', traducao: '`mkdir` cria pastas. O `-p` cria o caminho inteiro de uma vez.' },
       { comando: 'touch projeto/src/app.js', saida: '', traducao: '`touch` cria um **arquivo vazio**.' },
@@ -385,7 +383,6 @@ export const DECK: Cena[] = [
     titulo: 'Erro → diagnóstico → conserto',
     imagem: '/slides/m3-permissoes-rwx.png',
     legendaImagem: 'Permissões: r (leitura = 4), w (escrita = 2), x (execução = 1) para Dono, Grupo e Outros',
-    imagemSoNoFinal: true,
     linhas: [
       { comando: 'cat relatorio.txt', saida: 'cat: relatorio.txt: Permission denied', destaque: 'Permission denied', traducao: 'A mensagem mais comum do Linux. Não é defeito: é o sistema **protegendo** o arquivo.' },
       { comando: 'ls -l relatorio.txt', saida: '---------- 1 aluno aluno 24 out 19 09:40 relatorio.txt', destaque: '----------', traducao: 'O começo da linha são as permissões. **Tudo tracinho**: ninguém pode nada.' },
