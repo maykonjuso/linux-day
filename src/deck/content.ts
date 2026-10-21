@@ -79,10 +79,36 @@ export const DECK: Cena[] = [
     id: 'm0-origem', ilustra: 'livro', tipo: 'TerminalDemo', modulo: 0, passos: 4, minutos: 1.5,
     titulo: 'De onde veio',
     linhas: [
-      { comando: '# 1983: Richard Stallman começa o projeto GNU', saida: 'objetivo: um sistema inteiro feito de software livre', traducao: 'Software livre: qualquer pessoa pode usar, estudar, mudar e distribuir. Vieram as ferramentas, mas faltava **o núcleo**.' },
-      { comando: '# 1991: Linus Torvalds, estudante de 21 anos, Finlândia', saida: '"just a hobby, won\'t be big and professional"', destaque: "won't be big", traducao: 'Ele anunciou o núcleo num fórum dizendo que era **só um hobby**. Envelheceu muito mal.' },
-      { comando: '# o mascote: Tux, o pinguim', saida: 'Linus foi mordido por um pinguim num zoológico', destaque: 'mordido por um pinguim', traducao: 'É sério: o pinguim virou o símbolo por causa de **uma mordida** que ele levou na Austrália.' },
-      { comando: '# GNU + Linux = um sistema operacional completo', saida: 'licença GPL: o código é de todos, e continua sendo', traducao: 'Por isso qualquer pessoa pode baixar, abrir e **modificar** o Linux.' },
+      {
+        comando: '# 1983: Richard Stallman começa o projeto GNU',
+        saida: 'objetivo: um sistema inteiro feito de software livre',
+        traducao: 'Software livre: qualquer pessoa pode usar, estudar, mudar e distribuir. Vieram as ferramentas, mas faltava **o núcleo**.',
+        imagem: '/slides/m0-stallman.jpeg',
+        legendaImagem: 'Richard Stallman — fundador do Projeto GNU e da Free Software Foundation',
+      },
+      {
+        comando: '# 1991: Linus Torvalds, estudante de 21 anos, Finlândia',
+        saida: '"just a hobby, won\'t be big and professional"',
+        destaque: "won't be big",
+        traducao: 'Ele anunciou o núcleo num fórum dizendo que era **só um hobby**. Envelheceu muito mal.',
+        imagem: '/slides/m0-linus-1991.jpeg',
+        legendaImagem: 'Linus Torvalds (1991): o e-mail histórico anunciando o Linux',
+      },
+      {
+        comando: '# o mascote: Tux, o pinguim',
+        saida: 'Linus foi mordido por um pinguim num zoológico',
+        destaque: 'mordido por um pinguim',
+        traducao: 'É sério: o pinguim virou o símbolo por causa de **uma mordida** que ele levou na Austrália.',
+        imagem: '/slides/m0-tux.jpg',
+        legendaImagem: 'Tux: o pinguim mascote criado em 1996 por Larry Ewing',
+      },
+      {
+        comando: '# GNU + Linux = um sistema operacional completo',
+        saida: 'licença GPL: o código é de todos, e continua sendo',
+        traducao: 'Por isso qualquer pessoa pode baixar, abrir e **modificar** o Linux.',
+        imagem: '/slides/m0-gnu-linux.png',
+        legendaImagem: 'Ferramentas GNU + Kernel Linux = Sistema Operacional GNU/Linux',
+      },
     ],
   },
   {
@@ -133,10 +159,37 @@ export const DECK: Cena[] = [
     id: 'm0-onde', ilustra: 'celular', tipo: 'TerminalDemo', modulo: 0, passos: 4, minutos: 1,
     titulo: 'Onde o Linux está',
     linhas: [
-      { comando: '# no seu bolso e na sua mochila', saida: 'Android, ChromeOS e Steam Deck rodam sobre o kernel Linux', destaque: 'Android', traducao: 'Quase todo mundo aqui usa Linux todo dia sem saber. (O iPhone não: o iOS é da Apple.)' },
-      { comando: '# na internet', saida: 'a maioria dos servidores web roda Linux', traducao: 'Todo site que vocês abriram hoje passou por uma máquina Linux.' },
-      { comando: '# nos 500 supercomputadores mais rápidos do mundo', saida: '500 de 500', destaque: '500 de 500', traducao: 'Não é "a maioria". São **todos**.' },
-      { comando: '# e o Git?', saida: 'também foi criado pelo Linus, para guardar as versões do kernel', destaque: 'criado pelo Linus', traducao: 'A ferramenta de versionar código que vocês usam nasceu **do mesmo projeto**.' },
+      {
+        comando: '# no seu bolso e na sua mochila',
+        saida: 'Android, ChromeOS e Steam Deck rodam sobre o kernel Linux',
+        destaque: 'Android',
+        traducao: 'Quase todo mundo aqui usa Linux todo dia sem saber. (O iPhone não: o iOS é da Apple.)',
+        imagem: '/slides/m0-gadgets.png',
+        legendaImagem: 'Android, Steam Deck, ChromeOS e roteadores: Linux no seu dia a dia',
+      },
+      {
+        comando: '# na internet',
+        saida: 'a maioria dos servidores web roda Linux',
+        traducao: 'Todo site que vocês abriram hoje passou por uma máquina Linux.',
+        imagem: '/slides/m0-datacenter.jpeg',
+        legendaImagem: 'A nuvem mundial roda em servidores Linux (AWS, Google Cloud, Azure)',
+      },
+      {
+        comando: '# nos 500 supercomputadores mais rápidos do mundo',
+        saida: '500 de 500',
+        destaque: '500 de 500',
+        traducao: 'Não é "a maioria". São **todos**.',
+        imagem: '/slides/m0-supercomputador.jpeg',
+        legendaImagem: 'TOP500: 100% dos supercomputadores mais potentes do planeta rodam Linux',
+      },
+      {
+        comando: '# e o Git?',
+        saida: 'também foi criado pelo Linus, para guardar as versões do kernel',
+        destaque: 'criado pelo Linus',
+        traducao: 'A ferramenta de versionar código que vocês usam nasceu **do mesmo projeto**.',
+        imagem: '/slides/m0-git-linus.png',
+        legendaImagem: 'Git: criado por Linus Torvalds em 2005 para gerenciar o kernel do Linux',
+      },
     ],
   },
   {
@@ -156,6 +209,8 @@ export const DECK: Cena[] = [
     enunciado: 'A equipe que **apertar primeiro** responde em voz alta. Acertou, leva o XP para todo mundo da equipe. Errou, a vez passa para a próxima da fila.',
     segundos: 60,
     premios: [300],
+    imagem: '/slides/m0-desafio-git.png',
+    imagemResposta: '/slides/m0-git-resposta.png',
     referencias: [{ id: 'm0-onde', titulo: 'Onde o Linux está' }],
   },
 
@@ -187,6 +242,9 @@ export const DECK: Cena[] = [
   {
     id: 'm1-demo', ilustra: 'bussola', tipo: 'TerminalDemo', modulo: 1, passos: 7, minutos: 2.5,
     titulo: 'Olhando em volta',
+    imagem: '/slides/m1-arvore-navegacao.png',
+    legendaImagem: 'Navegação no Linux: árvore de diretórios, onde estou (pwd) e atalhos (~, ., ..)',
+    imagemSoNoFinal: true,
     linhas: [
       { comando: 'pwd', saida: '/home/aluno', traducao: '**Onde eu estou.** Perdido? Comece sempre por aqui.' },
       { comando: 'ls', saida: 'app  app.log  bagunca  docs  projetos  relatorio.txt', traducao: '**O que tem aqui**: pastas e arquivos da pasta atual.' },
@@ -258,6 +316,9 @@ export const DECK: Cena[] = [
   {
     id: 'm2-demo', ilustra: 'pasta-aberta', tipo: 'TerminalDemo', modulo: 2, passos: 8, minutos: 3.5,
     titulo: 'Criar, copiar, mover, editar, apagar',
+    imagem: '/slides/m2-cuidado-rm.png',
+    legendaImagem: 'Atenção: no Linux o rm apaga imediatamente, sem lixeira e sem confirmação',
+    imagemSoNoFinal: true,
     linhas: [
       { comando: 'mkdir -p projeto/src && ls projeto', saida: 'src', traducao: '`mkdir` cria pastas. O `-p` cria o caminho inteiro de uma vez.' },
       { comando: 'touch projeto/src/app.js', saida: '', traducao: '`touch` cria um **arquivo vazio**.' },
@@ -322,6 +383,9 @@ export const DECK: Cena[] = [
   {
     id: 'm3-demo', ilustra: 'chave', tipo: 'TerminalDemo', modulo: 3, passos: 8, minutos: 3.5,
     titulo: 'Erro → diagnóstico → conserto',
+    imagem: '/slides/m3-permissoes-rwx.png',
+    legendaImagem: 'Permissões: r (leitura = 4), w (escrita = 2), x (execução = 1) para Dono, Grupo e Outros',
+    imagemSoNoFinal: true,
     linhas: [
       { comando: 'cat relatorio.txt', saida: 'cat: relatorio.txt: Permission denied', destaque: 'Permission denied', traducao: 'A mensagem mais comum do Linux. Não é defeito: é o sistema **protegendo** o arquivo.' },
       { comando: 'ls -l relatorio.txt', saida: '---------- 1 aluno aluno 24 out 19 09:40 relatorio.txt', destaque: '----------', traducao: 'O começo da linha são as permissões. **Tudo tracinho**: ninguém pode nada.' },
@@ -378,6 +442,8 @@ export const DECK: Cena[] = [
     enunciado: 'A equipe que **apertar primeiro** fala o comando em voz alta. Errou, a vez passa. Dica: é um comando e uma letra a mais.',
     segundos: 60,
     premios: [300],
+    imagem: '/slides/kr1-perigo-rmr.png',
+    imagemResposta: '/slides/kr1-rmr-resposta.png',
     referencias: [{ id: 'm2-demo', titulo: 'Criar, copiar, mover, editar, apagar (rm -r)' }],
   },
 
@@ -400,6 +466,9 @@ export const DECK: Cena[] = [
   {
     id: 'm4-demo', ilustra: 'lupa', tipo: 'TerminalDemo', modulo: 4, passos: 8, minutos: 3.5,
     titulo: 'Procurando no log, peça por peça',
+    imagem: '/slides/m4-esteira-pipes.png',
+    legendaImagem: 'Pipeline: encadeamento de comandos com | (pipe) refinando dados brutos até a resposta',
+    imagemSoNoFinal: true,
     linhas: [
       { comando: 'wc -l app.log', saida: '50652 app.log', traducao: '`wc -l` **conta as linhas**. São mais de 50 mil: ninguém lê isso no olho.' },
       { comando: 'grep WARN app.log | head -2', saida: '2026-10-19T08:57:00 WARN 10.0.0.9 fila crescendo\n2026-10-19T08:34:00 WARN 192.168.0.14 fila crescendo', destaque: 'WARN', traducao: '`grep` mostra só as linhas que **contêm a palavra**. `head -2` corta nas 2 primeiras.' },
@@ -487,6 +556,9 @@ export const DECK: Cena[] = [
   {
     id: 'm5-demo', ilustra: 'pacote', tipo: 'TerminalDemo', modulo: 5, passos: 7, minutos: 3,
     titulo: 'Instalar, rodar, encerrar',
+    imagem: '/slides/m5-processo-pid.png',
+    legendaImagem: 'Processos no Linux: segundo plano (&), identificador único (PID) e encerramento com kill',
+    imagemSoNoFinal: true,
     linhas: [
       { comando: 'sudo apt install -y htop', saida: 'Setting up htop ...', traducao: '`sudo` = como administrador. `apt install` baixa o programa da **loja oficial** da distro. `-y` responde "sim" para tudo.' },
       { comando: 'htop', saida: '  PID USER   CPU%  COMMAND\n 4821 aluno   0.3  node app.js', destaque: '4821', traducao: 'Mostra o que está rodando. Olhe só **PID, CPU% e o nome**. Sai com q.' },

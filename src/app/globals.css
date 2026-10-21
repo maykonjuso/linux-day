@@ -1325,3 +1325,31 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
 .palco[data-papel="screen"] .roleta-corpo[data-girou] .roleta-roda { width: min(360px, 42vh); }
 /* listas longas (as dez equipes) rolam dentro do menu, sem passar da janela */
 .painel-controles { max-height: min(60dvh, 480px); overflow-y: auto; }
+
+/* ── ilustrações e fotos nos slides ────────────────────────────────────────── */
+.slide-figura {
+  margin: var(--e2) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  animation: cena-entra 300ms var(--ease) both;
+}
+.slide-figura img {
+  max-width: min(100%, 640px);
+  max-height: clamp(140px, 30vh, 320px);
+  object-fit: contain;
+  border-radius: var(--r-m);
+  border: 1px solid var(--borda);
+  background: var(--papel-2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.slide-figura figcaption {
+  font-size: var(--t6);
+  color: var(--tinta-2);
+  margin-top: var(--e05);
+  text-align: center;
+  max-width: 580px;
+}
+
