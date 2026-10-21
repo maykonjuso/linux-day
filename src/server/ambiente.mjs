@@ -51,6 +51,19 @@ export function liberarConta(conta) {
   contasEmUso.delete(conta);
 }
 
+/**
+ * Repovoação do map contasEmUso depois de um reinício do servidor.
+ * Sem isso, ao rearrancar o servidor o map começa vazio e `alocarConta`
+ * distribui a mesma conta para participantes diferentes que já estavam no banco.
+ * Deve ser chamada uma vez, logo depois de `jogo.recarregarDoBanco()`.
+ */
+export function restaurarContas(participantes) {
+  contasEmUso.clear();
+  for (const [id, p] of participantes) {
+    if (p.conta) contasEmUso.set(p.conta, id);
+  }
+}
+
 export function casaDe(conta) {
   return MODO === 'local' ? resolve(RAIZ, conta) : `/home/${conta}`;
 }

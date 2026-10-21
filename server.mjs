@@ -86,6 +86,9 @@ const jogo = criarJogo({
   cartasValidas: CARTAS_VALIDAS,
 });
 jogo.recarregarDoBanco();
+// repopula contasEmUso para que alocarConta não distribua a mesma conta
+// para dois participantes diferentes após um reinício do servidor
+amb.restaurarContas(jogo.participantes);
 
 /**
  * XP de cada pessoa e equipe no começo da cena da vez. Vai junto com o placar
