@@ -116,7 +116,10 @@ ok((await pedir(host, 'host:ir', { cenaIndex: iBoss, cenaId: 'm6-boss', passo: 0
 ok(!!(await pedir(pessoas.ana, 'chamado:cartao', { cartaoId: 'inv-grep' })).erro, 'cartão não roda com o chamado fechado');
 // sem clicar em "preparar boss": abrir o chamado prepara sozinho
 host.emit('host:fase', { fase: 'aberta', cenaId: 'm6-boss', segundos: 540 });
-await esperar(2500);
+// O primeiro cartão pode ser enviado imediatamente: ele deve aguardar o
+// preparo da pasta, não falhar numa corrida contra a semeadura assíncrona.
+const primeiroCartao = await pedir(pessoas.ana, 'chamado:cartao', { cartaoId: 'inv-ls' });
+ok(primeiroCartao.jogada?.ok && /relatorio\.log/.test(primeiroCartao.jogada?.saida ?? ''), 'o primeiro cartão aguarda a pasta da equipe ficar pronta');
 const logo = {};
 for (const s of Object.values(pessoas)) {
   const v = await pedir(s, 'lab:verificar', { taskSlug: 'boss-chamado', auto: true });
@@ -124,6 +127,16 @@ for (const s of Object.values(pessoas)) {
 }
 ok(Object.keys(logo).length === 0, 'ao abrir o chamado nenhum defeito fecha sozinho', `(${Object.keys(logo)})`);
 ok(placar.individual.find((p) => p.nick === 'bia').badges?.includes('carta-operador'), 'quem tem carta começa o chamado com a conquista do cargo');
+
+// A trava impede trocar de time, mas um participante atrasado não pode ficar
+// preso sem equipe quando usa o seletor global fora do slide de equipes.
+const atrasado = novo();
+await esperar(200);
+await pedir(atrasado, 'entrar', { nick: 'eva', emoji: '🐧' });
+const entradaTardia = await pedir(atrasado, 'grupo:entrar', 'verde');
+ok(entradaTardia.ok && entradaTardia.grupo === 'verde', 'quem chegou atrasado entra numa equipe mesmo com o chamado trancado');
+const trocaNoChamado = await pedir(pessoas.ana, 'grupo:entrar', 'verde');
+ok(trocaNoChamado.erro === 'trancado', 'quem já tem equipe não troca no meio do chamado');
 
 let registroDaDavi = [];
 pessoas.davi.on('chamado:jogada', (j) => registroDaDavi.push(j));
@@ -165,7 +178,7 @@ for (const [nome, s] of [['ana', pessoas.ana], ['bia', pessoas.bia], ['caio', pe
 ok(['b-c1', 'b-c2', 'b-c3', 'b-c4'].every((c) => fechou[c]), 'os quatro defeitos fecham, cada um com o seu cargo', `(${Object.keys(fechou)})`);
 
 // ───────────────────────────────── fim ────────────────────────────────────
-[host, ...Object.values(pessoas)].forEach((s) => s.close());
+[host, atrasado, ...Object.values(pessoas)].forEach((s) => s.close());
 // o processo travado do boss vive fora do servidor: sem isto, fica gastando CPU
 // e o próximo teste encontra dois
 spawn('pkill', ['-f', '[a]rena-travado-']);

@@ -223,8 +223,8 @@ const EVENTOS: Record<string, { titulo: string; icone: string; sala: string; voc
   },
   'resgate-de-equipe': {
     titulo: 'Resgate de equipe!', icone: 'pessoas',
-    sala: 'A equipe com menos XP ganhou 60 XP para cada pessoa. O placar das equipes ficou mais apertado.',
-    voce: (contemplado) => contemplado ? 'Para você: sua equipe foi resgatada, +60 XP!' : 'Para você: nada muda, mas a equipe de trás chegou mais perto.',
+    sala: 'A equipe com menos XP ganhou 120 XP para cada pessoa. O placar das equipes ficou mais apertado.',
+    voce: (contemplado) => contemplado ? 'Para você: sua equipe foi resgatada, +120 XP!' : 'Para você: nada muda, mas a equipe de trás chegou mais perto.',
   },
   roleta: {
     titulo: 'Roleta!', icone: 'alvo',
@@ -233,8 +233,8 @@ const EVENTOS: Record<string, { titulo: string; icone: string; sala: string; voc
   },
   resgate: {
     titulo: 'Resgate!', icone: 'premio',
-    sala: 'As 5 pessoas com menos XP ganharam 80 XP de presente, para ninguém ficar para trás.',
-    voce: (contemplado) => contemplado ? 'Para você: você foi resgatado e ganhou +80 XP!' : 'Para você: nada muda, você já está fora dos 5 últimos.',
+    sala: 'As 5 pessoas com menos XP ganharam 160 XP de presente, para ninguém ficar para trás.',
+    voce: (contemplado) => contemplado ? 'Para você: você foi resgatado e ganhou +160 XP!' : 'Para você: nada muda, você já está fora dos 5 últimos.',
   },
 };
 
@@ -302,13 +302,14 @@ export function Confete({ atraso = 0, quantidade = 18 }: { atraso?: number; quan
 
 /**
  * Conquista desbloqueada: cartão que entra pela lateral com a medalha girando.
- * Quando é de outra pessoa da sala, aparece menor e mais discreto (é bom saber
- * que os outros estão conquistando coisas, mas o destaque é de quem conquistou).
+ * O servidor envia este cartão somente para quem desbloqueou a conquista.
+ * Ainda conferimos o id para nunca tratar um evento malformado como pessoal.
  */
 export function CartaoConquista({ arena }: { arena: Arena }) {
   const b = arena.badge;
   if (!b) return null;
-  const minha = b.nick === arena.eu?.nick;
+  const minha = b.id === arena.eu?.id;
+  if (!minha) return null;
   return (
     <div key={`${b.nick}:${b.badge}`} className="conquista" data-minha={minha}>
       {minha && <Confete />}

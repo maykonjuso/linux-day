@@ -84,6 +84,7 @@ function comoUsuario(conta, script, env = {}, timeout = 10_000) {
     LOGNAME: conta,
     LANG: 'C.UTF-8',
     TERM: 'xterm-256color',
+    ARENA_MODO: MODO,
     ...env,
   };
   if (MODO === 'usuarios') {
@@ -367,4 +368,28 @@ export async function rodarComando(conta, script, env = {}) {
 
 export function dirDoGrupo(grupo) {
   return `${RAIZ_GRUPOS}/grupo-${grupo}`;
+}
+
+/**
+ * Garante que a conta usada pelo boss consiga preparar a pasta compartilhada.
+ * No modo de contas reais, /srv/chamado é criado pelo provisionamento e cada
+ * pasta pertence ao grupo Unix g-<equipe>; incluir a conta antes do `su -`
+ * faz a nova sessão herdar essa permissão. No ensaio local basta criar a pasta.
+ */
+export async function prepararPastaDoGrupo(conta, grupo) {
+  if (!/^[a-z0-9_-]{1,32}$/.test(String(grupo)) || !/^[a-z0-9_-]{1,32}$/.test(String(conta))) {
+    return { ok: false, saida: 'conta ou equipe inválida' };
+  }
+  const pasta = dirDoGrupo(grupo);
+  if (MODO === 'local') {
+    mkdirSync(pasta, { recursive: true });
+    return { ok: true, saida: pasta };
+  }
+  try {
+    await exec('install', ['-d', '-m', '2770', '-g', `g-${grupo}`, pasta]);
+    await exec('usermod', ['-aG', `g-${grupo}`, conta]);
+    return { ok: true, saida: pasta };
+  } catch (e) {
+    return { ok: false, saida: String(e.stderr || e.message || e).trim() };
+  }
 }

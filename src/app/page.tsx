@@ -316,12 +316,12 @@ export default function Player() {
         */}
         <MenuControles rotulo={eu.grupo ?? 'equipe'} icone="pessoas" destaque={eu.grupo ? null : '!'}
           titulo={eu.grupo ? `sua equipe: ${eu.grupo}. Clique para trocar` : 'você está sem equipe: escolha a sua'}>
-          {/* não mostrar o aviso de trancado quando estamos na cena de escolha de equipe */}
-          {arena.equipesTrancadas && cenaVista.tipo !== 'GroupScene' && <div className="info-menu">As equipes estão trancadas durante o chamado.</div>}
+          {arena.equipesTrancadas && eu.grupo && <div className="info-menu">As trocas de equipe estão trancadas durante o chamado.</div>}
+          {arena.equipesTrancadas && !eu.grupo && <div className="info-menu">O chamado já começou, mas você ainda pode escolher uma equipe com vaga.</div>}
           {[...arena.placar.grupos].sort((a, b) => a.ordem - b.ordem).map((g) => {
             const minha = g.nome === eu.grupo;
             const cheia = !minha && g.membros.length >= g.capacidade;
-            const trancada = arena.equipesTrancadas && cenaVista.tipo !== 'GroupScene';
+            const trancada = arena.equipesTrancadas && !!eu.grupo;
             return (
               <button key={g.nome} className="btn-icone" data-equipe={g.nome}
                 disabled={minha || cheia || trancada}

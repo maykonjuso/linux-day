@@ -87,23 +87,16 @@ async function jogarEscolhas(rodadas) {
   return true;
 }
 
-console.log('\n── os 5 exercícios do deck ──');
+console.log('\n── os 3 widgets do deck ──');
 
-// 1 · escape-room
+// 1 · path-quiz
 let antes = await xp();
-await irPara('m1-fuga-widget');
-ok(await jogarEscolhas(3), 'escape-room: três rodadas jogáveis até o fim');
-await dormir(600);
-ok(await xp() > antes, 'escape-room paga XP', `(${antes} → ${await xp()})`);
-
-// 2 · path-quiz
-antes = await xp();
 await irPara('m1-widget');
 ok(await jogarEscolhas(3), 'path-quiz: três rodadas jogáveis');
 await dormir(600);
 ok(await xp() > antes, 'path-quiz paga XP');
 
-// 3 · permission-toggles
+// 2 · permission-toggles
 antes = await xp();
 await irPara('m3-widget');
 const numeroAtual = async () => (((await pg.locator('.term').first().textContent()) ?? '').match(/\d{3}/) ?? ['000'])[0];
@@ -128,7 +121,7 @@ for (const alvo of ['700', '644', '755']) {
 await dormir(500);
 ok(await xp() > antes, 'permission-toggles paga XP');
 
-// 4 · pipe-builder
+// 3 · pipe-builder
 antes = await xp();
 await irPara('m4-widget');
 for (const peca of ['grep', 'cut', 'sort', 'uniq', 'sortrn', 'head']) {
@@ -139,13 +132,6 @@ const certo = pg.locator('.cartao', { hasText: 'é esse o top 3' });
 ok(await certo.count() > 0, 'pipe-builder: a ordem correta é reconhecida e mostra a saída final');
 if (await certo.count()) { await pg.getByRole('button', { name: 'concluir' }).click(); await dormir(500); }
 ok(await xp() > antes, 'pipe-builder paga XP');
-
-// 5 · predict-output
-antes = await xp();
-await irPara('m5-prever');
-ok(await jogarEscolhas(3), 'predict-output: três rodadas jogáveis');
-await dormir(500);
-ok(await xp() > antes, 'predict-output paga XP');
 
 console.log('\n── controles do participante ──');
 

@@ -203,7 +203,9 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
     if (!dao.darBadge(id, badge)) return;
     const p = participantes.get(id);
     if (p) p.badges = dao.badgesDe(id);
-    emitir('badge', { id, nick: p?.nick ?? '', badge, descricao: BADGES[badge] });
+    // Conquista é pessoal. O broadcast fazia todas as telas abrirem o mesmo
+    // cartão e dava a impressão de que a sala inteira havia recebido o badge.
+    emitirPara(id, 'badge', { id, nick: p?.nick ?? '', badge, descricao: BADGES[badge] });
   }
 
   function mexerCombo(id, acertou) {

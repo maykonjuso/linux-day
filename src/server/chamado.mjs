@@ -23,9 +23,10 @@ export const CARTOES = [
   { id: 'inv-rm', papel: 'investigador', comando: 'rm log/relatorio.log', armadilha: 'apagar o log apaga a prova: o erro some da tela, mas o chamado fica sem explicação. Log se lê, não se apaga.' },
 
   // ── Operador: acha o processo que trava o servidor e encerra ──
-  // o --sort é do Linux; no macOS (ensaio no modo local) quem ordena por CPU é o -r
+  // Filtrar pelo nome mantém o processo visível mesmo no primeiro segundo,
+  // antes de o `ps` ter amostrado CPU suficiente para colocá-lo no top 5.
   { id: 'op-ps', papel: 'operador', comando: 'ps aux --sort=-%cpu | head -5',
-    script: 'if ps --version >/dev/null 2>&1; then ps aux --sort=-%cpu | head -5; else ps aux -r | head -5; fi' },
+    script: 'ps aux | { head -1; grep "[a]rena-travado-$GRUPO"; }' },
   { id: 'op-kill', papel: 'operador', comando: 'kill {PID}', campo: { nome: 'PID', tipo: 'pid', dica: 'o número da 2ª coluna do ps' },
     script: 'kill "$VALOR" && echo "processo $VALOR encerrado"' },
   { id: 'op-reboot', papel: 'operador', comando: 'sudo reboot', armadilha: 'reiniciar o servidor inteiro derruba todo mundo que estava usando, para matar um processo só. kill + PID resolve sem tirar ninguém do ar.' },

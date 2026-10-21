@@ -111,12 +111,26 @@ const v0 = await pedir(ana, 'lab:verificar', { taskSlug: 'm2-bagunca' });
 ok(v0.resultados.length === 6 && v0.resultados.every((r) => !r.passou), 'lab começa com os 6 critérios abertos');
 ok(/mkdir|imagens/.test(v0.resultados[0].mensagem ?? ''), 'a mensagem de falha aponta o próximo passo', `("${v0.resultados[0].mensagem}")`);
 
+// apagar tudo não pode satisfazer critérios que procuram a ausência de lixo
+ana.emit('term:entrada', 'cp -a ~/bagunca ~/.arena/bagunca-seed && rm -rf ~/bagunca/*\n');
+await esperar(900);
+const apagouTudo = await pedir(ana, 'lab:verificar', { taskSlug: 'm2-bagunca' });
+ok(apagouTudo.resultados.every((r) => !r.passou), 'rm -rf * não conclui nenhuma conquista do lab');
+ana.emit('term:entrada', 'rm -rf ~/bagunca && mv ~/.arena/bagunca-seed ~/bagunca\n');
+await esperar(900);
+
 // resolve de verdade, pelo terminal, como o participante faria
+const badgesDaAna = [];
+const badgesDaBia = [];
+ana.on('badge', (b) => badgesDaAna.push(b));
+bia.on('badge', (b) => badgesDaBia.push(b));
 ana.emit('term:entrada', 'cd ~/bagunca && mkdir -p imagens docs scripts && mv *.png *.jpg imagens/ && mv rascunho.txt docs/notas.md && mv *.txt *.md docs/ && mv *.sh scripts/ && rm -f tmp_* && echo "organizado por ana" > README.md\n');
 await esperar(1800);
 const v1 = await pedir(ana, 'lab:verificar', { taskSlug: 'm2-bagunca' });
 ok(v1.todos, 'depois dos comandos, os 6 critérios passam', `(ganho ${v1.ganho} XP)`);
 ok(v1.ganho === 240, 'o lab paga os 240 XP dos 6 critérios', `(${v1.ganho})`);
+ok(badgesDaAna.length > 0 && badgesDaAna.every((b) => b.id === ra.eu.id), 'a conquista chega somente a quem ganhou');
+ok(badgesDaBia.length === 0, 'a conquista não aparece para os outros participantes');
 
 const v2 = await pedir(ana, 'lab:verificar', { taskSlug: 'm2-bagunca' });
 ok(v2.ganho === 0, 'verificar de novo NÃO pontua duas vezes (idempotência)');

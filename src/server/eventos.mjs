@@ -12,8 +12,8 @@ export const EVENTOS = {
   'xp-dobrado': { rotulo: 'XP dobrado: todo XP vale 2× por 3 min', quando: (c) => c.multiplicador === 1 },
   relampago: { rotulo: 'relâmpago: XP triplo por 1 min', quando: (c) => c.multiplicador === 1 },
   sabotagem: { rotulo: 'sabotagem: tira o x do deploy.sh de todos', quando: (c) => c.passouDoM3 },
-  resgate: { rotulo: 'resgate: +80 XP para os 5 com menos XP', quando: (c) => c.ativos >= 6 },
-  'resgate-de-equipe': { rotulo: 'resgate de equipe: +60 XP para a equipe com menos XP', quando: (c) => c.equipesComGente >= 2 },
+  resgate: { rotulo: 'resgate: +160 XP para os 5 com menos XP', xp: 160, quando: (c) => c.ativos >= 6 },
+  'resgate-de-equipe': { rotulo: 'resgate de equipe: +120 XP para a equipe com menos XP', xp: 120, quando: (c) => c.equipesComGente >= 2 },
   'chuva-de-tokens': { rotulo: 'chuva de tokens: +1 token para quem está na sala', quando: () => true },
   roleta: { rotulo: 'roleta: 1 pessoa a cada 20 gira e joga', quando: (c) => !c.roletaAtiva && c.ativos >= 2 },
 };

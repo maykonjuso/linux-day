@@ -157,6 +157,8 @@ const XP_DO_WIDGET = 90;
 
 /** em que conta o processo travado de cada equipe nasceu (o kill roda nela) */
 const contaDoBoss = new Map();
+/** preparo em andamento por equipe; cartões aguardam esta promessa */
+const preparoDoBoss = new Map();
 
 /** o chamado está aberto agora? (é o único momento em que cartão roda) */
 const CENA_DO_CHAMADO = DECK.find((c) => c.tipo === 'LabScene' && c.cartoes)?.id ?? null;
@@ -168,21 +170,50 @@ const chamadoAberto = () => estado.cenaId === CENA_DO_CHAMADO && estado.fase ===
  * usa, para não desfazer o progresso de quem já começou se o apresentador
  * reabrir a cena. O botão "preparar boss" refaz em todas.
  */
-async function semearChamado({ soNovas = false } = {}) {
-  let n = 0;
-  for (const g of jogo.grupos.values()) {
-    if (!g.membros.size || (soNovas && contaDoBoss.has(g.nome))) continue;
+async function prepararGrupoDoChamado(g, { refazer = false } = {}) {
+  if (!g?.membros.size) return false;
+  if (!refazer && contaDoBoss.has(g.nome)) return true;
+  if (preparoDoBoss.has(g.nome)) await preparoDoBoss.get(g.nome);
+  if (!refazer && contaDoBoss.has(g.nome)) return true;
+
+  const preparo = (async () => {
     // O processo travado nasce na conta do Operador. Com hidepid=2 cada
     // pessoa só enxerga os próprios processos: semeado na conta de outro
     // membro, o Operador não via nem conseguia matar, e o checker (que roda
     // como quem verifica) achava que ele já estava morto.
     const operador = Object.entries(g.papeis).find(([, p]) => p === 'operador')?.[0];
     const conta = jogo.participantes.get(operador ?? [...g.membros][0])?.conta;
-    if (!conta) continue;
-    contaDoBoss.set(g.nome, conta);
+    if (!conta) return false;
+    const pasta = await amb.prepararPastaDoGrupo(conta, g.nome);
+    if (!pasta.ok) {
+      console.warn('[boss]', g.nome, pasta.saida);
+      return false;
+    }
     const r = await amb.semear(conta, 'boss.sh', { GRUPO: g.nome, DIR_GRUPO: amb.dirDoGrupo(g.nome) });
-    if (r.ok) n++; else { contaDoBoss.delete(g.nome); console.warn('[boss]', g.nome, r.saida); }
+    if (!r.ok) {
+      contaDoBoss.delete(g.nome);
+      console.warn('[boss]', g.nome, r.saida);
+      return false;
+    }
+    // Só anuncia a conta depois de toda a pasta estar pronta. Antes, um cartão
+    // enviado no primeiro segundo podia tentar entrar numa pasta ainda ausente.
+    contaDoBoss.set(g.nome, conta);
     g.jogadas = [];
+    return true;
+  })();
+  preparoDoBoss.set(g.nome, preparo);
+  try {
+    return await preparo;
+  } finally {
+    if (preparoDoBoss.get(g.nome) === preparo) preparoDoBoss.delete(g.nome);
+  }
+}
+
+async function semearChamado({ soNovas = false } = {}) {
+  let n = 0;
+  for (const g of jogo.grupos.values()) {
+    if (!g.membros.size || (soNovas && contaDoBoss.has(g.nome))) continue;
+    if (await prepararGrupoDoChamado(g, { refazer: !soNovas })) n++;
   }
   return n;
 }
@@ -318,14 +349,14 @@ function executarEvento(tipo) {
   if (tipo === 'resgate') {
     // todo mundo, inclusive quem saiu: o XP fica guardado e volta com a pessoa
     const atrasados = [...jogo.participantes.values()].sort((a, b) => a.xp - b.xp).slice(0, 5);
-    for (const p of atrasados) jogo.premiar(p.id, 80, 'resgate', 'evento');
+    for (const p of atrasados) jogo.premiar(p.id, EVENTOS.resgate.xp, 'resgate', 'evento');
     contemplados = atrasados.map((p) => p.id);
   }
   if (tipo === 'resgate-de-equipe') {
     const ultima = jogo.placar().grupos.filter((g) => g.membros.length).sort((a, b) => a.xp - b.xp || a.media - b.media)[0];
     if (ultima) {
-      jogo.premiarEquipe(ultima.nome, 60);
-      for (const m of ultima.membros) jogo.premiar(m.id, 60, 'resgate-de-equipe', 'evento');
+      jogo.premiarEquipe(ultima.nome, EVENTOS['resgate-de-equipe'].xp);
+      for (const m of ultima.membros) jogo.premiar(m.id, EVENTOS['resgate-de-equipe'].xp, 'resgate-de-equipe', 'evento');
       contemplados = ultima.membros.map((m) => m.id);
     }
   }
@@ -632,7 +663,14 @@ io.on('connection', (socket) => {
 
     const dono = lab.escopo === 'grupo' ? `grupo:${eu.grupo}` : eu.id;
     const antes = new Set(dao.criteriosDe(dono));
-    const resultados = await avaliar(dono, eu.conta, taskSlug, extra);
+    if (taskSlug === 'boss-chamado') {
+      const pronto = await prepararGrupoDoChamado(jogo.grupos.get(eu.grupo));
+      if (!pronto) return ack?.({ erro: 'não foi possível preparar a pasta da equipe; avise o apresentador' });
+    }
+    // O Chamado é um ambiente compartilhado controlado pelos cartões. Todos
+    // os checks rodam na conta que possui os arquivos e o processo do boss.
+    const contaDaAvaliacao = taskSlug === 'boss-chamado' ? contaDoBoss.get(eu.grupo) : eu.conta;
+    const resultados = await avaliar(dono, contaDaAvaliacao, taskSlug, extra);
 
     let ganho = 0;
     for (const r of resultados) {
@@ -788,10 +826,23 @@ io.on('connection', (socket) => {
   socket.on('grupo:entrar', (nome, ack) => {
     if (!eu) return;
 
-    // trancado: ninguém entra nem sai no meio do chamado
-    if (equipesTrancadas) {
-      socket.emit('aviso', 'as equipes estão trancadas para o chamado');
+    // A trava impede abandonar ou trocar uma equipe no meio do chamado, mas
+    // não pode prender do lado de fora quem chegou atrasado e ainda está sem
+    // equipe. Entrar pela primeira vez continua permitido.
+    if (equipesTrancadas && eu.grupo) {
+      socket.emit('aviso', 'as trocas de equipe estão trancadas durante o chamado');
       return ack?.({ erro: 'trancado' });
+    }
+
+    if (nome === eu.grupo) return ack?.({ ok: true, grupo: eu.grupo });
+
+    // Valida o destino antes de tirar a pessoa da equipe atual. Antes, clicar
+    // numa equipe cheia removia primeiro da antiga e só depois descobria que
+    // não havia vaga.
+    const destino = nome ? jogo.grupos.get(nome) : null;
+    if (nome && (!destino || destino.membros.size >= destino.capacidade)) {
+      socket.emit('aviso', destino ? `a equipe ${nome} está cheia: escolha outra` : 'essa equipe não existe');
+      return ack?.({ erro: destino ? 'cheia' : 'equipe-invalida', grupo: eu.grupo, cheia: !!destino });
     }
 
     // limite de trocas: entrar e sair para caçar a equipe que está ganhando
@@ -812,19 +863,13 @@ io.on('connection', (socket) => {
       emitirPlacar(); emitirPresenca();
       return ack?.({ ok: true, grupo: null });
     }
-    const g = jogo.grupos.get(nome);
-    if (g && g.membros.size < g.capacidade) {
-      g.membros.add(eu.id); eu.grupo = nome; eu.papel = null; socket.join(`g:${nome}`);
-    } else {
-      eu.grupo = null;
-      socket.emit('aviso', `a equipe ${nome} está cheia: escolha outra`);
-    }
+    destino.membros.add(eu.id); eu.grupo = nome; eu.papel = null; socket.join(`g:${nome}`);
     dao.salvarParticipante(eu);
     socket.emit('grupo', eu.grupo);   // sem o eco, a própria tela não atualiza
     emitirPlacar(); emitirPresenca();
     // confirma SEMPRE: quem chama com callback (o app e os testes) ficava
     // esperando para sempre quando a entrada dava certo
-    ack?.({ ok: !!eu.grupo, grupo: eu.grupo, cheia: !!nome && !eu.grupo });
+    ack?.({ ok: true, grupo: eu.grupo, cheia: false });
   });
 
   /**
@@ -929,12 +974,17 @@ io.on('connection', (socket) => {
     const p = prepararCartao({ cartaoId, valor, meuPapel: eu.papel, papeisDaEquipe: g.papeis });
     if (p.erro) return ack?.({ erro: p.erro });
 
+    const pronto = await prepararGrupoDoChamado(g);
+    if (!pronto) return ack?.({ erro: 'não foi possível preparar a pasta da equipe; avise o apresentador' });
+
     const jogada = { nick: eu.nick, emoji: eu.emoji, papel: p.cartao.papel, comando: p.exibir ?? p.cartao.comando, em: Date.now() };
     if (p.armadilha) {
       Object.assign(jogada, { ok: false, armadilha: p.armadilha });
     } else {
-      // o processo travado é da conta em que nasceu: só nela o kill alcança
-      const conta = p.cartao.papel === 'operador' ? contaDoBoss.get(eu.grupo) ?? eu.conta : eu.conta;
+      // Todos os cartões usam a mesma conta de serviço da equipe. Assim chmod,
+      // kill e o laudo operam sobre os mesmos arquivos também na VM, onde os
+      // quatro participantes são usuários Unix diferentes.
+      const conta = contaDoBoss.get(eu.grupo);
       const r = await fila.adicionar(() => amb.rodarComando(conta, p.script, { ...p.env, GRUPO: eu.grupo, DIR_GRUPO: amb.dirDoGrupo(eu.grupo) }));
       Object.assign(jogada, { ok: r.ok, saida: r.saida });
     }

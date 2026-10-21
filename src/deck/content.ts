@@ -757,7 +757,7 @@ export const DECK: Cena[] = [
       { id: 'b-c1', papel: 'investigador', descricao: 'Colar no campo a mensagem da linha `FATAL` do log (o texto depois de FATAL)', xp: 150 },
       { id: 'b-c2', papel: 'operador', descricao: 'Achar no `ps` o processo que mais gasta CPU (o PID está na 2ª coluna) e encerrar com `kill` + o PID', xp: 150 },
       { id: 'b-c3', papel: 'mecanico', descricao: 'Deixar o `backup.sh` executável e rodar ele (`./backup.sh`)', xp: 150 },
-      { id: 'b-c4', papel: 'relator', descricao: 'Criar `laudo.txt` na pasta da equipe com o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
+      { id: 'b-c4', papel: 'relator', descricao: 'Usar o cartão `echo > laudo.txt` para registrar o nome da equipe, quantas linhas `ERROR` o log tem e o PID encerrado', xp: 250 },
     ],
     comandosDoModulo: ['ls -l', 'grep', 'grep -c', 'ps aux', 'kill', 'chmod +x', './backup.sh', 'echo >'],
     segundos: 540, escopo: 'grupo',

@@ -79,6 +79,17 @@ export const LABS = {
           [ ! -f rascunho.txt ] && [ ! -f docs/rascunho.txt ] || cai "o rascunho.txt ainda existe: renomeie com mv em vez de copiar"` },
       { id: 'm2-c5', xp: 40, descricao: 'Apagar os arquivos que começam com tmp_', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
+          # Ausência de lixo não basta: apagar tudo também deixaria zero tmp_.
+          # Confere que os 14 arquivos úteis continuam em algum lugar da
+          # árvore e que o rascunho existe com o nome antigo ou com o novo.
+          for f in foto1.png foto2.png grafico.png logo.jpg banner.jpg capa.jpg \
+                   notas.txt lista.txt leia.md guia.md contatos.txt \
+                   deploy.sh backup.sh limpar.sh; do
+            [ -n "$(find . -type f -name "$f" -print -quit)" ] \
+              || cai "arquivos úteis foram apagados. Use resetar ambiente e remova somente tmp_*"
+          done
+          { [ -f rascunho.txt ] || [ -f docs/rascunho.txt ] || [ -f docs/notas.md ]; } \
+            || cai "o rascunho foi apagado. Use resetar ambiente e depois renomeie-o para docs/notas.md"
           [ -z "$(find . -name 'tmp_*' -print -quit)" ] || cai "ainda sobrou algum tmp_: rm tmp_*"` },
       { id: 'm2-c6', xp: 40, descricao: 'Criar README.md em ~/bagunca com o texto: organizado por + o nome do seu prompt', check: `
           cd "$HOME/bagunca" || cai "não achei ~/bagunca"
@@ -156,7 +167,7 @@ export const LABS = {
           # independente do pacote já estar no PATH do sistema (jq, tree, etc.).
           # No modo VM (usuarios) o stub não existe, então caímos no dpkg -s.
           [ -x "$HOME/.arena/bin/$pkg" ] && exit 0
-          dpkg -s "$pkg" >/dev/null 2>&1 \
+          [ "$ARENA_MODO" = "usuarios" ] && dpkg -s "$pkg" >/dev/null 2>&1 \
             || cai "o seu pacote é '$pkg' — sudo apt install -y $pkg"` },
       // adesivo: passa enquanto a app está no ar. Depois que a pessoa mata (c3),
       // este critério continua verde porque já foi premiado — ver `avaliar()`.
@@ -168,7 +179,12 @@ export const LABS = {
           # mesmo arquivo não se confundem, e no modo VM hidepid=2 já isola.
           achou=0
           for pid in $(pgrep -f "app/app.js" 2>/dev/null); do
-            cwd=$(readlink /proc/$pid/cwd 2>/dev/null)
+            # pgrep -f também encontra um bash cujo texto contém o comando.
+            # Exigimos que o executável seja o Node e conferimos o cwd tanto
+            # no Linux (/proc) quanto no macOS (lsof).
+            exe=$(ps -p "$pid" -o comm= 2>/dev/null | awk '{print $1}')
+            case "$exe" in *node*) ;; *) continue ;; esac
+            cwd=$(readlink /proc/$pid/cwd 2>/dev/null || lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
             [ "$cwd" = "$HOME" ] && achou=1 && break
           done
           [ "$achou" = "1" ] || cai "a app não está rodando. Rode: node app/app.js &"
@@ -177,7 +193,9 @@ export const LABS = {
           [ -f "$HOME/.arena/rodou" ] || cai "primeiro o item 2: rode node app/app.js & e espere ele ficar verde ANTES de encerrar"
           achou=0
           for pid in $(pgrep -f "app/app.js" 2>/dev/null); do
-            cwd=$(readlink /proc/$pid/cwd 2>/dev/null)
+            exe=$(ps -p "$pid" -o comm= 2>/dev/null | awk '{print $1}')
+            case "$exe" in *node*) ;; *) continue ;; esac
+            cwd=$(readlink /proc/$pid/cwd 2>/dev/null || lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
             [ "$cwd" = "$HOME" ] && achou=1 && break
           done
           [ "$achou" = "0" ] || cai "ela ainda está no ar: ache o PID com ps aux | grep app.js e use kill PID"

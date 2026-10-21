@@ -168,6 +168,12 @@ export function LabScene({
       />
       {ganhoVisivel && <div key={ganhoVisivel.chave} className="ganho-xp">+{ganhoVisivel.xp} XP</div>}
       <p className="corpo-p"><Texto>{cena.objetivo}</Texto></p>
+      {cena.cartoes && souJogador && (
+        <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)', flexWrap: 'wrap', maxWidth: '100%' }}>
+          <Icone nome="pasta" tamanho={16} />
+          A pasta da equipe é preparada automaticamente. Use os cartões abaixo — não é preciso criar a pasta nem abrir o terminal.
+        </div>
+      )}
       {cena.escopo === 'grupo' && souJogador && !cena.cartoes && (
         <div className="chip forte" style={{ justifySelf: 'start', fontSize: 'var(--t5)', flexWrap: 'wrap', maxWidth: '100%' }}>
           <Icone nome="pasta" tamanho={16} />

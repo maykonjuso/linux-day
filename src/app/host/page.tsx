@@ -31,8 +31,8 @@ const EVENTOS_DO_PAINEL: [string, string][] = [
   ['xp-dobrado', 'XP dobrado: todo XP vale 2× por 3 min'],
   ['relampago', 'relâmpago: XP triplo por 1 min'],
   ['chuva-de-tokens', 'chuva de tokens: +1 token para quem está na sala'],
-  ['resgate', 'resgate: +80 XP para os 5 com menos XP'],
-  ['resgate-de-equipe', 'resgate de equipe: +60 XP para a equipe com menos XP'],
+  ['resgate', 'resgate: +160 XP para os 5 com menos XP'],
+  ['resgate-de-equipe', 'resgate de equipe: +120 XP para a equipe com menos XP'],
   ['sabotagem', 'sabotagem: tira o x do deploy.sh de todos (depois do módulo 3)'],
 ];
 

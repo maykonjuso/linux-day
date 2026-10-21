@@ -51,10 +51,11 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
         {[...arena.placar.grupos].sort((a, b) => a.ordem - b.ordem).map((g) => {
           const souDaqui = meu === g.nome;
           const cheia = g.membros.length >= g.capacidade && !souDaqui;
+          const trancada = arena.equipesTrancadas && !!meu;
           return (
-            <button key={g.nome} className="cartao" disabled={!souJogador || cheia}
+            <button key={g.nome} className="cartao" disabled={!souJogador || cheia || trancada}
               onClick={() => arena.emit('grupo:entrar', souDaqui ? null : g.nome)}
-              title={souDaqui ? 'clique para sair desta equipe' : cheia ? 'equipe cheia' : 'clique para entrar'}
+              title={trancada ? 'trocas trancadas durante o chamado' : souDaqui ? 'clique para sair desta equipe' : cheia ? 'equipe cheia' : 'clique para entrar'}
               style={{
                 textAlign: 'left', display: 'grid', gap: 'var(--e1)',
                 borderColor: souDaqui ? g.cor : 'var(--borda)',
@@ -104,7 +105,9 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
 
       {souJogador && !meu && (
         <div className="chip forte" data-aviso="sem-equipe">
-          <Icone nome="duvida" tamanho={14} /> escolha uma equipe: a apresentação só continua quando todo mundo tiver a sua
+          <Icone nome="duvida" tamanho={14} /> {arena.equipesTrancadas
+            ? 'o chamado já começou, mas você ainda pode escolher uma equipe com vaga'
+            : 'escolha uma equipe: a apresentação só continua quando todo mundo tiver a sua'}
         </div>
       )}
       {!souJogador && <Pendentes arena={arena} />}

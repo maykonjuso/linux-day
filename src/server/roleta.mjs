@@ -20,7 +20,7 @@
 export const PESSOAS_POR_GIRO = 20;
 
 /** quanto vale cada fatia, por faixa: quem tem menos XP ganha mais */
-export const VALOR = { baixo: 300, medio: 200, alto: 120 };
+export const VALOR = { baixo: 450, medio: 300, alto: 180 };
 
 export const FATIAS = {
   'bonus-direto': { rotulo: 'XP de presente', icone: 'premio' },

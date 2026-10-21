@@ -152,7 +152,7 @@ const pi2 = comFatia('par-impar');
 pi2.indicar('p4', 'p1', sala);
 pi2.escolher('p4', 'par:2');
 ok(pi2.escolher('p1', '3').premios[0].id === 'p1', '2 + 3 = 5, deu ímpar: vence o adversário');
-ok(VALOR.alto >= 120, 'os mini games valem mais XP (até a faixa de cima ganha 120)');
+ok(VALOR.baixo === 450 && VALOR.medio === 300 && VALOR.alto === 180, 'os mini games pagam 180 a 450 XP conforme a faixa');
 const tk = comFatia('perde-xp');
 ok(!!tk.indicar('p4', 'p4', sala).erro, 'não dá para indicar a si mesmo');
 const rt = tk.indicar('p4', 'p1', sala);

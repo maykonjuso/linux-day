@@ -93,7 +93,7 @@ export function useArena(papel: Papel) {
   /** jogo de equipe em andamento */
   const [arenaEstado, setArenaEstado] = useState<EstadoArena | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [badge, setBadge] = useState<{ nick: string; badge: string; descricao: string } | null>(null);
+  const [badge, setBadge] = useState<{ id: string; nick: string; badge: string; descricao: string } | null>(null);
   const [subiuNivel, setSubiuNivel] = useState<{ nick: string; patente: string } | null>(null);
   const [ganho, setGanho] = useState<{ xp: number; mult: number; em: number } | null>(null);
   const [evento, setEvento] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export function useArena(papel: Papel) {
       setEu((p) => (p && p.id === id ? { ...p, nivel: p.nivel + 1 } : p));
       efemero('nivel', setSubiuNivel, { nick, patente }, 2600);
     });
-    s.on('badge', (b: { nick: string; badge: string; descricao: string }) => efemero('badge', setBadge, b, 5000));
+    s.on('badge', (b: { id: string; nick: string; badge: string; descricao: string }) => efemero('badge', setBadge, b, 5000));
     s.on('evento', ({ tipo }: { tipo: string }) => efemero('evento', setEvento, tipo, 8000));
     s.on('evento:fim', () => setEvento(null));
     // eco do servidor para a própria pessoa: sem isso o card do grupo não
