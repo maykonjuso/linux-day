@@ -68,13 +68,28 @@ function Equipes({ arena, souJogador, meu }: { arena: Arena; souJogador: boolean
                 <span className="xp-item" style={{ marginLeft: 'auto' }}>{g.membros.length}/{g.capacidade}</span>
               </div>
 
-              <div style={{ display: 'flex', gap: 'var(--e05)', flexWrap: 'wrap', minHeight: 30 }}>
-                {g.membros.length === 0 && <small style={{ color: 'var(--tinta-2)' }}>vazia, seja a primeira pessoa</small>}
+              {/* lista de membros com nome: scroll quando a equipe é grande */}
+              <div style={{
+                display: 'grid', gap: 4,
+                maxHeight: 160, overflowY: 'auto',
+                minHeight: 32,
+              }}>
+                {g.membros.length === 0 && (
+                  <small style={{ color: 'var(--tinta-2)', alignSelf: 'center' }}>vazia, seja a primeira pessoa</small>
+                )}
                 {g.membros.map((m) => (
-                  <span key={m.id} title={m.nick}
-                    style={{ filter: m.presenca === 'ativo' ? undefined : 'grayscale(1) opacity(0.5)' }}>
-                    <Avatar pessoa={m} tamanho={24} />
-                  </span>
+                  <div key={m.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    opacity: m.presenca === 'ativo' ? 1 : 0.45,
+                    fontSize: 'clamp(12px, 1.1vw, 14px)',
+                  }}>
+                    <Avatar pessoa={m} tamanho={22} />
+                    <span style={{
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontWeight: m.id === arena.eu?.id ? 700 : 400,
+                      color: m.id === arena.eu?.id ? g.cor : 'var(--tinta)',
+                    }}>{m.nick}</span>
+                  </div>
                 ))}
               </div>
 

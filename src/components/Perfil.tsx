@@ -120,17 +120,6 @@ export function Perfil({ arena, onFechar }: { arena: Arena; onFechar: () => void
           {salvando ? 'salvando…' : 'salvar'}
         </button>
 
-        {arena.codigo && (
-          <div className="cartao" style={{ background: 'var(--papel-2)', display: 'grid', gap: 'var(--e05)' }}>
-            <span className="olho">seu código de retorno</span>
-            <code className="kbd" style={{ fontSize: 22, letterSpacing: 2, justifySelf: 'start' }}>{arena.codigo}</code>
-            <small style={{ color: 'var(--tinta-2)' }}>
-              Guarde. Serve para recuperar a sua conta se você trocar de computador. É ele que prova quem
-              você é: por isso digitar o nome de outra pessoa não dá acesso aos pontos dela.
-            </small>
-          </div>
-        )}
-
         <hr style={{ border: 0, borderTop: '1px solid var(--borda)', margin: 0 }} />
 
         {!confirmandoSaida ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useArena } from '@/deck/useArena';
 import { SceneRouter } from '@/components/SceneRouter';
 import { Encaixe } from '@/components/Encaixe';
@@ -18,6 +18,7 @@ import { TEMAS_TERMINAL, temaTerminalPorId } from '@/deck/temas';
 import { nivelDe } from '@/deck/types';
 import { DECK } from '@/deck/content';
 import { CartaoEvento, CartaoConquista, Confete } from '@/components/Celebracao';
+import { prepararFoto } from '@/deck/foto';
 
 import { AVATARES, AVATAR_PADRAO, usuarioDoNick } from '@/deck/avatares';
 
@@ -42,7 +43,10 @@ export default function Player() {
   const [consulta, setConsulta] = useState(false);
   const [tour, setTour] = useState(false);
   const [perfil, setPerfil] = useState(false);
-  const [codigo, setCodigo] = useState('');
+  /** foto escolhida antes de entrar: dataUrl pronto para enviar */
+  const fotaPendente = useRef<string | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [fotoErro, setFotoErro] = useState<string | null>(null);
   const { tema, trocar } = useTema('claro');
   const { temaTerminal, trocarTemaTerminal } = useTemaTerminal();
   const [escolhendoTema, setEscolhendoTema] = useState(false);
@@ -60,6 +64,14 @@ export default function Player() {
     s?.on('aovivo', aoVivo);
     return () => { s?.off('aovivo', aoVivo); };
   }, [arena.socket]);
+
+  // envia foto pendente logo após o login ser concluído
+  useEffect(() => {
+    if (!eu || !fotaPendente.current) return;
+    const dataUrl = fotaPendente.current;
+    fotaPendente.current = null;
+    arena.enviarFoto(dataUrl);
+  }, [eu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -92,6 +104,7 @@ export default function Player() {
         </div>
       );
     }
+    const doEntrar = () => entrar(nick.trim(), emoji);
     return (
       <div className="centro">
         <div className="cartao" style={{ width: 'min(470px, 100%)', display: 'grid', gap: 'var(--e2)' }}>
@@ -102,7 +115,7 @@ export default function Player() {
           <input className="btn" style={{ textAlign: 'left', borderColor: arena.nomeRecusado ? 'var(--erro)' : 'var(--borda)' }}
             placeholder="seu nome" value={nick} maxLength={20}
             onChange={(e) => setNick(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && nick.trim()) entrar(nick.trim(), emoji); }} />
+            onKeyDown={(e) => { if (e.key === 'Enter' && nick.trim()) doEntrar(); }} />
 
           {arena.nomeRecusado && (
             <div className="cartao" style={{ borderColor: 'var(--erro)', display: 'grid', gap: 'var(--e1)' }}>
@@ -122,9 +135,48 @@ export default function Player() {
               )}
             </div>
           )}
+
+          {/* foto opcional: aparece como preview e é enviada logo após entrar */}
+          <div>
+            <div className="olho" style={{ marginBottom: 'var(--e1)' }}>sua foto (opcional)</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e2)' }}>
+              {fotoPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={fotoPreview} alt="sua foto" width={56} height={56}
+                  style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--borda)', flex: 'none' }} />
+              ) : (
+                <span style={{ fontSize: 36, lineHeight: 1, flex: 'none' }}>{emoji}</span>
+              )}
+              <div style={{ display: 'grid', gap: 4, flex: 1 }}>
+                <label className="btn" style={{ padding: 'var(--e1) var(--e2)', cursor: 'pointer', justifySelf: 'start' }}>
+                  {fotoPreview ? 'trocar foto' : 'enviar foto'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!f) return;
+                      setFotoErro(null);
+                      const r = await prepararFoto(f);
+                      if ('erro' in r) { setFotoErro(r.erro); return; }
+                      fotaPendente.current = r.dataUrl;
+                      setFotoPreview(r.dataUrl);
+                    }} />
+                </label>
+                {fotoPreview && (
+                  <button className="btn" style={{ padding: 'var(--e1) var(--e2)', justifySelf: 'start' }}
+                    onClick={() => { fotaPendente.current = null; setFotoPreview(null); setFotoErro(null); }}>
+                    remover foto
+                  </button>
+                )}
+                {fotoErro && <small style={{ color: 'var(--erro)' }}>{fotoErro}</small>}
+                {!fotoErro && <small style={{ color: 'var(--tinta-2)' }}>PNG, JPG ou WebP · até 2 MB</small>}
+              </div>
+            </div>
+          </div>
+
           <div>
             <div className="olho" style={{ marginBottom: 'var(--e1)' }}>
-              escolha seu bicho ({AVATARES.length} opções{usados.size ? `, ${usados.size} já escolhidos` : ''})
+              {fotoPreview ? 'ou escolha um bicho (aparece quando não tem foto)' : `escolha seu bicho (${AVATARES.length} opções${usados.size ? `, ${usados.size} já escolhidos` : ''})`}
             </div>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(46px, 1fr))',
@@ -132,8 +184,6 @@ export default function Player() {
               border: '1px solid var(--borda)', borderRadius: 'var(--r-p)', background: 'var(--papel-2)',
             }}>
               {AVATARES.map((e) => {
-                // avatar já escolhido por alguém: ainda dá para usar, mas fica
-                // esmaecido para a sala naturalmente se espalhar pelos 64
                 const emUso = usados.has(e);
                 return (
                   <button key={e} onClick={() => setEmoji(e)} aria-label={`avatar ${e}`}
@@ -150,6 +200,7 @@ export default function Player() {
               })}
             </div>
           </div>
+
           {nick.trim() && (
             <div className="cartao" style={{ background: 'var(--papel-2)', display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
               <Icone nome="terminal" tamanho={16} />
@@ -157,38 +208,10 @@ export default function Player() {
               <code className="kbd">{usuarioDoNick(nick)}@linuxday:~$</code>
             </div>
           )}
-          <button className="btn primario" disabled={!nick.trim()} onClick={() => entrar(nick.trim(), emoji)}>
+          <button className="btn primario" disabled={!nick.trim()} onClick={doEntrar}>
             entrar
           </button>
 
-          {!arena.ultimaPessoa && (
-            <details>
-              <summary style={{ cursor: 'pointer', fontSize: 13, color: 'var(--tinta-2)' }}>
-                já participei hoje em outro computador
-              </summary>
-              <div style={{ display: 'flex', gap: 'var(--e1)', marginTop: 'var(--e1)' }}>
-                <input className="btn" style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}
-                  placeholder="código de 4 letras" value={codigo} maxLength={4}
-                  onChange={(e) => setCodigo(e.target.value)} />
-                <button className="btn" disabled={codigo.trim().length < 4}
-                  onClick={() => entrar(nick.trim() || 'voltei', emoji, undefined, codigo.trim())}>
-                  recuperar
-                </button>
-              </div>
-              <small style={{ color: 'var(--tinta-2)' }}>
-                O código aparece no seu perfil, naquele computador. Sem ele ninguém assume a sua conta,
-                nem de propósito nem por acidente.
-              </small>
-            </details>
-          )}
-
-          {arena.ultimaPessoa && (
-            <button className="btn" onClick={() => entrar(arena.ultimaPessoa!.nick, arena.ultimaPessoa!.emoji, arena.ultimaPessoa!.id)}
-              style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', justifyContent: 'center' }}>
-              <Icone nome="historico" tamanho={16} />
-              voltar como {arena.ultimaPessoa.emoji} {arena.ultimaPessoa.nick}
-            </button>
-          )}
           <small style={{ color: 'var(--tinta-2)' }}>
             Guardamos só o nick e o emoji. Tudo é apagado depois do evento.
           </small>
@@ -293,14 +316,16 @@ export default function Player() {
         */}
         <MenuControles rotulo={eu.grupo ?? 'equipe'} icone="pessoas" destaque={eu.grupo ? null : '!'}
           titulo={eu.grupo ? `sua equipe: ${eu.grupo}. Clique para trocar` : 'você está sem equipe: escolha a sua'}>
-          {arena.equipesTrancadas && <div className="info-menu">As equipes estão trancadas durante o chamado.</div>}
+          {/* não mostrar o aviso de trancado quando estamos na cena de escolha de equipe */}
+          {arena.equipesTrancadas && cenaVista.tipo !== 'GroupScene' && <div className="info-menu">As equipes estão trancadas durante o chamado.</div>}
           {[...arena.placar.grupos].sort((a, b) => a.ordem - b.ordem).map((g) => {
             const minha = g.nome === eu.grupo;
             const cheia = !minha && g.membros.length >= g.capacidade;
+            const trancada = arena.equipesTrancadas && cenaVista.tipo !== 'GroupScene';
             return (
               <button key={g.nome} className="btn-icone" data-equipe={g.nome}
-                disabled={minha || cheia || arena.equipesTrancadas}
-                title={minha ? 'esta é a sua equipe' : cheia ? 'equipe cheia' : arena.equipesTrancadas ? 'equipes trancadas' : `entrar na equipe ${g.nome}`}
+                disabled={minha || cheia || trancada}
+                title={minha ? 'esta é a sua equipe' : cheia ? 'equipe cheia' : trancada ? 'equipes trancadas' : `entrar na equipe ${g.nome}`}
                 onClick={() => arena.emit('grupo:entrar', g.nome)}>
                 <span aria-hidden style={{ width: 12, height: 12, borderRadius: 99, background: g.cor, flex: 'none' }} />
                 <span className="texto" style={{ textTransform: 'capitalize' }}>{g.nome}</span>

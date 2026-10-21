@@ -132,6 +132,9 @@ let quizAtual = null;   // { cenaId, correta, xpBase, segundos }
  */
 let equipesTrancadas = false;
 
+/** ids de quem saiu por vontade própria: não pode reentrar com o mesmo id */
+const saiuPorVontade = new Set();
+
 /** quantas vezes cada pessoa já trocou de equipe (limite baixo de propósito) */
 const trocasDeEquipe = new Map();
 const LIMITE_DE_TROCAS = Number(process.env.ARENA_MAX_TROCAS ?? 3);
@@ -462,6 +465,10 @@ io.on('connection', (socket) => {
      * devolvem uma identidade: o id guardado neste navegador, ou o código de
      * retorno que só aparece na tela da própria pessoa.
      */
+    // bloqueia reentrada de quem saiu por vontade própria ou foi expulso
+    if (id && saiuPorVontade.has(id)) {
+      return ack?.({ erro: 'nome-em-uso', nome: String(nick).trim(), sugestoes: [] });
+    }
     const porCodigo = !id && codigo
       ? [...jogo.participantes.values()].find((p) => codigoDe(p.id) === String(codigo).trim().toUpperCase())
       : null;
@@ -491,10 +498,15 @@ io.on('connection', (socket) => {
       if (Date.now() - jogo.abertoEm < 3 * 60_000) jogo.darBadge(eu.id, 'chegou-cedo');
       ambientePronto = false;
       // semeia o ambiente em segundo plano: a pessoa já pode ver o slide
-      amb.semear(conta, 'all.sh', { NICK: eu.nick, USUARIO: usuarioDoNick(eu.nick) }).then((r) => {
-        if (!r.ok) console.warn('[seed]', conta, r.saida);
-        io.to(`p:${eu.id}`).emit('ambiente', { conta, pronto: r.ok });
-      });
+      // em modo stress (ARENA_STRESS=1) pula o seed real para não travar o disco
+      if (process.env.ARENA_STRESS === '1') {
+        io.to(`p:${eu.id}`).emit('ambiente', { conta, pronto: true });
+      } else {
+        amb.semear(conta, 'all.sh', { NICK: eu.nick, USUARIO: usuarioDoNick(eu.nick) }).then((r) => {
+          if (!r.ok) console.warn('[seed]', conta, r.saida);
+          io.to(`p:${eu.id}`).emit('ambiente', { conta, pronto: r.ok });
+        });
+      }
     }
     socket.join(`p:${eu.id}`);
     if (eu.grupo) socket.join(`g:${eu.grupo}`);
@@ -837,20 +849,23 @@ io.on('connection', (socket) => {
   });
 
   /**
-   * Sair. A pessoa deixa a sala na hora (libera o nome e sai da contagem do
-   * quiz), mas o XP, os critérios e o grupo continuam gravados: se ela voltar
-   * com o mesmo nome, encontra tudo no lugar.
+   * Sair. A saída é permanente: o participante é removido da sala e o id fica
+   * bloqueado, não é possível reentrar com o mesmo id ou código de retorno.
+   * A conta do Linux (aluno0N) é liberada para outra pessoa.
    */
   socket.on('sair', (_, ack) => {
     if (!eu) return ack?.({ ok: true });
-    eu.presenca = 'desconectado';
-    dao.salvarParticipante(eu);
-    pty.matarSessao(eu.id);
     const quem = eu.id;
+    const conta = eu.conta;
+    saiuPorVontade.add(quem);
+    pty.matarSessao(quem);
+    for (const g of jogo.grupos.values()) { g.membros.delete(quem); delete g.papeis[quem]; }
+    jogo.participantes.delete(quem);
+    if (conta) amb.liberarConta(conta);
     eu = null;
     socket.leave(`p:${quem}`);
     ack?.({ ok: true });
-    emitirPresenca();
+    emitirPresenca(); emitirPlacar();
     if (estado.cenaId) io.emit('respostas', contagemDeRespostas(estado.cenaId));
   });
 
@@ -1046,6 +1061,8 @@ io.on('connection', (socket) => {
   socket.on('host:expulsar', soHost(({ id, motivo = '' }, ack) => {
     const p = jogo.participantes.get(id);
     if (!p) return ack?.({ erro: 'não encontrei essa pessoa' });
+    saiuPorVontade.add(id);   // bloqueia reentrada, inclusive por código
+    if (p.conta) amb.liberarConta(p.conta);
     pty.matarSessao(id);
     for (const g of jogo.grupos.values()) { g.membros.delete(id); delete g.papeis[id]; }
     jogo.participantes.delete(id);

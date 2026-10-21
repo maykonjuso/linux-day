@@ -24,7 +24,8 @@
     "teste:tempo": "node testes/tempo.mjs",
     "teste:equipes": "node testes/equipes.mjs",
     "teste:novidades": "node testes/novidades.mjs",
-    "teste:chamado": "node testes/chamado-e-roleta.mjs"
+    "teste:chamado": "node testes/chamado-e-roleta.mjs",
+    "teste:stress": "node testes/stress.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",

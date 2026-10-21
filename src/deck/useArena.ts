@@ -178,6 +178,8 @@ export function useArena(papel: Papel) {
     s.on('chamado:jogada', (j: Jogada) => setJogadas((js) => [...js.slice(-39), j]));
     s.on('expulso', ({ motivo }: { motivo: string }) => {
       localStorage.removeItem(CHAVE);
+      // remove também o "última vez" para não oferecer retorno a quem foi expulso
+      localStorage.removeItem(ULTIMO);
       setEu(null);
       setExpulso(motivo || 'o apresentador encerrou a sua participação');
     });
@@ -288,14 +290,12 @@ export function useArena(papel: Papel) {
     }), []);
 
   /**
-   * Sair. Guardamos quem era numa chave separada para a tela de entrada poder
-   * oferecer "voltar como ana": o XP continua gravado no servidor, e voltar
-   * com o mesmo nome reencontra tudo.
+   * Sair. Permanente: limpa tudo do localStorage para que a tela não ofereça
+   * retorno. O servidor remove o participante e bloqueia a reentrada pelo id.
    */
   const sair = useCallback(() => {
-    const salvo = localStorage.getItem(CHAVE);
-    if (salvo) localStorage.setItem(ULTIMO, salvo);
     localStorage.removeItem(CHAVE);
+    localStorage.removeItem(ULTIMO);
     socketRef.current?.emit('sair');
     setEu(null);
     setNomeRecusado(null);
@@ -331,7 +331,7 @@ export function useArena(papel: Papel) {
   return {
     socket, conectado, estado, cena, eu, placar, presenca, revelacao, respostas,
     aviso, badge, subiuNivel, ganho, evento, ambienteOk, chat, meuGrupo, labs, ocioso, gabaritos,
-    nomeRecusado, ultimaPessoa, codigo, expulso, avisoTerminal,
+    nomeRecusado, ultimaPessoa, expulso, avisoTerminal,
     arena: arenaEstado,
     tentarArena: (resposta: unknown) => new Promise<{
       certo?: boolean; posicao?: number; xp?: number; detalhe?: string; erro?: string;

@@ -36,14 +36,15 @@ export function alocarConta(participanteId, contaExistente) {
     return contaExistente;
   }
   for (const [conta, dono] of contasEmUso) if (dono === participanteId) return conta;
-  for (let i = 1; i <= 99; i++) {
+  const limite = Number(process.env.ARENA_MAX_CONTAS ?? 150);
+  for (let i = 1; i <= limite; i++) {
     const conta = `${PREFIXO}${String(i).padStart(2, '0')}`;
     if (!contasEmUso.has(conta)) {
       contasEmUso.set(conta, participanteId);
       return conta;
     }
   }
-  throw new Error('sem contas livres (limite de 99)');
+  throw new Error(`sem contas livres (limite de ${limite})`);
 }
 
 export function liberarConta(conta) {

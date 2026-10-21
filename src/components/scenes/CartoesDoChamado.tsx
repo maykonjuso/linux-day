@@ -22,7 +22,11 @@ export function CartoesDoChamado({ arena, nomeDaCarta, aberto }: {
 
   const liberados = useMemo(() => {
     const comDono = new Set(Object.values(papeis));
-    return arena.cartoes.filter((c) => c.papel === meuPapel || !comDono.has(c.papel));
+    // se a pessoa tem um cargo: só os cartões do cargo dela
+    // se não tem cargo: apenas os cartões de cargos sem dono
+    return arena.cartoes.filter((c) =>
+      meuPapel ? c.papel === meuPapel : !comDono.has(c.papel),
+    );
   }, [arena.cartoes, papeis, meuPapel]);
   const porPapel = useMemo(() => {
     const m = new Map<string, CartaoPublico[]>();
@@ -32,7 +36,7 @@ export function CartoesDoChamado({ arena, nomeDaCarta, aberto }: {
   }, [liberados, meuPapel]);
 
   return (
-    <div className="cartoes-chamado">
+    <div className="cartoes-chamado" style={{ flex: '1 1 auto', minHeight: 0 }}>
       <div className="mao-de-cartoes" aria-label="seus cartões de comando">
         {!meuPapel && liberados.length === 0 && (
           <div className="cartao">Todas as cartas da equipe têm dono. Ajude pelo chat e acompanhe o registro ao lado.</div>

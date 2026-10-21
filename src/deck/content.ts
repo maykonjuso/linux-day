@@ -47,12 +47,12 @@ export const DECK: Cena[] = [
       },
       {
         nome: 'Maykon Soares', github: 'maykonjuso', foto: '/equipe/maykonjuso.jpg',
-        cargo: 'Desenvolvedor Full-Stack no Sicoob',
+        cargo: 'Desenvolvedor Full-Stack no Sicoob · cursando Engenharia de Software na UnB',
         linkedin: 'https://www.linkedin.com/in/maykon13',
         historia: [
-          'Antes do código veio a química: é **técnico em Química** pelo IFB. Depois se formou em Engenharia de Software na UnB, onde foi monitor de Métodos de Desenvolvimento de Software para mais de 30 alunos.',
-          'Entrou no Sicoob como **estagiário do datacenter**, e o código daquele estágio continua em produção.',
-          'Hoje cuida do job que reinicia o DataStage em **mais de 20 servidores** e de uma plataforma que prevê incidentes em 140 bancos DB2. Faz MBA em Análise de Sistemas na UnB.',
+          'Antes do código veio a química: é **técnico em Química** pelo IFB. Hoje cursa Engenharia de Software na UnB, onde participou da **empresa júnior Orcquesta**.',
+          'Estagiou na **GEAP** e depois no **Sicoob**, onde foi efetivado. Desde então faz **automações de infraestrutura** para o Sicoob.',
+          'Hoje também faz a residência em IA e Engenharia de Dados do Instituto Eldorado com a Softex.',
         ],
       },
     ],

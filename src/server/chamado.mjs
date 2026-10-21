@@ -46,10 +46,12 @@ export const CARTOES = [
 
 export const cartaoDe = (id) => CARTOES.find((c) => c.id === id) ?? null;
 
-/** os cartões que esta pessoa pode enviar: os do cargo dela e os dos cargos sem dono */
+/** os cartões que esta pessoa pode enviar: os do cargo dela (se tiver), ou os sem dono (se não tiver) */
 export function cartoesLiberados({ meuPapel, papeisDaEquipe }) {
   const comDono = new Set(Object.values(papeisDaEquipe ?? {}));
-  return CARTOES.filter((c) => c.papel === meuPapel || !comDono.has(c.papel));
+  return CARTOES.filter((c) =>
+    meuPapel ? c.papel === meuPapel : !comDono.has(c.papel),
+  );
 }
 
 /** o que pode ir num campo; o resto é recusado antes de qualquer coisa rodar */
