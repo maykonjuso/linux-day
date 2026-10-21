@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node server.mjs",
-    "build": "next build",
-    "start": "next build && NODE_ENV=production node server.mjs",
+    "build": "rm -rf .next && next build",
+    "build:limpo": "rm -rf .next && next build",
+    "start": "rm -rf .next && next build && NODE_ENV=production node server.mjs",
     "typecheck": "tsc --noEmit",
     "postinstall": "node -e \"const{chmodSync,existsSync}=require('fs');for(const p of ['node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper','node_modules/node-pty/prebuilds/darwin-x64/spawn-helper','node_modules/node-pty/prebuilds/linux-arm64/spawn-helper','node_modules/node-pty/prebuilds/linux-x64/spawn-helper','node_modules/node-pty/build/Release/spawn-helper'])if(existsSync(p))chmodSync(p,0o755)\"",
     "provision": "sudo bash infra/provision.sh",

@@ -92,7 +92,8 @@ export const DECK: Cena[] = [
         destaque: "won't be big",
         traducao: 'Ele anunciou o núcleo num fórum dizendo que era **só um hobby**. Envelheceu muito mal.',
         imagem: '/slides/m0-linus-1991.jpeg',
-        legendaImagem: 'Linus Torvalds (1991): o e-mail histórico anunciando o Linux',
+        imagens: ['/slides/linus_torvalds.png', '/slides/m0-linus-1991.jpeg'],
+        legendaImagem: 'Linus Torvalds (1991): o criador e o anúncio histórico do Linux',
       },
       {
         comando: '# o mascote: Tux, o pinguim',

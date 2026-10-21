@@ -30,6 +30,7 @@ export interface LinhaTerminal {
   traducao?: string;
   /** Imagem opcional para ilustrar este passo específico (ex: '/slides/m0-stallman.png') */
   imagem?: string;
+  imagens?: string[];
   legendaImagem?: string;
 }
 

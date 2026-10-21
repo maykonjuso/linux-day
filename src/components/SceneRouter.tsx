@@ -132,40 +132,85 @@ function Apresentacao({ cena, passo, papel }: { cena: C<'Apresentacao'>; passo: 
   const pessoa = passo > 0 ? cena.pessoas[passo - 1] : null;
   if (pessoa) {
     return (
-      <div className="cena apresentacao-pessoa" data-modulo={cena.modulo} key={pessoa.github}>
+      <div className="cena apresentacao-pessoa" data-modulo={cena.modulo} key={pessoa.github}
+        style={{ justifyContent: 'center' }}>
         <Cabecalho ilustra={ilustraDa(cena)} olho={`apresentação · ${passo} de ${cena.pessoas.length}`} titulo={pessoa.nome} />
-        <div className="perfil-apresentacao">
+        <div className="cartao perfil-apresentacao" style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+          gap: 'var(--e4)',
+          alignItems: 'center',
+          padding: 'var(--e4) var(--e5)',
+          borderRadius: 'var(--r-g)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
+        }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={pessoa.foto} alt={`foto de ${pessoa.nome}`} width={220} height={220} className="foto-apresentacao" />
-          <div className="texto-apresentacao">
-            <strong className="cargo-apresentacao">{pessoa.cargo}</strong>
-            {pessoa.historia.map((h) => <p key={h} className="corpo-p"><Texto>{h}</Texto></p>)}
-            <span style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', color: 'var(--tinta-2)' }}>
+          <img src={pessoa.foto} alt={`foto de ${pessoa.nome}`} width={280} height={280} className="foto-apresentacao"
+            style={{
+              width: 'clamp(200px, 22vw, 290px)',
+              height: 'clamp(200px, 22vw, 290px)',
+              aspectRatio: '1',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '4px solid var(--tinta)',
+              flexShrink: 0,
+            }}
+          />
+          <div className="texto-apresentacao" style={{ display: 'grid', gap: 'var(--e2)' }}>
+            <strong className="cargo-apresentacao" style={{ fontSize: 'clamp(18px, 1.6vw, 24px)', color: 'var(--acento)' }}>{pessoa.cargo}</strong>
+            {pessoa.historia.map((h) => <p key={h} className="corpo-p" style={{ margin: 0, fontSize: 'clamp(15px, 1.25vw, 19px)' }}><Texto>{h}</Texto></p>)}
+            <span style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'var(--t5)', color: 'var(--tinta-2)', marginTop: 'var(--e1)' }}>
               <MarcaGithub /> @{pessoa.github}
             </span>
           </div>
-          <div className="linkedin-apresentacao">
-            <QrCode texto={pessoa.linkedin} tamanho={200} rotulo={`QR code do LinkedIn de ${pessoa.nome}`} />
+          <div className="linkedin-apresentacao" style={{
+            display: 'grid',
+            justifyItems: 'center',
+            gap: 'var(--e1)',
+            flexShrink: 0,
+            background: 'var(--papel-2)',
+            padding: 'var(--e3)',
+            borderRadius: 'var(--r-m)',
+            border: '1px solid var(--borda)',
+          }}>
+            <QrCode texto={pessoa.linkedin} tamanho={220} rotulo={`QR code do LinkedIn de ${pessoa.nome}`} />
             {/* no celular o QR não serve para nada: o link é clicável */}
             {papel === 'player'
-              ? <a href={pessoa.linkedin} target="_blank" rel="noreferrer" className="btn">abrir o LinkedIn</a>
-              : <small style={{ color: 'var(--tinta-2)' }}>LinkedIn</small>}
+              ? <a href={pessoa.linkedin} target="_blank" rel="noreferrer" className="btn" style={{ width: '100%', textAlign: 'center' }}>abrir o LinkedIn</a>
+              : <small style={{ color: 'var(--tinta-2)', fontWeight: 600, fontSize: 13 }}>LinkedIn</small>}
           </div>
         </div>
       </div>
     );
   }
   return (
-    <div className="cena" data-modulo={cena.modulo}>
+    <div className="cena" data-modulo={cena.modulo} style={{ justifyContent: 'center' }}>
       <Cabecalho ilustra={ilustraDa(cena)} olho="apresentação" titulo={cena.titulo} />
-      <div className="grade" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--e3)' }}>
+      <div className="grade" style={{
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        maxWidth: 1040,
+        margin: '0 auto',
+        width: '100%',
+        gap: 'var(--e4)',
+      }}>
         {cena.pessoas.map((p) => (
-          <div key={p.github} className="cartao" style={{ display: 'grid', justifyItems: 'center', gap: 'var(--e2)', padding: 'var(--e4) var(--e3)', textAlign: 'center' }}>
+          <div key={p.github} className="cartao" style={{
+            display: 'grid',
+            justifyItems: 'center',
+            gap: 'var(--e2)',
+            padding: 'var(--e5) var(--e4)',
+            textAlign: 'center',
+            borderRadius: 'var(--r-g)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+          }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.foto} alt={`foto de ${p.nome}`} width={160} height={160}
-              style={{ width: 'clamp(110px, 13vw, 180px)', height: 'auto', aspectRatio: '1', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--tinta)' }} />
-            <strong className="titulo" style={{ fontSize: 'var(--t3)' }}>{p.nome}</strong>
-            <span style={{ color: 'var(--tinta-2)', fontSize: 'var(--t5)' }}>{p.cargo}</span>
+            <img src={p.foto} alt={`foto de ${p.nome}`} width={200} height={200}
+              style={{ width: 'clamp(140px, 16vw, 200px)', height: 'clamp(140px, 16vw, 200px)', aspectRatio: '1', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--tinta)' }} />
+            <strong className="titulo" style={{ fontSize: 'clamp(22px, 2.2vw, 30px)' }}>{p.nome}</strong>
+            <span style={{ color: 'var(--tinta-2)', fontSize: 'clamp(14px, 1.2vw, 17px)' }}>{p.cargo}</span>
           </div>
         ))}
       </div>
@@ -264,12 +309,14 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
   const atual = Math.min(passo, cena.linhas.length - 1);
   const linhaAtual = cena.linhas[atual];
 
+  const imagensPasso = linhaAtual?.imagens;
   const imagemPasso = linhaAtual?.imagem;
   const legendaPasso = linhaAtual?.legendaImagem;
   const noUltimoPasso = atual === cena.linhas.length - 1;
   const imagemCena = (!cena.imagemSoNoFinal || noUltimoPasso) ? cena.imagem : undefined;
   const legendaCena = (!cena.imagemSoNoFinal || noUltimoPasso) ? cena.legendaImagem : undefined;
 
+  const imagensAtivas = imagensPasso;
   const imagemAtiva = imagemPasso ?? imagemCena;
   const legendaAtiva = imagemPasso ? legendaPasso : legendaCena;
 
@@ -306,9 +353,22 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
         })}
       </div>
 
-      {imagemAtiva && (
-        <SlideFigura src={imagemAtiva} legenda={legendaAtiva} alt={cena.titulo} />
-      )}
+      {imagensAtivas && imagensAtivas.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: 'var(--e1) 0' }}>
+          <div style={{ display: 'flex', gap: 'var(--e3)', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+            {imagensAtivas.map((img) => (
+              <SlideFigura key={img} src={img} alt={cena.titulo} maxAltura={220} />
+            ))}
+          </div>
+          {legendaAtiva && (
+            <figcaption style={{ fontSize: 'var(--t6)', color: 'var(--tinta-2)', marginTop: 'var(--e05)', textAlign: 'center', maxWidth: 640 }}>
+              <Texto>{legendaAtiva}</Texto>
+            </figcaption>
+          )}
+        </div>
+      ) : imagemAtiva ? (
+        <SlideFigura src={imagemAtiva} legenda={legendaAtiva} alt={cena.titulo} maxAltura={220} />
+      ) : null}
 
       <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
         <span>passo {atual + 1} de {cena.linhas.length}</span>
