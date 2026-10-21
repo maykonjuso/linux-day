@@ -1181,6 +1181,7 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
   padding: var(--e1) var(--e2); border: 1px solid var(--borda); border-radius: var(--r); background: var(--papel);
   transition: border-color 140ms ease, transform 140ms var(--ease);
 }
+.cartao-comando > *, .cartoes-chamado > * { min-width: 0; }
 .cartao-comando:hover { border-color: var(--acento); }
 .texto-cartao { font-family: var(--mono); font-size: 14px; overflow-wrap: anywhere; }
 .texto-cartao input {
@@ -1195,6 +1196,12 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
 .jogada[data-armadilha] { border: 1px solid var(--atencao); }
 .aviso-armadilha { display: flex; gap: var(--e05); align-items: flex-start; font-size: 13px; color: var(--atencao); }
 @media (max-width: 900px) { .cartoes-chamado { grid-template-columns: 1fr; } }
+
+/* No notebook do participante o buzzer divide a altura com a barra inferior.
+   A imagem é apoio, então encolhe antes de empurrar o botão para fora. */
+.palco[data-papel="player"] .cena-buzzer { --respiro: 8px; }
+.palco[data-papel="player"] .cena-buzzer .slide-figura img { max-height: 120px !important; }
+.palco[data-papel="player"] .cena-buzzer > button { width: min(280px, 80vw) !important; }
 
 /* ── roleta: cartunesca de propósito (contorno grosso, cor viva, tudo quica) ── */
 .roleta-fundo {
@@ -1359,4 +1366,3 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
   text-align: center;
   max-width: 580px;
 }
-

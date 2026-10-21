@@ -140,7 +140,6 @@ function Apresentacao({ cena, passo, papel }: { cena: C<'Apresentacao'>; passo: 
           margin: '0 auto',
           width: '100%',
           display: 'grid',
-          gridTemplateColumns: 'auto minmax(0, 1fr) auto',
           gap: 'var(--e4)',
           alignItems: 'center',
           padding: 'var(--e4) var(--e5)',

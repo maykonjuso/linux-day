@@ -173,7 +173,6 @@ export const DECK: Cena[] = [
         saida: 'iOS e macOS vêm do Unix — o "avô" do Linux',
         destaque: 'Unix',
         traducao: 'Unix veio antes (anos 60, AT&T). O Linux foi inspirado nele, mas reescrito do zero. macOS e iOS descendem do Unix via BSD — então são **primos**, não filhos do Linux.',
-        imagem: '/slides/m0-unix-family.png',
         legendaImagem: 'Família Unix: Unix → BSD → macOS/iOS · Unix → Minix → Linux (linhagens separadas)',
       },
       {

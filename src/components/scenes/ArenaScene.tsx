@@ -118,7 +118,7 @@ function Montagem({
   }
 
   return (
-    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+    <div className="cena cena-buzzer" data-modulo={cena.modulo} data-denso="true">
       <Cabecalho ilustra="elo" titulo={cena.titulo}
         olho={`montagem em equipe${arena.estado.restante !== null ? ` · ${arena.estado.restante}s` : ''}`} />
       <p className="corpo-p"><Texto>{desafio?.enunciado ?? cena.enunciado}</Texto></p>
