@@ -86,8 +86,8 @@ ok((tentativa?.sugestoes ?? []).length > 0, 'e a recusa vem com nomes livres par
 // mesmo com o nome livre depois, a conta só volta com o código
 const codigoCerto = ra.codigo;
 const comCodigoErrado = await pedir(ladrao, 'entrar', { nick: 'Roubador', emoji: '🐼', codigo: 'XXXX' });
-ok(comCodigoErrado?.eu?.id !== ra.eu.id, 'código errado não devolve a conta de ninguém');
-ok(!!codigoCerto && codigoCerto.length === 4, 'cada pessoa tem um código de retorno de 4 letras', `(${codigoCerto})`);
+ok(comCodigoErrado?.erro === 'codigo-invalido' && !comCodigoErrado?.eu, 'código errado não cria nem devolve conta');
+ok(!!codigoCerto && codigoCerto.length >= 8, 'cada pessoa tem um código de retorno aleatório e forte', `(${codigoCerto})`);
 
 // ───────────────── placar de equipe não premia trocar de time ─────────────
 let placar = null;

@@ -9,6 +9,7 @@
  * auditório, não a exceção.
  */
 import { createServer } from 'node:http';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import next from 'next';
 import { Server } from 'socket.io';
 
@@ -39,6 +40,13 @@ const port = Number(process.env.PORT ?? 3000);
 const PIN_HOST = process.env.PIN_HOST ?? '1991';
 const HOST_REMOTO = process.env.ARENA_HOST_REMOTO === '1';
 const tentarPin = criarLimitador({ limite: 5, janelaMs: 60_000 });
+const tentarCodigo = criarLimitador({ limite: 8, janelaMs: 60_000 });
+const segredoNovo = () => randomBytes(32).toString('base64url');
+const segredoIgual = (a, b) => {
+  const x = Buffer.from(String(a ?? ''));
+  const y = Buffer.from(String(b ?? ''));
+  return x.length === y.length && x.length > 0 && timingSafeEqual(x, y);
+};
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
@@ -74,11 +82,12 @@ estado.maxCenaIndex = Math.max(estado.maxCenaIndex ?? 0, estado.cenaIndex ?? 0);
 estado.restante = null;
 
 /**
- * Código de retorno: quatro caracteres do próprio id. Serve para a pessoa
+ * Código de retorno aleatório e independente do id público. Serve para a pessoa
  * recuperar a conta num outro computador, e só aparece na tela dela (e na
  * grade do apresentador, para ele poder ajudar quem perdeu).
  */
-const codigoDe = (id) => String(id).slice(0, 4).toUpperCase();
+const codigoNovo = () => randomBytes(6).toString('base64url').toUpperCase();
+const codigoDe = (id) => jogo.participantes.get(id)?.codigo ?? '';
 
 const jogo = criarJogo({
   emitir: (ev, dados) => io.emit(ev, dados),
@@ -89,6 +98,9 @@ jogo.recarregarDoBanco();
 // repopula contasEmUso para que alocarConta não distribua a mesma conta
 // para dois participantes diferentes após um reinício do servidor
 amb.restaurarContas(jogo.participantes);
+for (const p of jogo.participantes.values()) {
+  if (!p.codigo) { p.codigo = codigoNovo(); dao.salvarParticipante(p); }
+}
 
 /**
  * XP de cada pessoa e equipe no começo da cena da vez. Vai junto com o placar
@@ -459,7 +471,7 @@ io.on('connection', (socket) => {
     return sugestoes;
   }
 
-  async function registrar({ id, nick, emoji, codigo }, ack) {
+  async function registrar({ id, nick, emoji, codigo, segredo }, ack) {
     /**
      * Identidade tem que ser PROVADA, nunca digitada.
      *
@@ -472,10 +484,16 @@ io.on('connection', (socket) => {
     if (id && saiuPorVontade.has(id)) {
       return ack?.({ erro: 'nome-em-uso', nome: String(nick).trim(), sugestoes: [] });
     }
+    if (codigo && !tentarCodigo(socket.handshake.address)) return ack?.({ erro: 'muitas-tentativas' });
     const porCodigo = !id && codigo
       ? [...jogo.participantes.values()].find((p) => codigoDe(p.id) === String(codigo).trim().toUpperCase())
       : null;
-    const existente = (id && jogo.participantes.get(id)) || porCodigo;
+    if (codigo && !porCodigo) return ack?.({ erro: 'codigo-invalido' });
+    const porId = id && jogo.participantes.get(id);
+    // O id aparece no placar e portanto não é credencial. Sem este segredo,
+    // qualquer navegador poderia escrever no PTY de outra pessoa.
+    if (porId && !segredoIgual(segredo, porId.segredo)) return ack?.({ erro: 'sessao-invalida' });
+    const existente = porId || porCodigo;
     let ambientePronto = true;   // quem volta já tem ambiente semeado
 
     // quem está voltando mantém o próprio nome; quem está chegando não pode
@@ -485,14 +503,21 @@ io.on('connection', (socket) => {
     }
     if (existente) {
       eu = existente;
+      // Recuperar por código transfere a conta para este navegador e revoga
+      // imediatamente a credencial anterior.
+      if (porCodigo) {
+        eu.segredo = segredoNovo();
+        io.in(`p:${eu.id}`).disconnectSockets(true);
+      }
       eu.presenca = 'ativo';
       eu.visto = Date.now();
     } else {
-      const novoId = id || Math.random().toString(36).slice(2, 10);
+      const novoId = randomBytes(16).toString('base64url');
       const conta = amb.alocarConta(novoId);
       eu = {
         id: novoId, nick: String(nick || 'anônimo').slice(0, 20), emoji: emoji || '🐧',
         conta, grupo: null, papel: null, tokens: 3, xp: 0, nivel: 1,
+        segredo: segredoNovo(), codigo: codigoNovo(),
         presenca: 'ativo', livre: false, visto: Date.now(), criterios: [], badges: [],
       };
       jogo.participantes.set(eu.id, eu);
@@ -514,7 +539,7 @@ io.on('connection', (socket) => {
     socket.join(`p:${eu.id}`);
     if (eu.grupo) socket.join(`g:${eu.grupo}`);
     dao.salvarParticipante(eu);
-    ack?.({ eu: jogo.publico(eu), codigo: codigoDe(eu.id), estado, placar: jogo.placar(), ambientePronto });
+    ack?.({ eu: jogo.publico(eu), segredo: eu.segredo, codigo: codigoDe(eu.id), estado, placar: jogo.placar(), ambientePronto });
     emitirPresenca();
     // quem chega entra no placar de todas as telas (senão só aparecia no
     // pódio depois da primeira vez que alguém pontuasse)
@@ -567,7 +592,13 @@ io.on('connection', (socket) => {
   socket.on('term:abrir', ({ cols, rows } = {}) => {
     if (!eu?.conta) return;
     ouvinteTerm = (d) => socket.emit('term:dados', d);
-    pty.abrirSessao(eu.id, eu.conta, ouvinteTerm, usuarioDoNick(eu.nick));
+    try {
+      pty.abrirSessao(eu.id, eu.conta, ouvinteTerm, usuarioDoNick(eu.nick));
+    } catch (e) {
+      console.error('[terminal]', e.message);
+      socket.emit('terminal:encerrado', { motivo: 'isolamento seguro indisponível neste sistema; use a VM do workshop' });
+      return;
+    }
     if (cols && rows) pty.redimensionar(eu.id, cols, rows);
   });
   socket.on('term:entrada', (d) => { if (eu) pty.escrever(eu.id, d); });

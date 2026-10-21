@@ -97,7 +97,7 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
     const fotos = dao.versoesDasFotos();
     for (const r of dao.participantes()) {
       participantes.set(r.id, {
-        id: r.id, nick: r.nick, emoji: r.emoji, conta: r.conta, grupo: r.grupo, papel: r.papel,
+        id: r.id, nick: r.nick, emoji: r.emoji, conta: r.conta, grupo: r.grupo, papel: r.papel, segredo: r.segredo, codigo: r.codigo,
         tokens: r.tokens, xp: xps[r.id] ?? 0, nivel: nivelDe(xps[r.id] ?? 0).nivel,
         presenca: 'desconectado', livre: false, visto: r.visto_em,
         criterios: dao.criteriosDe(r.id), badges: dao.badgesDe(r.id),

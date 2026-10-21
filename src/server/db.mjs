@@ -73,12 +73,18 @@ db.exec(`
   );
 `);
 
+// Migra bancos criados por versões anteriores. O segredo de sessão nunca vai
+// para o placar; ele é apenas a credencial do navegador que possui a conta.
+try { db.exec('ALTER TABLE participantes ADD COLUMN segredo TEXT'); } catch { /* coluna já existe */ }
+try { db.exec('ALTER TABLE participantes ADD COLUMN codigo TEXT'); } catch { /* coluna já existe */ }
+
 const q = {
   upsertParticipante: db.prepare(`
-    INSERT INTO participantes (id, nick, emoji, conta, grupo, papel, tokens, criado_em, visto_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO participantes (id, nick, emoji, conta, grupo, papel, tokens, criado_em, visto_em, segredo, codigo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET nick = excluded.nick, emoji = excluded.emoji,
-      grupo = excluded.grupo, papel = excluded.papel, tokens = excluded.tokens, visto_em = excluded.visto_em`),
+      grupo = excluded.grupo, papel = excluded.papel, tokens = excluded.tokens,
+      visto_em = excluded.visto_em, segredo = excluded.segredo, codigo = excluded.codigo`),
   participantes: db.prepare('SELECT * FROM participantes'),
   ledgerInsert: db.prepare('INSERT INTO ledger (participante_id, xp, tipo, referencia, em) VALUES (?, ?, ?, ?, ?)'),
   xpPorParticipante: db.prepare('SELECT participante_id id, COALESCE(SUM(xp), 0) xp FROM ledger GROUP BY participante_id'),
@@ -104,7 +110,7 @@ const q = {
 
 export const dao = {
   salvarParticipante(p) {
-    q.upsertParticipante.run(p.id, p.nick, p.emoji, p.conta ?? null, p.grupo ?? null, p.papel ?? null, p.tokens, p.criadoEm ?? Date.now(), Date.now());
+    q.upsertParticipante.run(p.id, p.nick, p.emoji, p.conta ?? null, p.grupo ?? null, p.papel ?? null, p.tokens, p.criadoEm ?? Date.now(), Date.now(), p.segredo ?? null, p.codigo ?? null);
   },
   participantes: () => q.participantes.all(),
   lancarXp(id, xp, tipo, referencia) { q.ledgerInsert.run(id, xp, tipo, referencia ?? null, Date.now()); },

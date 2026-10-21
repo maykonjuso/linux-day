@@ -24,10 +24,11 @@ export function abrirSessao(participanteId, conta, aoReceber, nomeVisivel = cont
   const proc = spawn(arquivo, args, {
     name: 'xterm-256color',
     cols: 100, rows: 28, cwd,
+    // Nunca repassar process.env: ele contém PIN_HOST, credenciais e caminhos
+    // internos do servidor. O terminal recebe uma lista positiva mínima.
     env: {
-      ...process.env,
       HOME: home, USER: conta, LOGNAME: conta,
-      PATH: caminhoExtra ? `${caminhoExtra}:${process.env.PATH}` : process.env.PATH,
+      PATH: caminhoExtra ? `${caminhoExtra}:/usr/bin:/bin` : '/usr/bin:/bin',
       /**
        * O nome da conta vai LITERAL no prompt. Com `\u` o bash mostra o
        * usuário real do sistema operacional, e no modo local isso é o seu
@@ -69,13 +70,14 @@ export function atualizarNome(participanteId, nomeVisivel) {
 
 export function escrever(participanteId, dados) {
   const s = sessoes.get(participanteId);
-  if (s && !s.morto) s.proc.write(dados);
+  if (s && !s.morto && typeof dados === 'string' && dados.length <= 64 * 1024) s.proc.write(dados);
 }
 
 export function redimensionar(participanteId, cols, rows) {
   const s = sessoes.get(participanteId);
-  if (s && !s.morto && cols > 0 && rows > 0) {
-    try { s.proc.resize(cols, rows); } catch { /* corrida com o resize do navegador */ }
+  const c = Number(cols); const r = Number(rows);
+  if (s && !s.morto && Number.isInteger(c) && Number.isInteger(r) && c >= 10 && c <= 500 && r >= 2 && r <= 200) {
+    try { s.proc.resize(c, r); } catch { /* corrida com o resize do navegador */ }
   }
 }
 

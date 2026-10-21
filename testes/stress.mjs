@@ -197,7 +197,7 @@ if (msLab > 5000) aviso(`verificações demoraram mais de 5s para ${N} pessoas`)
 // ─── reconexão de 10 pessoas ──────────────────────────────────────────────────
 console.log('\n▸ reconexão (10 pessoas fecham e reabrem)…');
 const dezPrimeiros = pessoas.slice(0, 10);
-const dezIds = entradas.slice(0, 10).map((r) => r.eu);
+const dezIds = entradas.slice(0, 10).map((r) => ({ ...r.eu, segredo: r.segredo }));
 
 dezPrimeiros.forEach((s) => s.close());
 await esperar(500);
@@ -207,7 +207,7 @@ await esperar(500);
 
 const voltas = await Promise.all(
   reconectados.map((s, i) =>
-    pedir(s, 'entrar', { id: dezIds[i].id, nick: dezIds[i].nick, emoji: dezIds[i].emoji }),
+    pedir(s, 'entrar', { id: dezIds[i].id, segredo: dezIds[i].segredo, nick: dezIds[i].nick, emoji: dezIds[i].emoji }),
   ),
 );
 const voltaComXp = voltas.filter((r) => r?.eu?.xp >= 20).length;

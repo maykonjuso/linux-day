@@ -188,7 +188,7 @@ ana.close();
 await esperar(400);
 const ana2 = novo();
 await esperar(400);
-const volta = await pedir(ana2, 'entrar', { id: ra.eu.id, nick: 'ana', emoji: '🐧' });
+const volta = await pedir(ana2, 'entrar', { id: ra.eu.id, segredo: ra.segredo, nick: 'ana', emoji: '🐧' });
 ok(volta.eu.xp > 200, 'quem reconecta recupera o XP inteiro', `(${volta.eu.xp})`);
 ok(volta.eu.criterios.length >= 7, 'e recupera os critérios já conquistados', `(${volta.eu.criterios.length})`);
 // 3 iniciais + 1 do acerto no quiz + 1 do lab aprovado na primeira submissão

@@ -125,11 +125,12 @@ com a conquista do cargo.
 
 ### Travas do computador principal
 
-No modo local o terminal de cada aluno roda com o **seu** usuário. Por isso
-`sudo`, `apt`, `su`, `brew`, `shutdown`, `systemctl` e afins respondem por
-atalhos do workshop: `sudo apt install -y <pacote do lab>` "instala" um atalho
-na casa do aluno, e o resto é recusado. É quebra-molas, não muralha
-(`/usr/bin/sudo` passa por cima): no evento, use a VM (`ARENA_MODO=usuarios`).
+No modo local em Linux, cada terminal roda dentro de um sandbox Bubblewrap:
+enxerga somente `/usr` em leitura, um `/tmp` efêmero e a própria casa. As
+casas dos colegas, os arquivos do apresentador e as variáveis secretas do
+servidor não entram no terminal. Se Bubblewrap não estiver disponível, o
+terminal falha fechado. No macOS e no evento, use a VM
+(`ARENA_MODO=usuarios`), que entrega uma conta Linux distinta a cada pessoa.
 
 ### Quando outro computador não abre
 

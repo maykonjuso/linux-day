@@ -47,10 +47,25 @@ let encerrado = null;
 s.on('term:dados', (d) => { saida += d; });
 s.on('terminal:encerrado', (d) => { encerrado = d.motivo; });
 await espera(400);
-await new Promise((r) => s.emit('entrar', { nick: 'Ana', emoji: '🐧' }, r));
+const entrada = await new Promise((r) => s.emit('entrar', { nick: 'Ana', emoji: '🐧' }, r));
 await espera(2600);
 s.emit('term:abrir', { cols: 90, rows: 24 });
 await espera(1800);
+
+// ── isolamento real: sem segredos do servidor, host ou casa de colega ──
+saida = '';
+s.emit('term:entrada', 'printf "pin=%s db=%s\\n" "$PIN_HOST" "$ARENA_DB"; test ! -e /etc/passwd && echo host-oculto; test ! -e ../aluno02 && echo colega-oculto\n');
+await espera(1200);
+ok(/pin= db=/.test(saida), 'o PTY não herda segredos do processo servidor');
+ok(/host-oculto/.test(saida), 'arquivos do sistema hospedeiro não existem no sandbox');
+ok(/colega-oculto/.test(saida), 'cada participante tem um sistema de arquivos separado');
+
+// o id é público; ele sozinho não pode anexar outro socket ao terminal
+const intruso = io(URL, { path: '/rt', transports: ['websocket'] });
+await espera(300);
+const invasao = await new Promise((r) => intruso.emit('entrar', { id: entrada.eu.id, nick: 'Ana', emoji: '🐧' }, r));
+ok(invasao?.erro === 'sessao-invalida', 'id público sem segredo não acessa o terminal de outra pessoa');
+intruso.close();
 
 // ── prompt ──
 ok(/ana@linuxday:[^$]*\$/.test(saida), 'o prompt mostra o nome da pessoa', `(${(saida.match(/[a-z0-9]+@linuxday:[^$]*\$/) ?? ['nenhum'])[0]})`);

@@ -133,11 +133,13 @@ export function useArena(papel: Papel) {
       if (papel !== 'player') return;
       const salvo = typeof window !== 'undefined' ? localStorage.getItem(CHAVE) : null;
       if (salvo) {
-        const { id, nick, emoji } = JSON.parse(salvo);
-        s.emit('entrar', { id, nick, emoji }, (r: { eu: Participante; codigo?: string; ambientePronto?: boolean }) => {
+        const { id, nick, emoji, segredo } = JSON.parse(salvo);
+        s.emit('entrar', { id, nick, emoji, segredo }, (r: { eu?: Participante; segredo?: string; codigo?: string; ambientePronto?: boolean; erro?: string }) => {
+          if (!r.eu) { localStorage.removeItem(CHAVE); setEu(null); return; }
           setEu(r.eu);
           if (r.codigo) setCodigo(r.codigo);
           setAmbienteOk(r.ambientePronto !== false);
+          localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji, segredo: r.segredo ?? segredo }));
         });
       }
     });
@@ -237,8 +239,10 @@ export function useArena(papel: Papel) {
     const s = socketRef.current;
     if (!s) return;
     const salvo = localStorage.getItem(CHAVE);
-    const id = idExplicito ?? (salvo ? JSON.parse(salvo).id : undefined);
-    s.emit('entrar', { id, nick, emoji, codigo: codigoDigitado }, (r: { eu?: Participante; codigo?: string; ambientePronto?: boolean; erro?: string; nome?: string; sugestoes?: string[] }) => {
+    const sessao = salvo ? JSON.parse(salvo) : {};
+    const id = codigoDigitado ? undefined : (idExplicito ?? sessao.id);
+    const segredo = codigoDigitado ? undefined : sessao.segredo;
+    s.emit('entrar', { id, nick, emoji, segredo, codigo: codigoDigitado }, (r: { eu?: Participante; segredo?: string; codigo?: string; ambientePronto?: boolean; erro?: string; nome?: string; sugestoes?: string[] }) => {
       if (r?.erro === 'nome-em-uso') {
         setNomeRecusado({ nome: r.nome ?? nick, sugestoes: r.sugestoes ?? [] });
         return;
@@ -248,7 +252,7 @@ export function useArena(papel: Papel) {
       setEu(r.eu);
       if (r.codigo) setCodigo(r.codigo);
       setAmbienteOk(r.ambientePronto !== false);
-      localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji }));
+      localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji, segredo: r.segredo }));
     });
   }, []);
 
@@ -279,7 +283,8 @@ export function useArena(papel: Papel) {
           setEu(r.eu);
           if (r.codigo) setCodigo(r.codigo);
           setNomeRecusado(null);
-          localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji }));
+          const anterior = JSON.parse(localStorage.getItem(CHAVE) ?? '{}');
+          localStorage.setItem(CHAVE, JSON.stringify({ id: r.eu.id, nick: r.eu.nick, emoji: r.eu.emoji, segredo: anterior.segredo }));
         }
         resolver({ ok: !!r?.eu, erro: r?.erro });
       });

@@ -168,10 +168,30 @@ export function shellDe(conta, nomeVisivel = conta) {
   // Estes atalhos deixam o ambiente de desenvolvimento igual ao do evento.
   prepararAtalhosLocais(nomeVisivel, home);
   const rc = escreverBashrc(home, nomeVisivel);
+  // No modo local, aliases não são uma fronteira de segurança: caminhos
+  // absolutos os contornam. Bubblewrap entrega ao PTY apenas /usr (somente
+  // leitura), dispositivos mínimos, /tmp efêmero e a casa desta pessoa. As
+  // casas dos colegas e o computador do apresentador nem existem nesse mount
+  // namespace. Se o sandbox não estiver disponível, falhamos fechado.
+  const bwrap = '/usr/bin/bwrap';
+  if (!existsSync(bwrap)) {
+    throw new Error('modo local requer /usr/bin/bwrap; use a VM com ARENA_MODO=usuarios');
+  }
+  const shell = comandoComTravas(`exec bash --noprofile --rcfile ${JSON.stringify(rc)} -i`);
   return {
-    arquivo: 'bash',
-    args: ['--noprofile', '--norc', '-c', comandoComTravas(`exec bash --noprofile --rcfile ${JSON.stringify(rc)} -i`)],
-    cwd: home, home,
+    arquivo: bwrap,
+    args: [
+      '--die-with-parent', '--unshare-user', '--unshare-pid', '--unshare-uts', '--unshare-ipc',
+      '--ro-bind', '/usr', '/usr',
+      '--symlink', 'usr/bin', '/bin', '--symlink', 'usr/lib', '/lib',
+      '--symlink', 'usr/lib64', '/lib64',
+      '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/home',
+      '--bind', home, home, '--chdir', home,
+      '--setenv', 'HOME', home, '--setenv', 'USER', conta, '--setenv', 'LOGNAME', conta,
+      '--setenv', 'PATH', `${resolve(home, '.arena/bin')}:/usr/bin:/bin`,
+      'bash', '--noprofile', '--norc', '-c', shell,
+    ],
+    cwd: '/', home,
     caminhoExtra: resolve(home, '.arena/bin'),
   };
 }
