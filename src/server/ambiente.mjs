@@ -183,6 +183,30 @@ export function escreverBashrc(home, nomeVisivel) {
   const bin = resolve(home, '.arena/bin');
   mkdirSync(bin, { recursive: true });
   const arquivo = resolve(home, '.arena/bashrc');
+
+  // No modo local o shell roda como o usuário do Mac, então sem restrição o
+  // aluno poderia `cd /` e navegar pelo computador do apresentador.
+  // A função `cd` abaixo intercepta o builtin e bloqueia sair da casa.
+  // No modo VM (usuarios) o chmod 700 dos homes e o hidepid=2 já isolam de
+  // verdade; esta função é uma camada extra de conforto para o modo local.
+  const guardaDeNavegacao = MODO === 'local' ? [
+    `cd() {`,
+    `  local dest`,
+    `  if [ $# -eq 0 ] || [ "$1" = "~" ]; then`,
+    `    builtin cd "$HOME"`,
+    `  else`,
+    `    dest=$(builtin cd "$@" 2>/dev/null && pwd)`,
+    `    case "$dest" in`,
+    `      "$HOME"/*|"$HOME") builtin cd "$@" ;;`,
+    // data/casas está fora do home simbólico, então permitimos subir até a
+    // raiz dos casas para que `cd ..` funcione como o aluno espera, mas
+    // barramos qualquer caminho que não começa com o HOME real.
+    `      *) echo "cd: acesso bloqueado fora do seu diretório de trabalho" >&2; return 1 ;;`,
+    `    esac`,
+    `  fi`,
+    `}`,
+  ] : [];
+
   writeFileSync(arquivo, [
     `export PATH="${bin}:$PATH"`,
     `export PS1='${nomeVisivel}@linuxday:\\w$ '`,
@@ -192,6 +216,7 @@ export function escreverBashrc(home, nomeVisivel) {
     // um alias de cortesia, e o módulo do alias no fim do workshop mostra como
     // criar os próprios
     "alias ll='ls -la'",
+    ...guardaDeNavegacao,
     '',
   ].join('\n'));
   return arquivo;

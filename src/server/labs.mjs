@@ -156,13 +156,26 @@ export const LABS = {
       // adesivo: passa enquanto a app está no ar. Depois que a pessoa mata (c3),
       // este critério continua verde porque já foi premiado — ver `avaliar()`.
       { id: 'm5-c2', xp: 80, descricao: 'Rodar node app/app.js & e esperar o item ficar verde', check: `
-          # casa o caminho completo, não o usuário: funciona tanto com contas
-          # reais (su - alunoNN) quanto no modo local de desenvolvimento
-          pgrep -f "$HOME/app/app.js" >/dev/null || cai "a app não está rodando. Rode node app/app.js & e espere este item ficar verde"
+          # O aluno roda "node app/app.js" com caminho relativo: o kernel grava
+          # exatamente "app/app.js" em cmdline, não o caminho absoluto.
+          # Procuramos pelo sufixo "app/app.js" E restringimos ao cwd do
+          # processo (igual ao $HOME da pessoa): dois alunos no modo local com o
+          # mesmo arquivo não se confundem, e no modo VM hidepid=2 já isola.
+          achou=0
+          for pid in $(pgrep -f "app/app.js" 2>/dev/null); do
+            cwd=$(readlink /proc/$pid/cwd 2>/dev/null)
+            [ "$cwd" = "$HOME" ] && achou=1 && break
+          done
+          [ "$achou" = "1" ] || cai "a app não está rodando. Rode: node app/app.js &"
           mkdir -p "$HOME/.arena" && touch "$HOME/.arena/rodou"` },
       { id: 'm5-c3', xp: 120, descricao: 'Encerrar a app com kill + o PID', check: `
           [ -f "$HOME/.arena/rodou" ] || cai "primeiro o item 2: rode node app/app.js & e espere ele ficar verde ANTES de encerrar"
-          pgrep -f "$HOME/app/app.js" >/dev/null && cai "ela ainda está no ar: ache o PID com ps aux | grep app.js e use kill PID"
+          achou=0
+          for pid in $(pgrep -f "app/app.js" 2>/dev/null); do
+            cwd=$(readlink /proc/$pid/cwd 2>/dev/null)
+            [ "$cwd" = "$HOME" ] && achou=1 && break
+          done
+          [ "$achou" = "0" ] || cai "ela ainda está no ar: ache o PID com ps aux | grep app.js e use kill PID"
           exit 0` },
     ],
   },

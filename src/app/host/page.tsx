@@ -81,6 +81,8 @@ export default function Host() {
   const [recado, setRecado] = useState('');
   const [nota, setNota] = useState<string | null>(null);
   const { tema, trocar } = useTema('claro');
+  /** dupla confirmação para reiniciar o jogo do zero */
+  const [confirmaReiniciar, setConfirmaReiniciar] = useState(false);
 
   const segundos = 'segundos' in cena ? (cena as unknown as { segundos: number }).segundos : null;
   const taskSlug = cena.tipo === 'LabScene' ? cena.taskSlug : null;
@@ -432,6 +434,15 @@ export default function Host() {
           <input className="btn-icone" style={{ width: 150, border: '1px solid var(--borda)' }} placeholder="recado para a sala" value={recado}
             onChange={(e) => setRecado(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && recado.trim()) { emit('host:aviso', recado.trim()); setRecado(''); avisar('recado enviado'); } }} />
+          {!confirmaReiniciar
+            ? <button className="btn-icone" style={{ color: 'var(--erro, #dc2626)' }} title="apaga tudo e volta para o slide 0 — pede confirmação"
+                onClick={() => setConfirmaReiniciar(true)}>
+                <Icone nome="apagar" tamanho={17} /><span className="texto">reiniciar jogo</span>
+              </button>
+            : <button className="btn-icone" style={{ color: 'var(--erro, #dc2626)', fontWeight: 700 }} title="confirmar reinício — apaga XP, grupos, terminais e volta ao slide 0"
+                onClick={() => { setConfirmaReiniciar(false); emit('host:reiniciar', null, (r: { ok: boolean }) => avisar(r?.ok ? 'reiniciando…' : 'erro ao reiniciar')); }}>
+                <Icone nome="apagar" tamanho={17} /><span className="texto">⚠ confirmar reinício</span>
+              </button>}
         </MenuControles>
 
         <div className="estado-faixa">

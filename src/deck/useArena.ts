@@ -183,6 +183,11 @@ export function useArena(papel: Papel) {
       setEu(null);
       setExpulso(motivo || 'o apresentador encerrou a sua participação');
     });
+    s.on('reiniciado', () => {
+      localStorage.removeItem(CHAVE);
+      localStorage.removeItem(ULTIMO);
+      window.location.reload();
+    });
     s.on('silenciado', (v: boolean) => setEu((p) => (p ? { ...p, silenciado: v } : p)));
     s.on('terminal:encerrado', ({ motivo }: { motivo: string }) =>
       efemero('terminal', setAvisoTerminal, motivo, 12_000));

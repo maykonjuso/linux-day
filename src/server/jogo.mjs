@@ -226,9 +226,20 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
     ledgerDaEquipe.set(nome, (ledgerDaEquipe.get(nome) ?? 0) + xp);
   }
 
+  /** zera tudo em memória (o banco já foi limpo antes de chamar isso) */
+  function reiniciar() {
+    participantes.clear();
+    for (const g of grupos.values()) { g.membros.clear(); g.papeis = {}; g.chat = []; }
+    combos.clear();
+    contagens.clear();
+    ledgerDaEquipe.clear();
+    multiplicadorGlobal = 1;
+    abertoEm = Date.now();
+  }
+
   return {
     participantes, grupos, combos, contador, publico, placar, premiar, penalizar, mexerTokens, premiarEquipe,
-    darBadge, mexerCombo, recarregarDoBanco,
+    darBadge, mexerCombo, recarregarDoBanco, reiniciar,
     get multiplicadorGlobal() { return multiplicadorGlobal; },
     set multiplicadorGlobal(v) { multiplicadorGlobal = v; },
     get abertoEm() { return abertoEm; },

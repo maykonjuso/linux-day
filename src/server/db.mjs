@@ -129,6 +129,20 @@ export const dao = {
   foto: (id) => q.fotoGet.get(id),
   apagarFoto(id) { q.fotoApagar.run(id); },
   versoesDasFotos: () => Object.fromEntries(q.fotosVersoes.all().map((r) => [r.id, r.versao])),
+  /** apaga todos os dados do jogo, mantendo só a estrutura das tabelas */
+  zerarJogo() {
+    db.exec(`
+      DELETE FROM ledger;
+      DELETE FROM tokens_ledger;
+      DELETE FROM criterios_premiados;
+      DELETE FROM respostas;
+      DELETE FROM badges;
+      DELETE FROM submissoes;
+      DELETE FROM participantes;
+      DELETE FROM fotos;
+      DELETE FROM estado;
+    `);
+  },
   getEstado(chave) {
     const r = q.estadoGet.get(chave);
     return r ? JSON.parse(r.valor) : null;

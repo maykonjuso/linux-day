@@ -1148,6 +1148,44 @@ io.on('connection', (socket) => {
     ack?.({ colocados: pares.length, sobraram: ids.length - pares.length });
   }));
   socket.on('host:boss:semear', soHost(async (_, ack) => { const semeados = await semearChamado(); ack?.({ semeados }); }));
+
+  /**
+   * Reinicia o jogo do zero: zera o banco, limpa o estado em memória, fecha
+   * todos os terminais, libera todas as contas Linux, volta para o slide 0 e
+   * desconecta todos os clientes (eles recarregam e voltam para a tela de entrada).
+   */
+  socket.on('host:reiniciar', soHost(async (_, ack) => {
+    // 1. mata todos os terminais e libera contas Linux
+    for (const [id, p] of jogo.participantes) {
+      pty.matarSessao(id);
+      if (p.conta) amb.liberarConta(p.conta);
+    }
+    // 2. limpa o banco
+    dao.zerarJogo();
+    // 3. limpa o estado em memória
+    jogo.reiniciar();
+    saiuPorVontade.clear();
+    trocasDeEquipe.clear();
+    contaDoBoss.clear();
+    baseDaCena = null;
+    quizAtual = null;
+    equipesTrancadas = false;
+    if (timer) { clearInterval(timer); clearTimeout(timer); timer = null; }
+    // 4. volta para o slide 0
+    estado.cenaIndex = 0;
+    estado.maxCenaIndex = 0;
+    estado.passo = 0;
+    estado.fase = 'idle';
+    estado.pausado = false;
+    estado.restante = null;
+    estado.cenaId = null;
+    salvarEstado();
+    // 5. avisa todos e desconecta
+    io.emit('reiniciado');
+    setTimeout(() => io.disconnectSockets(), 300);
+    ack?.({ ok: true });
+  }));
+
   /**
    * Fechou o navegador: a sessão de apresentação dela encerra na hora (sai da
    * contagem, não trava mais a sala). O XP, os critérios e o grupo ficam
