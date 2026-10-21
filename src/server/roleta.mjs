@@ -5,7 +5,7 @@
  * dependem da faixa de XP dela: quem está embaixo tem fatias que pagam mais,
  * quem está em cima tem fatias que pagam menos. Duas regras do jogo continuam
  * valendo aqui:
- *   - XP nunca diminui. "Perder" na roleta é perder um TOKEN, que é recurso.
+ *   - XP nunca vai abaixo de zero. "Perder XP" é um desconto que para no zero.
  *   - Quem decide é o servidor: os duelos (par ou ímpar, pedra-papel-tesoura)
  *     são resolvidos aqui com os lances dos dois, que só aparecem no fim.
  *     Só as dinâmicas faladas em voz alta pedem o apresentador.
@@ -27,16 +27,16 @@ export const FATIAS = {
   'par-impar': { rotulo: 'par ou ímpar', icone: 'binario' },   // duelo: quem gira escolhe o adversário
   // pedra, papel e tesoura é sempre um duelo: quem gira escolhe o adversário
   ppt: { rotulo: 'pedra, papel, tesoura', icone: 'pessoas' },
-  'perde-token': { rotulo: 'alguém perde um token', icone: 'token' },
+  'perde-xp': { rotulo: 'alguém perde XP', icone: 'xp' },
   'fala-comando': { rotulo: 'explique um comando', icone: 'terminal' },
   'equipe-desafio': { rotulo: 'desafio da equipe', icone: 'pessoas' },
 };
 
 /** peso de cada fatia por faixa (0 = não aparece na roleta daquela faixa) */
 const PESOS = {
-  baixo: { 'bonus-direto': 3, 'par-impar': 2, ppt: 3, 'perde-token': 1, 'fala-comando': 1, 'equipe-desafio': 1 },
-  medio: { 'bonus-direto': 1, 'par-impar': 2, ppt: 4, 'perde-token': 1, 'fala-comando': 1, 'equipe-desafio': 1 },
-  alto: { 'bonus-direto': 0, 'par-impar': 2, ppt: 4, 'perde-token': 0, 'fala-comando': 2, 'equipe-desafio': 1 },
+  baixo: { 'bonus-direto': 3, 'par-impar': 2, ppt: 3, 'perde-xp': 1, 'fala-comando': 1, 'equipe-desafio': 1 },
+  medio: { 'bonus-direto': 1, 'par-impar': 2, ppt: 4, 'perde-xp': 1, 'fala-comando': 1, 'equipe-desafio': 1 },
+  alto: { 'bonus-direto': 0, 'par-impar': 2, ppt: 4, 'perde-xp': 0, 'fala-comando': 2, 'equipe-desafio': 1 },
 };
 
 export const DINAMICAS_FALADAS = {
@@ -107,7 +107,7 @@ export function criarRoleta({ rng = Math.random } = {}) {
       return { premios: [{ id: atual.id, xp: atual.valor }] };
     }
     // par ou ímpar e pedra-papel-tesoura são duelos: quem gira escolhe o adversário
-    atual.fase = ['par-impar', 'ppt', 'perde-token'].includes(atual.fatia) ? 'indicar' : 'julgar';
+    atual.fase = ['par-impar', 'ppt', 'perde-xp'].includes(atual.fatia) ? 'indicar' : 'julgar';
     if (atual.fase === 'julgar') atual.dinamica = DINAMICAS_FALADAS[atual.fatia];
     return {};
   }
@@ -156,16 +156,16 @@ export function criarRoleta({ rng = Math.random } = {}) {
     return { erro: 'não é hora de escolher' };
   }
 
-  /** a pessoa da vez indica alguém: o adversário do duelo, ou quem perde um token */
+  /** a pessoa da vez indica alguém: o adversário do duelo, ou quem perde XP */
   function indicar(quem, alvo, participantes) {
     if (!atual || atual.fase !== 'indicar') return { erro: 'não é hora de indicar' };
     if (quem !== atual.id) return { erro: 'não é a sua vez' };
     if (alvo === atual.id || !participantes.some((p) => p.id === alvo)) return { erro: 'indique outra pessoa da sala' };
     atual.alvo = alvo;
-    if (atual.fatia === 'perde-token') {
+    if (atual.fatia === 'perde-xp') {
       atual.fase = 'fim';
-      atual.resultado = { texto: 'perdeu um token, e ele foi para quem girou' };
-      return { tokens: [{ id: alvo, delta: -1 }, { id: atual.id, delta: 1 }] };
+      atual.resultado = { texto: `perdeu ${atual.valor} XP` };
+      return { perdas: [{ id: alvo, xp: atual.valor }] };
     }
     atual.fase = 'escolher';
     return {};

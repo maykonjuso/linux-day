@@ -155,6 +155,19 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
   }
 
   /** O único caminho por onde XP entra. Multiplicadores aplicados aqui. */
+  /** debita XP diretamente (sem combo, sem multiplicador global) */
+  function penalizar(id, xp, tipo, referencia) {
+    const p = participantes.get(id);
+    if (!p || xp <= 0) return 0;
+    const desconto = Math.min(xp, p.xp);   // XP fica em 0, nunca negativo
+    if (desconto <= 0) return 0;
+    dao.lancarXp(id, -desconto, tipo, referencia);
+    p.xp -= desconto;
+    p.nivel = nivelDe(p.xp).nivel;
+    emitirPara(id, 'xp', { xp: -desconto, tipo, referencia, total: p.xp, mult: 1 });
+    return desconto;
+  }
+
   function premiar(id, xpBase, tipo, referencia, { usarCombo = false } = {}) {
     const p = participantes.get(id);
     if (!p || xpBase <= 0) return 0;
@@ -214,7 +227,7 @@ export function criarJogo({ emitir, emitirPara, cartasValidas = new Set() }) {
   }
 
   return {
-    participantes, grupos, combos, contador, publico, placar, premiar, mexerTokens, premiarEquipe,
+    participantes, grupos, combos, contador, publico, placar, premiar, penalizar, mexerTokens, premiarEquipe,
     darBadge, mexerCombo, recarregarDoBanco,
     get multiplicadorGlobal() { return multiplicadorGlobal; },
     set multiplicadorGlobal(v) { multiplicadorGlobal = v; },

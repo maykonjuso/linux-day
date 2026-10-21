@@ -11,7 +11,7 @@ type Atual = NonNullable<EstadoRoleta['atual']>;
 /** cores de bala: vivas, e cada uma com texto branco legível por cima */
 const CORES = ['#ff5a5f', '#2f80ed', '#f2a900', '#8e44ad', '#27ae60', '#ff7a00', '#e84393'];
 const EMOJI: Record<string, string> = {
-  'bonus-direto': '🎁', 'par-impar': '🎲', ppt: '✊', 'perde-token': '🪙', 'fala-comando': '🗣️', 'equipe-desafio': '👥',
+  'bonus-direto': '🎁', 'par-impar': '🎲', ppt: '✊', 'perde-xp': '💸', 'fala-comando': '🗣️', 'equipe-desafio': '👥',
 };
 const LANCE: Record<string, { emoji: string; nome: string }> = {
   pedra: { emoji: '✊', nome: 'pedra' }, papel: { emoji: '✋', nome: 'papel' }, tesoura: { emoji: '✌️', nome: 'tesoura' },
@@ -196,7 +196,7 @@ function Etapa({ arena, papel, parou }: { arena: Arena; papel: Papel; parou: boo
         {titulo}
         {souEu ? (
           <>
-            <p className="roleta-texto">{DUELOS.includes(atual.fatia ?? '') ? 'Quem você desafia?' : 'Quem perde um token para você?'}</p>
+            <p className="roleta-texto">{DUELOS.includes(atual.fatia ?? '') ? 'Quem você desafia?' : 'Quem perde XP?'}</p>
             <div className="escolha-adversario">
               {outros.map((p, i) => (
                 <button key={p.id} className="cartao-pessoa" style={{ ['--i' as string]: i }} onClick={() => enviar('roleta:indicar', p.id)}>

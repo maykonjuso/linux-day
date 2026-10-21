@@ -360,8 +360,8 @@ function passoDaRoleta(passo) {
   const r = passo();
   if (r?.erro) return r;
   for (const pr of r?.premios ?? []) jogo.premiar(pr.id, pr.xp, 'roleta', 'roleta');
-  for (const t of r?.tokens ?? []) jogo.mexerTokens(t.id, t.delta, 'roleta');
-  if (r?.premios?.length || r?.tokens?.length) emitirPlacar();
+  for (const p of r?.perdas ?? []) jogo.penalizar(p.id, p.xp, 'roleta', 'roleta');
+  if (r?.premios?.length || r?.perdas?.length) emitirPlacar();
   emitirRoleta();
 
   clearTimeout(esperaDaRoleta);
