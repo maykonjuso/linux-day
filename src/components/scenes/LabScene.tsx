@@ -71,7 +71,10 @@ export function LabScene({
     || (cena.taskSlug === 'boss-chamado' && (!cena.cartoes || souInvestigador || investigadorLivre));
 
   useEffect(() => { setResultados({}); setAvisos({}); setResposta(''); setDica(null); setDicaIndice(0); }, [cena.id]);
+  // sincroniza o ref apenas para a verificação MANUAL (Enter / botão enviar).
+  // O check automático sempre passa '' para não usar o que está sendo digitado.
   useEffect(() => { ultimaResposta.current = resposta; }, [resposta]);
+  const ultimaRespostaManual = useRef('');
 
   /** itens que acabaram de ficar prontos: ganham a animação de conquista */
   const [recentes, setRecentes] = useState<string[]>([]);
@@ -81,7 +84,9 @@ export function LabScene({
   const verificar = useCallback(async (silencioso = false) => {
     if (!souJogador || ocupado) return;
     setOcupado(true);
-    const r = await arena.verificar(cena.taskSlug, ultimaResposta.current, silencioso);
+    // automático: passa '' (não usa o campo). Manual: usa o que o usuário digitou.
+    const respostaParaEnviar = silencioso ? '' : ultimaRespostaManual.current;
+    const r = await arena.verificar(cena.taskSlug, respostaParaEnviar, silencioso);
     setOcupado(false);
     if (r.erro) { if (!silencioso) setMsg(r.erro); return; }
     setResultados(Object.fromEntries(r.resultados.map((x) => [x.id, x])));
@@ -89,6 +94,10 @@ export function LabScene({
       setAvisos(Object.fromEntries(r.resultados
         .filter((x) => !x.passou && x.tipo === 'resposta' && x.mensagem)
         .map((x) => [x.id, x.mensagem as string])));
+      // limpa o campo depois de enviar: a resposta já foi registrada
+      setResposta('');
+      ultimaResposta.current = '';
+      ultimaRespostaManual.current = '';
     } else {
       // o que ficou certo perde o aviso antigo
       setAvisos((a) => Object.fromEntries(Object.entries(a).filter(([id]) => !r.resultados.find((x) => x.id === id)?.passou)));
@@ -275,15 +284,24 @@ export function LabScene({
               </div>
               <div className="linha">
                 <input
-                  autoComplete="off" spellCheck={false} size={8}
-                  placeholder="cole ou digite aqui"
-                  value={resposta} onChange={(e) => setResposta(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') verificar(); }} />
-                <button className="btn primario" data-acao="enviar-resposta"
-                  disabled={!resposta.trim() || ocupado}
-                  onClick={() => verificar()}>
-                  <Icone nome="proximo" tamanho={18} /> enviar
-                </button>
+                    autoComplete="off" spellCheck={false} size={8}
+                    placeholder="cole ou digite aqui"
+                    value={resposta}
+                    onChange={(e) => {
+                      setResposta(e.target.value);
+                      ultimaRespostaManual.current = e.target.value;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && resposta.trim()) {
+                        ultimaRespostaManual.current = resposta;
+                        verificar();
+                      }
+                    }} />
+                  <button className="btn primario" data-acao="enviar-resposta"
+                    disabled={!resposta.trim() || ocupado}
+                    onClick={() => { ultimaRespostaManual.current = resposta; verificar(); }}>
+                    <Icone nome="proximo" tamanho={18} /> enviar
+                  </button>
               </div>
               <small className="apoio">Pode tentar quantas vezes quiser: errar não tira XP.</small>
             </div>

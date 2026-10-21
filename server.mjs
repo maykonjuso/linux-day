@@ -679,9 +679,15 @@ io.on('connection', (socket) => {
   socket.on('lab:reset', async (_, ack) => {
     if (!eu?.conta) return ack?.({ erro: 'sem ambiente' });
     jogo.contador(eu.id).resets += 1;
-    const r = await amb.resetar(eu.conta);               // sempre grátis: medo de
-    pty.matarSessao(eu.id);                              // quebrar a máquina é o
-    ack?.({ ok: r.ok, saida: r.saida });                 // maior freio do iniciante
+    // avisa o cliente que o ambiente está sendo recriado (exibe "preparando…")
+    socket.emit('ambiente', { pronto: false });
+    pty.matarSessao(eu.id);                              // mata o PTY antes do rm -rf
+    const r = await amb.resetar(eu.conta);               // apaga e semeia de novo
+    ack?.({ ok: r.ok, saida: r.saida });
+    if (!r.ok) { socket.emit('ambiente', { pronto: false }); return; }
+    // reabre o PTY com o ambiente limpo: sem isso o terminal ficava mudo
+    pty.abrirSessao(eu.id, eu.conta, (d) => socket.emit('term:dados', d), usuarioDoNick(eu.nick));
+    socket.emit('ambiente', { pronto: true });
   });
 
   // ───────────────────────── quiz, widgets, predições ──────────────────────

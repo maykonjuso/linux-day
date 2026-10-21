@@ -45,8 +45,11 @@ export function SlideFigura({
 
   return (
     <figure className="slide-figura">
+      {/* sem key na <img>: com key o React desmonta e remonta a cada troca de
+          extensão/passo, forçando reload e a animação de entrada de novo.
+          Sem key o browser reutiliza o elemento DOM e o cache da imagem — sem
+          piscada quando a mesma imagem já está carregada. */}
       <img
-        key={currentSrc}
         src={currentSrc}
         alt={alt ?? legenda ?? ''}
         onError={lidarComErro}

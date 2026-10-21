@@ -22,6 +22,8 @@ export function TerminalHost({
   socket, ativo, gaveta, tema = temaTerminalPadrao, onFechar,
 }: { socket: Socket | null; ativo: boolean; gaveta: boolean; tema?: TemaTerminal; onFechar?: () => void }) {
   const [focado, setFocado] = useState(false);
+  const [copiadoAviso, setCopiadoAviso] = useState(false);
+  const copiadoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const caixa = useRef<HTMLDivElement>(null);
   const termRef = useRef<{
     term: unknown; fit: { fit: () => void }; write: (d: string) => void;
@@ -93,6 +95,26 @@ export function TerminalHost({
       term.textarea?.addEventListener('focus', () => setFocado(true));
       term.textarea?.addEventListener('blur', () => setFocado(false));
 
+      /**
+       * Copia automática ao selecionar: quando a seleção muda e tem conteúdo,
+       * copia para o clipboard e mostra o aviso por 2s. O onSelectionChange do
+       * xterm.js dispara a cada caractere arrastado — esperamos o mouseup/touchend
+       * para só copiar quando a seleção estiver completa.
+       */
+      const copiarSelecao = () => {
+        const texto = term.getSelection();
+        if (!texto) return;
+        navigator.clipboard.writeText(texto).then(() => {
+          setCopiadoAviso(true);
+          if (copiadoTimer.current) clearTimeout(copiadoTimer.current);
+          copiadoTimer.current = setTimeout(() => setCopiadoAviso(false), 2000);
+        }).catch(() => { /* clipboard bloqueado (iframe sem permissão) */ });
+      };
+      // mouseup: terminou de arrastar; o xterm já atualizou a seleção neste ponto
+      caixa.current?.addEventListener('mouseup', copiarSelecao);
+      // touch: para celular/tablet
+      caixa.current?.addEventListener('touchend', copiarSelecao);
+
       term.onData((d: string) => socket?.emit('term:entrada', d));
       term.onResize(({ cols, rows }: { cols: number; rows: number }) => socket?.emit('term:resize', { cols, rows }));
 
@@ -130,6 +152,24 @@ export function TerminalHost({
     const aoReceber = (d: string) => termRef.current?.write(d);
     socket.on('term:dados', aoReceber);
     return () => { socket.off('term:dados', aoReceber); };
+  }, [socket]);
+
+  /**
+   * Ao receber ambiente:pronto=true (depois de um recomeçar), o servidor já
+   * abriu um PTY novo — precisamos sincronizar as dimensões para o prompt
+   * aparecer no tamanho certo, e fazer o fit para limpar qualquer resíduo visual.
+   */
+  useEffect(() => {
+    if (!socket) return;
+    const aoAmbiente = ({ pronto }: { pronto: boolean }) => {
+      if (!pronto) return;
+      const t = termRef.current;
+      if (!t) return;
+      try { t.fit.fit(); } catch { /* pode falhar se a caixa estiver escondida */ }
+      socket.emit('term:resize', { cols: t.cols(), rows: t.rows() });
+    };
+    socket.on('ambiente', aoAmbiente);
+    return () => { socket.off('ambiente', aoAmbiente); };
   }, [socket]);
 
   /**
@@ -250,7 +290,9 @@ export function TerminalHost({
       <div ref={caixa} style={{ width: '100%', height: 'calc(100% - 26px)' }} />
       {/* rodapé do terminal: diz onde está o teclado e como sair dele */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--e1)', height: 22, color: focado ? tema.cores.green : tema.cores.brightBlack, fontSize: 11, fontFamily: 'var(--sans)' }}>
-        {focado ? 'o teclado está no terminal' : 'clique aqui para digitar'}
+        {copiadoAviso
+          ? <span style={{ color: tema.cores.green, fontWeight: 600, transition: 'opacity 300ms' }}>✓ copiado!</span>
+          : focado ? 'o teclado está no terminal · selecione texto para copiar' : 'clique aqui para digitar'}
         <button
           onClick={() => { termRef.current?.blurir(); }}
           style={{ marginLeft: 'auto', background: 'none', border: '1px solid #3a3a42', color: '#a7a7b0', borderRadius: 'var(--r-p)', padding: '2px var(--e1)', fontSize: 11, cursor: 'pointer' }}
