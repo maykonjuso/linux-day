@@ -28,6 +28,9 @@ export interface LinhaTerminal {
   destaque?: string;
   /** "o que acabou de acontecer", em linguagem humana */
   traducao?: string;
+  /** Imagem opcional para ilustrar este passo específico (ex: '/slides/m0-stallman.png') */
+  imagem?: string;
+  legendaImagem?: string;
 }
 
 export interface Alternativa {
@@ -114,6 +117,11 @@ export interface CenaTerminalDemo extends CenaBase {
   tipo: 'TerminalDemo';
   /** um passo por linha: você avança, a próxima linha aparece */
   linhas: LinhaTerminal[];
+  /** Imagem opcional para o slide (ex: diagrama do módulo ou síntese) */
+  imagem?: string;
+  legendaImagem?: string;
+  /** Se true, a imagem geral só é exibida no último passo da demonstração */
+  imagemSoNoFinal?: boolean;
 }
 
 export interface CenaErros extends CenaBase {
@@ -200,6 +208,10 @@ export interface CenaArena extends CenaBase {
   pergunta?: string;
   /** XP por posição (1º, 2º, 3º, demais) */
   premios?: number[];
+  /** Imagem exibida durante a pergunta (ex: suspense ou mistério) */
+  imagem?: string;
+  /** Imagem revelada quando a pergunta é respondida */
+  imagemResposta?: string;
 }
 
 export interface CenaPlacar extends CenaBase {

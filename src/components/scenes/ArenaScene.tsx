@@ -10,6 +10,7 @@ import { Texto } from '../Texto';
 import { ReferenciasConteudo } from '../ReferenciasConteudo';
 import { Aguardando } from '../SceneRouter';
 import { liberada, encerrada } from '@/deck/liberada';
+import { SlideFigura } from '../SlideFigura';
 
 type CenaArena = Extract<Cena, { tipo: 'ArenaScene' }>;
 
@@ -452,6 +453,15 @@ function Buzzer({
       <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta ?? cena.enunciado}</Texto></h2>
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>
       {papel === 'player' && <ReferenciasConteudo referencias={cena.referencias} onIrParaSlide={onIrParaSlide} />}
+
+      {/* Imagem de mistério/pergunta antes da resposta */}
+      {cena.imagem && !rodada?.resolvido && (
+        <SlideFigura src={cena.imagem} alt={cena.titulo} maxAltura={260} />
+      )}
+      {/* Imagem com a resposta revelada */}
+      {cena.imagemResposta && rodada?.resolvido && (
+        <SlideFigura src={cena.imagemResposta} alt="Resposta revelada" maxAltura={260} />
+      )}
 
       {!solto && <Aguardando papel={papel} oque="o botão" />}
       {papel === 'host' && arena.estado.fase === 'idle' && <Aguardando papel={papel} oque="o botão" />}

@@ -24,6 +24,7 @@ import { liberada, encerrada } from '@/deck/liberada';
 import { embaralhar } from '@/deck/embaralhar';
 import { QrCode } from './QrCode';
 import { PodioDaCena } from './Celebracao';
+import { SlideFigura } from './SlideFigura';
 
 /**
  * Uma cena, três projeções. O conteúdo é o mesmo objeto; quem muda é o papel:
@@ -261,6 +262,16 @@ function Anatomia({ cena }: { cena: C<'CommandAnatomy'> }) {
 
 function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
   const atual = Math.min(passo, cena.linhas.length - 1);
+  const linhaAtual = cena.linhas[atual];
+
+  const imagemPasso = linhaAtual?.imagem;
+  const legendaPasso = linhaAtual?.legendaImagem;
+  const noUltimoPasso = atual === cena.linhas.length - 1;
+  const imagemCena = (!cena.imagemSoNoFinal || noUltimoPasso) ? cena.imagem : undefined;
+  const legendaCena = (!cena.imagemSoNoFinal || noUltimoPasso) ? cena.legendaImagem : undefined;
+
+  const imagemAtiva = imagemPasso ?? imagemCena;
+  const legendaAtiva = imagemPasso ? legendaPasso : legendaCena;
 
   /**
    * As linhas anteriores encolhem para uma linha só (o comando), e apenas a
@@ -294,6 +305,10 @@ function Demo({ cena, passo }: { cena: C<'TerminalDemo'>; passo: number }) {
           );
         })}
       </div>
+
+      {imagemAtiva && (
+        <SlideFigura src={imagemAtiva} legenda={legendaAtiva} alt={cena.titulo} />
+      )}
 
       <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center' }}>
         <span>passo {atual + 1} de {cena.linhas.length}</span>
