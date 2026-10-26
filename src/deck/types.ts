@@ -101,11 +101,21 @@ export interface CenaControles extends CenaBase {
   legenda: string;
 }
 
+export interface CartaoPasso {
+  ilustra: string;
+  etiqueta: string;
+  titulo: string;
+  texto: string;
+  destaque?: string;
+}
+
 export interface CenaModeloMental extends CenaBase {
   tipo: 'MentalModel';
   legenda: string;
   /** nome do diagrama inline (um componente SVG por nome) */
-  diagrama: 'arvore' | 'distros' | 'processo' | 'cadeados' | 'encanamento';
+  diagrama?: 'arvore' | 'distros' | 'processo' | 'cadeados' | 'encanamento';
+  /** cartões revelados passo a passo (um a cada avanço) */
+  cartoesPasso?: CartaoPasso[];
 }
 
 export interface CenaAnatomia extends CenaBase {
