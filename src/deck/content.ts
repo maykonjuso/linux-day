@@ -32,7 +32,7 @@ export const DECK: Cena[] = [
   },
   {
     // um passo com os dois juntos e depois um passo para cada pessoa
-    id: 'apresentacao', ilustra: 'aperto-de-mao', tipo: 'Apresentacao', modulo: 0, passos: 3, minutos: 3,
+    id: 'apresentacao', ilustra: 'aperto-de-mao', tipo: 'Apresentacao', modulo: 0, passos: 3, minutos: 2,
     titulo: 'Quem está com vocês hoje',
     pessoas: [
       {
@@ -58,7 +58,7 @@ export const DECK: Cena[] = [
     ],
   },
   {
-    id: 'controles', ilustra: 'computador', tipo: 'Controles', modulo: 0, passos: 1, minutos: 2,
+    id: 'controles', ilustra: 'computador', tipo: 'Controles', modulo: 0, passos: 1, minutos: 1,
     titulo: 'Como usar a sua tela',
     legenda: 'Em toda pergunta e exercício, primeiro aparece **só o enunciado**: a gente explica, e só depois libera as opções. Aí o tempo começa a contar, e quem responde mais rápido ganha mais XP.',
   },
@@ -111,6 +111,62 @@ export const DECK: Cena[] = [
         legendaImagem: 'Ferramentas GNU + Kernel Linux = Sistema Operacional GNU/Linux',
       },
     ],
+  },
+  {
+    id: 'm0-gnu-linux', ilustra: 'engrenagem', tipo: 'MentalModel', modulo: 0, passos: 3, minutos: 1,
+    titulo: 'GNU/Linux: O Carro e o Motor',
+    cartoesPasso: [
+      {
+        ilustra: 'engrenagem',
+        etiqueta: 'PASSO 1 · O MOTOR',
+        titulo: 'Linux (O Kernel)',
+        texto: 'O núcleo invisível. Gerencia **hardware, CPU e memória** nos bastidores. Sozinho, o motor não anda.',
+        destaque: 'Kernel · Hardware e Memória',
+      },
+      {
+        ilustra: 'ferramenta',
+        etiqueta: 'PASSO 2 · A CARROCERIA',
+        titulo: 'GNU (O Sistema Visível)',
+        texto: 'Volante, painel e pedais: entrega o **Bash**, comandos essenciais (`ls`, `cd`, `grep`), compilador `gcc` e interfaces (**GNOME**).',
+        destaque: 'Bash · Comandos · Interface',
+      },
+      {
+        ilustra: 'foguete',
+        etiqueta: 'PASSO 3 · O CARRO COMPLETO',
+        titulo: 'GNU/Linux (A União)',
+        texto: 'A combinação dos dois projetos gigantes. O terminal que usamos é o **ferramental GNU** acelerando sobre o **motor Linux**.',
+        destaque: 'GNU + Linux = Sistema Completo',
+      },
+    ],
+    legenda: 'Quando abrimos o terminal ou gerenciamos arquivos, usamos as **ferramentas do GNU** rodando sobre o **motor do Linux** — por isso o termo técnico é **GNU/Linux**.',
+  },
+  {
+    id: 'm0-linhagem', ilustra: 'arvore', tipo: 'MentalModel', modulo: 0, passos: 3, minutos: 1,
+    titulo: 'UNIX, macOS e Linux: Qual a relação?',
+    cartoesPasso: [
+      {
+        ilustra: 'livro',
+        etiqueta: 'PASSO 1 · A ORIGEM',
+        titulo: 'UNIX (O Patriarca)',
+        texto: 'Criado nos **anos 1970**. Inaugurou a filosofia clássica de sistemas **estáveis, multiusuário e modulares**.',
+        destaque: 'Década de 1970 · Fundação',
+      },
+      {
+        ilustra: 'computador',
+        etiqueta: 'PASSO 2 · O HERDEIRO',
+        titulo: 'macOS (O Filho Legítimo)',
+        texto: 'Construído sobre base **BSD**. É **UNIX certificado e oficial** rodando por baixo da interface da Apple.',
+        destaque: 'Base BSD · UNIX Oficial',
+      },
+      {
+        ilustra: 'pinguim',
+        etiqueta: 'PASSO 3 · O CLONE LIVRE',
+        titulo: 'Linux (Unix-like)',
+        texto: '**Zero código** do UNIX original. Criado do zero por Linus Torvalds: comportamento idêntico, mas **DNA próprio e 100% aberto**.',
+        destaque: 'DNA Próprio · Código Livre',
+      },
+    ],
+    legenda: '**Em resumo:** o **UNIX** é a fundação histórica, o **macOS** é um filho legítimo dele, e o **Linux** é o clone moderno criado para ser **livre**.',
   },
   {
     id: 'm0-q1', ilustra: 'relogio', tipo: 'QuizScene', modulo: 0, passos: 1, minutos: 1.25,

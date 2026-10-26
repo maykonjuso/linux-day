@@ -72,7 +72,7 @@ export function SceneRouter({
     case 'ModuleCover': return <Capa cena={cena} />;
     case 'Apresentacao': return <Apresentacao cena={cena} passo={cena.id === arena.cena.id ? arena.estado.passo : 0} papel={papel} />;
     case 'Controles': return <Controles cena={cena} />;
-    case 'MentalModel': return <Modelo cena={cena} />;
+    case 'MentalModel': return <Modelo cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
     case 'CommandAnatomy': return <Anatomia cena={cena} />;
     case 'TerminalDemo': return <Demo cena={cena} passo={cenaForcada ? cena.passos - 1 : arena.estado.passo} />;
     case 'WillGoWrong': return <Erros cena={cena} />;
@@ -272,15 +272,97 @@ function Capa({ cena }: { cena: C<'ModuleCover'> }) {
 
 const ICONE_DO_DIAGRAMA = { arvore: 'arvore', distros: 'arvore', processo: 'processo', cadeados: 'cadeado', encanamento: 'juntar' } as const;
 
-function Modelo({ cena }: { cena: C<'MentalModel'> }) {
+function Modelo({ cena, passo = 0 }: { cena: C<'MentalModel'>; passo?: number }) {
+  const cartoes = cena.cartoesPasso;
+  const atual = cartoes ? Math.min(passo, cartoes.length - 1) : 0;
+  const noUltimoPasso = !cartoes || atual >= cartoes.length - 1;
+
   return (
-    <div className="cena" data-modulo={cena.modulo}>
+    <div className="cena" data-modulo={cena.modulo} style={{ justifyContent: 'center' }}>
       <Cabecalho ilustra={ilustraDa(cena)} olho="como isso funciona" titulo={cena.titulo} />
-      <Diagrama nome={cena.diagrama} />
-      <div className="cartao" style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'flex-start' }}>
+
+      {cartoes ? (
+        <div className="grade-cartoes-passo">
+          {cartoes.map((item, i) => {
+            const ativo = i <= atual;
+            const eAtual = i === atual;
+            return (
+              <div
+                key={item.titulo}
+                className="cartao cartao-passo"
+                data-ativo={ativo ? 'true' : 'false'}
+                data-atual={eAtual ? 'true' : undefined}
+              >
+                <div className="cartao-passo-topo">
+                  <div className="cartao-passo-icone">
+                    <Ilustra nome={item.ilustra as NomeIlustra} tamanho={34} />
+                  </div>
+                  <span className="olho" style={{ color: eAtual ? 'var(--acento)' : 'var(--tinta-2)' }}>
+                    {item.etiqueta}
+                  </span>
+                </div>
+                <strong className="titulo cartao-passo-titulo">{item.titulo}</strong>
+                {ativo ? (
+                  <>
+                    <p className="corpo-p cartao-passo-texto">
+                      <Texto>{item.texto}</Texto>
+                    </p>
+                    {item.destaque && (
+                      <span className={`chip${eAtual ? ' forte' : ''}`} style={{ justifySelf: 'start', marginTop: 'auto' }}>
+                        {item.destaque}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <p className="corpo-p cartao-passo-aguardando">
+                    Avance para revelar este passo…
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : cena.diagrama ? (
+        <Diagrama nome={cena.diagrama} />
+      ) : null}
+
+      <div
+        className="cartao"
+        style={{
+          maxWidth: cartoes ? 1160 : undefined,
+          margin: cartoes ? '0 auto' : undefined,
+          width: '100%',
+          display: 'flex',
+          gap: 'var(--e2)',
+          alignItems: 'center',
+          opacity: noUltimoPasso ? 1 : 0.55,
+          borderColor: cartoes && noUltimoPasso ? 'var(--acento)' : undefined,
+          transition: 'opacity 260ms var(--ease), border-color 260ms var(--ease)',
+        }}
+      >
         <Ilustra nome="ideia" tamanho={26} />
-        <p className="corpo-p"><Texto>{cena.legenda}</Texto></p>
+        <p className="corpo-p" style={{ margin: 0 }}><Texto>{cena.legenda}</Texto></p>
       </div>
+
+      {cartoes && cartoes.length > 1 && (
+        <div className="olho" style={{ display: 'flex', gap: 'var(--e1)', alignItems: 'center', justifyContent: 'center' }}>
+          <span>passo {atual + 1} de {cartoes.length}</span>
+          <span style={{ display: 'flex', gap: 'var(--e1)' }}>
+            {cartoes.map((_, i) => (
+              <span
+                key={i}
+                style={{
+                  width: 24,
+                  height: 4,
+                  borderRadius: 99,
+                  background: i <= atual ? 'var(--acento)' : 'var(--borda)',
+                  transition: 'background 240ms var(--ease)',
+                }}
+              />
+            ))}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

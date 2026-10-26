@@ -1366,3 +1366,104 @@ select.btn-icone, input.btn-icone { font: inherit; font-size: 13px; }
   text-align: center;
   max-width: 580px;
 }
+
+/* ── cartões conceituais em passos (MentalModel com cartoesPasso) ────────── */
+.grade-cartoes-passo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e3);
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  align-items: stretch;
+}
+.cartao-passo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  padding: var(--e3);
+  border-radius: var(--r-g);
+  transition: opacity 280ms var(--ease), transform 280ms var(--ease), border-color 280ms var(--ease), box-shadow 280ms var(--ease);
+}
+.cartao-passo[data-ativo="false"] {
+  opacity: 0.32;
+  border-style: dashed;
+  background: var(--papel-2);
+}
+.cartao-passo[data-ativo="true"] {
+  opacity: 0.92;
+  background: var(--papel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+.cartao-passo[data-atual="true"] {
+  opacity: 1;
+  border: 2px solid var(--acento);
+  box-shadow: 0 10px 30px rgba(29, 78, 216, 0.14);
+  animation: entra-cartao-passo 320ms var(--ease) both;
+}
+.cartao-passo-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.cartao-passo-icone {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-m);
+  background: var(--papel-2);
+  border: 1px solid var(--borda);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.cartao-passo[data-atual="true"] .cartao-passo-icone {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+}
+.cartao-passo-titulo {
+  font-size: clamp(19px, 1.8vw, 25px);
+  line-height: 1.2;
+}
+.cartao-passo-texto {
+  margin: 0;
+  color: var(--tinta-2);
+  font-size: clamp(14px, 1.2vw, 17px);
+  line-height: 1.45;
+}
+.cartao-passo-aguardando {
+  margin: 0;
+  color: var(--tinta-2);
+  font-size: 13px;
+  font-style: italic;
+}
+@keyframes entra-cartao-passo {
+  from { opacity: 0.4; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cartao-passo[data-atual="true"] { animation: none; }
+}
+@media (max-width: 900px) {
+  .grade-cartoes-passo {
+    grid-template-columns: 1fr;
+    gap: var(--e1);
+  }
+  .cartao-passo {
+    padding: var(--e2);
+    gap: var(--e1);
+    border-radius: var(--r-m);
+  }
+  .cartao-passo-icone {
+    width: 34px;
+    height: 34px;
+  }
+  .cartao-passo-titulo {
+    font-size: 16px;
+  }
+  .cartao-passo-texto {
+    font-size: 13px;
+  }
+  .cartao-passo .chip {
+    display: none;
+  }
+}
