@@ -447,8 +447,10 @@ function Buzzer({
   const jaErrei = minhaEquipe ? erradas.includes(minhaEquipe) : false;
   const naFila = fila.some((f) => f.equipe === minhaEquipe);
 
+  // cena-buzzer aperta o respiro, a figura e o botão: sem ela a tela do
+  // participante (1280x800) não fecha e o deck acusa corte de conteúdo
   return (
-    <div className="cena" data-modulo={cena.modulo} data-denso="true">
+    <div className="cena cena-buzzer" data-modulo={cena.modulo} data-denso="true">
       <Cabecalho ilustra="alarme" titulo={cena.titulo} olho="quem aperta primeiro responde" />
       <h2 className="titulo" style={{ fontSize: 'var(--t2)' }}><Texto>{cena.pergunta ?? cena.enunciado}</Texto></h2>
       <p className="corpo-p"><Texto>{cena.enunciado}</Texto></p>

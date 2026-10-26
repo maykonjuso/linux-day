@@ -470,7 +470,10 @@ export default function Player() {
         </div>
       )}
       {eu.silenciado && <div className="chip forte" style={{ position: 'fixed', top: 'var(--e2)', right: 'var(--e2)', zIndex: 50 }}>chat silenciado pelo apresentador</div>}
-      {arena.subiuNivel && (
+      {/* só para quem subiu: o evento vem para a sala toda, e a tela cheia dos
+          outros piscava em cima do conteúdo (e com o nome errado, o de quem
+          estava lendo). Mesmo filtro do cartão de conquista. */}
+      {arena.subiuNivel?.id === eu.id && (
         <div className="nivel-cheio">
           <Confete />
           <div className="nivel-cartao">
@@ -478,7 +481,7 @@ export default function Player() {
             <div className="olho">subiu de nível</div>
             {/* o nome da pessoa, e não o prompt inteiro (nome@servidor:/etc$):
                 no meio de um jogo o que ela precisa ler é que foi ela */}
-            <div style={{ fontSize: 'clamp(32px, 5vw, 64px)', fontWeight: 800 }}>{eu.nick}</div>
+            <div style={{ fontSize: 'clamp(32px, 5vw, 64px)', fontWeight: 800 }}>{arena.subiuNivel.nick}</div>
             <div className="chip forte grande" style={{ marginTop: 'var(--e2)' }}>{arena.subiuNivel.patente}</div>
           </div>
         </div>

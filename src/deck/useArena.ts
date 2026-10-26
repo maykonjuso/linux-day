@@ -94,7 +94,7 @@ export function useArena(papel: Papel) {
   const [arenaEstado, setArenaEstado] = useState<EstadoArena | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [badge, setBadge] = useState<{ id: string; nick: string; badge: string; descricao: string } | null>(null);
-  const [subiuNivel, setSubiuNivel] = useState<{ nick: string; patente: string } | null>(null);
+  const [subiuNivel, setSubiuNivel] = useState<{ id: string; nick: string; patente: string } | null>(null);
   const [ganho, setGanho] = useState<{ xp: number; mult: number; em: number } | null>(null);
   const [evento, setEvento] = useState<string | null>(null);
   /** o ambiente Linux da pessoa já foi semeado? (começa pronto para quem volta) */
@@ -162,7 +162,13 @@ export function useArena(papel: Papel) {
     s.on('combo', ({ mult }: { mult: number }) => setEu((p) => (p ? { ...p, combo: mult } : p)));
     s.on('nivel', ({ nick, patente, id }: { nick: string; patente: string; id: string }) => {
       setEu((p) => (p && p.id === id ? { ...p, nivel: p.nivel + 1 } : p));
-      efemero('nivel', setSubiuNivel, { nick, patente }, 2600);
+      /*
+       * O evento é broadcast (io.emit): toda a sala recebe a subida de nível de
+       * cada pessoa. Quem vê a tela cheia é só quem subiu — numa sala ganhando
+       * XP em lab, o aviso dos outros piscava sem parar sobre o conteúdo. O id
+       * vai no estado para a tela filtrar, como o cartão de conquista já faz.
+       */
+      efemero('nivel', setSubiuNivel, { id, nick, patente }, 2600);
     });
     s.on('badge', (b: { id: string; nick: string; badge: string; descricao: string }) => efemero('badge', setBadge, b, 5000));
     s.on('evento', ({ tipo }: { tipo: string }) => efemero('evento', setEvento, tipo, 8000));

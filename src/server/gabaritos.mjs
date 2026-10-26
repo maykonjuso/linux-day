@@ -12,7 +12,6 @@
 export const GABARITOS = {
   // M0
   'm0-q1': { correta: 'b', segundos: 20, xpBase: 40 },
-  'm0-q3': { correta: 'b', segundos: 20, xpBase: 40 },
   'm0-q4': { correta: 'b', segundos: 20, xpBase: 40 },
   'm0-q7': { correta: 'c', segundos: 20, xpBase: 40 },
   // M1 · kit de fuga (escape-room → 3 QuizScenes individuais)
@@ -23,6 +22,13 @@ export const GABARITOS = {
   'm5-prever-q1': { correta: 'a', segundos: 20, xpBase: 40 },  // prompt não volta
   'm5-prever-q2': { correta: 'a', segundos: 20, xpBase: 40 },  // prompt volta + PID
   'm5-prever-q3': { correta: 'a', segundos: 20, xpBase: 40 },  // processo encerrado
+  // Kahoot no lugar dos laboratórios individuais (um bloco por módulo)
+  'm1-k1': { correta: 'c', segundos: 20, xpBase: 40 },  // ls -la
+  'm2-k1': { correta: 'b', segundos: 20, xpBase: 40 },  // mv *.png imagens/
+  'm2-k3': { correta: 'a', segundos: 20, xpBase: 40 },  // rm tmp_*
+  'm3-k1': { correta: 'c', segundos: 20, xpBase: 40 },  // chmod +x deploy.sh
+  'm4-k1': { correta: 'a', segundos: 20, xpBase: 40 },  // grep -c ERROR app.log
+  'm4-k2': { correta: 'c', segundos: 20, xpBase: 40 },  // grep FATAL app.log > fatais.txt
 };
 
 export const gabaritoDe = (cenaId) => GABARITOS[cenaId] ?? null;

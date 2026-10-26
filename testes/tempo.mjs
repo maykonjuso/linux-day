@@ -3,7 +3,7 @@
  *
  * Lê o deck direto do TypeScript (o Node 22.6+ remove os tipos sozinho) e
  * confere três coisas que, quebradas, só apareceriam no meio do workshop:
- *   1. a soma dos `minutos` de todas as cenas é no máximo 120;
+ *   1. a soma dos `minutos` de todas as cenas é no máximo 90 (1h30 de workshop);
  *   2. toda cena tem `minutos`, e todo lab/exercício/jogo dá tempo de fazer
  *      (os minutos da cena cobrem o cronômetro dela);
  *   3. todo comando de `comandosDoModulo` e `resumo` tem "o que faz" em
@@ -15,7 +15,7 @@ import { COMANDOS } from '../src/deck/comandos.ts';
 let falhas = 0;
 const ok = (cond, msg) => { console.log(`${cond ? '✓' : '✗'} ${msg}`); if (!cond) falhas++; };
 
-ok(MINUTOS_TOTAIS <= 120, `o deck inteiro cabe em 120 min (planejado: ${MINUTOS_TOTAIS} min)`);
+ok(MINUTOS_TOTAIS <= 90, `o deck inteiro cabe em 1h30 (planejado: ${MINUTOS_TOTAIS} min)`);
 
 const semMinutos = DECK.filter((c) => typeof c.minutos !== 'number' || c.minutos <= 0).map((c) => c.id);
 ok(semMinutos.length === 0, `toda cena declara minutos ${semMinutos.join(', ')}`);

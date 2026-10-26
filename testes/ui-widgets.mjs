@@ -141,7 +141,7 @@ await pg.locator('.alt').nth(1).click();
 await dormir(300);
 host.emit('host:revelar', { cenaId: 'm0-q1', correta: 'b', xpBase: 40, segundos: 20 });
 await dormir(500);
-await irPara('m0-q3');
+await irPara('m0-q4');
 ok(await pg.locator('.alt').first().isEnabled(), 'na pergunta seguinte as alternativas destravam');
 await pg.locator('.alt').first().click();
 await dormir(400);
@@ -152,10 +152,11 @@ await irPara('fim-placar');
 ok((await pg.locator('.lado-podio', { hasText: 'ana' }).count()) > 0, 'o pódio final lista os participantes');
 ok((await pg.locator('.lado-podio').count()) === 2, 'e mostra pessoas e equipes lado a lado');
 
-// consulta (tecla ?) — precisa de uma cena de lab para ter o que consultar
-await irPara('m2-lab');
-await dormir(2200);
-await pg.locator('.cena').click({ position: { x: 5, y: 5 } });   // tira o foco do terminal
+// consulta (tecla ?) — a Consulta só recebe o módulo da cena, então qualquer
+// cena serve; vamos numa do M2 para a aba de comandos abrir no módulo certo
+await irPara('m2-demo');
+await dormir(600);
+await pg.locator('.cena').click({ position: { x: 5, y: 5 } });   // garante o foco na cena
 await pg.keyboard.press('?');
 await dormir(500);
 const consultaAberta = () => pg.locator('button', { hasText: 'fechar (Esc)' }).count();
@@ -178,6 +179,11 @@ for (const [rotulo, procura] of [['comandos por situação', /Onde eu estou/], [
   ok((await pg.locator('body').textContent())?.match(procura) !== null, `a aba "${rotulo}" mostra conteúdo`);
 }
 await pg.keyboard.press('Escape');
+
+// os botões de dica/recomeçar/ajuda vivem na barra do laboratório, e o boss do
+// M6 é o lab que sobrou no deck depois que os labs de módulo viraram Kahoot
+await irPara('m6-boss');
+await dormir(2200);
 
 // pedir ajuda
 let pediuAjuda = false;
